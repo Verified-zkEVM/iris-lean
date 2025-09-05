@@ -441,6 +441,8 @@ and thus,
    &= \sum_{I \subseteq [n]}  \mu(\alpha_I \cap (\cup_{i \in I} B_i))
    \tag{By~\cref{eq:finite-add-alpha}}\\
    &= \sum_{I \subseteq [n]}  \mu_a(\alpha_I) \cdot \mu_b (\cup_{i \in I} B_i)\tag{By definition of $\mu$} \\
+   &= \sum_{I \subseteq [n]}  \mu_a(\alpha_I) \cdot \mu_b (\cup_{i \in I} (\disjunion_{I' \subseteq [n] \mid i \in I'} \beta_{I'}))
+   \tag{By definition of $\beta_I$} \\
    &= \sum_{I \subseteq [n]}  \mu_a(\alpha_I) \cdot \mu_b (\disjunion_{I' \subseteq [n] \mid I \cap I' \neq \emptyset} \beta_{I'}) \notag \\
    &= \sum_{I \subseteq [n]}  \mu_a(\alpha_I) \cdot \sum_{I' \subseteq [n] \mid \mathrlap{I \cap I' \neq \emptyset}} \mu_b (\beta_{I'}) \notag \\
    &= \sum_{I \subseteq [n]} \sum_{I' \subseteq [n] \mid \mathrlap{I \cap I' \neq \emptyset}}  \mu_a(\alpha_I) \cdot \mu_b (\beta_{I'}) \notag
@@ -650,3 +652,4 @@ Thus,
      \bind(\prob, \fun a. \krnl(a) \iprod \prob_2)).
   $
  \end{proof}
+

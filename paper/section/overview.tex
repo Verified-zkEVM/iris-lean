@@ -335,6 +335,7 @@ without having to drop down to the level of semantics.
 
 
 
+
 \subsection{The Laws of \SuperCond}
 
 
@@ -369,13 +370,13 @@ We need the following primitive laws of \supercond:
   \distAs{\aexpr\at{i}}{\mu}
   \lequiv
   \CC\prob v.\sure{\aexpr\at{i}=v}
-|}   \label{rule:c-unit-r}
+}   \label{rule:c-unit-r}
 
   \infer*[lab=c-frame]{}{
   P * \CC\prob v.K(v)
   \proves
   \CC\prob v.(P * K(v))
-|}   \label{rule:c-frame}
+}   \label{rule:c-frame}
 
   \infer*[lab=c-cons]{
   \forall v\st
@@ -384,7 +385,7 @@ We need the following primitive laws of \supercond:
   \CC\prob v.K_1(v)
   \proves
   \CC\prob v.K_2(v)
-|}   \label{rule:c-cons}
+}   \label{rule:c-cons}
 \end{proofrules}
 
 \Cref{rule:c-unit-r} can convert back and forth from
@@ -611,7 +612,6 @@ something of the same form as the encoding of relational liftings.
 
 
 
-
 One of the well-known limitations of pRHL is that it requires
 a very strict structural alignment between the order of samplings
 to be coupled in the two programs.
@@ -643,7 +643,7 @@ In \thelogic, we can establish this pattern using a \emph{derived} general rule:
 \end{proofrule}
 The rule assumes that the lifting of $R_1$ (resp. $R_2$) can be established
 by analyzing $t_1$ and $t_1'$ ($t_2$ and~$t_2'$)
-side by side from precondition $P_1$ ($P_2$).
+side by side from precondition $P_1$ ($P_2)$.
 The standard sequential rule of pRHL would force an alignment
 between the wrong pairs ($t_1$ with~$t_2'$, and $t_2$ with~$t_1'$).
 Crucial to the soundness of the rule is the assumption
@@ -935,3 +935,4 @@ $
     \Ip{k}{1} = \neg\Ip{c}{2}
   }
 $ is equivalent to false.
+

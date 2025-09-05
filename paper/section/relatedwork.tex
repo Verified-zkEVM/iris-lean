@@ -101,6 +101,12 @@ regardless of whether the end goal is a conditional statement.
 
 
 
+
+
+
+
+
+
 \paragraph{\bfseries Relational Reasoning}
 \citet{barthe2009formal} extend relational Hoare logic~\cite{benton2004simple} to reason about probabilistic programs in a logic called pRHL (probabilistic Relational Hoare Logic).
 In pRHL, assertions on pairs of deterministic program states are lifted to assertions on pairs of distributions, and on the surface, the logic simply manipulates the deterministic assertions.
@@ -134,3 +140,4 @@ can accommodate modular and flexible relational proofs of deterministic programs
 Expectation-based approaches, which reason about expected quantities of probabilistic programs via a weakest-pre-expectation operator that propagates information about expected values backwards through the program, have been classically used to verify randomized algorithms~\cite{kozen1983PDL,Morgan:1996,kaminski2016weakest,kaminski2019thesis,aguirre2021pre,Bartocci2022moment}.
 These logics offer ergonomic dedicated principles for expectations, but do not aim at unifying principles for analyzing more general classes of properties or proof techniques, like we attempt here.
 Ellora~\cite{barthe2016ellora} proposes an assertion-based logic (without separation nor conditioning) to overcome the limitation of working only with expectations.
+
