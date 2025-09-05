@@ -1,0 +1,23 @@
+\section{Conclusions and Future Work}
+\thelogic's journey started as a quest to integrate unary and relational
+probabilistic reasoning and ended up uncovering \supercond{}
+as a key fundational tool.
+Remarkably, to achieve our goal we had to deviate from Lilac's previous
+proposal in both the definition of conditioning,
+  to enable the encoding of relational lifting,
+and of ownership (with almost measurability),
+  to resolve an issue with almost sure assertions
+(recently corrected~\cite{lilac2} in a different way).
+In addition, our model supports mutable state without sacrificing
+expressiveness.
+One limitation of our current model is lack of support for continuous
+distributions.
+Lilac's model and recent advances in it~\cite{LiAJ0H24} could suggest a pathway for a continuous extension of \thelogic,
+but it is unclear if all our rules would be still valid;
+for example \cref{rule:c-fuse}'s soundness hinges on properties of discrete distributions that we could not extend to the general case in an obvious way.
+\thelogic's encoding of relational lifting and the novel proof principles it uncovered for it are a demonstration of the potential
+of \supercond\ as a basis for deriving high-level logics on top of an ergonomic
+core logic.
+Obvious candidates for such scheme are approximate couplings~\cite{apRHL}
+(which have been used for \eg differential privacy),
+and expectation-based calculi (à la Ellora).
