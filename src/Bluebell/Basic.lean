@@ -2,11 +2,12 @@ import Iris
 import Bluebell.ProbabilityTheory.Coupling
 import Bluebell.ProbabilityTheory.IndepProduct
 import Bluebell.Core.Indexed
-import Bluebell.HyperAssertion
+import Bluebell.Algebra.HyperAssertion
+import Bluebell.Algebra.Probability
+import Bluebell.Algebra.Permission
+import Bluebell.Algebra.PSpPm
 
-/-! # Formalizing the Bluebell paper
-
-This is a copy from an initial attempt in VCV-io. We comment out most of this since there are lots of errors due to updates in Iris. -/
+/-! # Formalizing the Bluebell paper -/
 
 open Iris ProbabilityTheory MeasureTheory
 

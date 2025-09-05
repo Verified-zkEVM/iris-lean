@@ -14,13 +14,12 @@ namespace Permission
 
 variable {α F : Type*} [UFraction F]
 
-/-- Construct permissions from a bounded map `p : α → Frac F` that is ≤ 1 pointwise.
-This is a convenience wrapper around `DFrac.own` with a proof that the fraction is proper. -/
-def ofFrac (p : α → Frac F)
-    (_hp : ∀ a, Fraction.Proper (p a : F)) : Permission α F :=
-  fun a => by
-    -- `hp a` witnesses properness; we ignore it here since `own` just holds the value.
-    exact DFrac.own (p a : F)
+/-/-- Construct permissions by taking pointwise `DFrac.own` of `p : α → Frac F`. -/
+def ofFrac (p : α → Frac F) : Permission α F :=
+  fun a => DFrac.own (p a : F)
+
+/-- The all-one permission (own the whole fraction at every variable). -/
+def one : Permission α F := fun _ => DFrac.own (1 : F)
 
 end Permission
 
