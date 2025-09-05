@@ -16,15 +16,4 @@ namespace PSp
 
 end PSp
 
-variable {Ω : Type*}
-
-noncomputable section
-
-/-- Trivial probability space `{∅, Ω}` with Dirac measure at an arbitrary point (requires `Nonempty Ω`). -/
-instance [inst : Nonempty Ω] : One (ProbabilityTheory.ProbabilitySpace Ω) where
-  one := @ProbabilityTheory.ProbabilitySpace.mk Ω (@MeasureTheory.MeasureSpace.mk Ω ⊥ (@MeasureTheory.Measure.dirac _ ⊥ (Classical.choice inst)))
-    (by constructor; simp [MeasureTheory.Measure.dirac])
-
-end
-
 end Bluebell

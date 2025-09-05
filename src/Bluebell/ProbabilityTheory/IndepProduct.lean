@@ -68,6 +68,23 @@ instance : Preorder (ProbabilitySpace Ω) where
 
 end ProbabilityTheory
 
+/-! ### Canonical unit probability space
+
+We provide `One (ProbabilitySpace Ω)` as the Dirac measure at a chosen point,
+requiring `[Nonempty Ω]`. -/
+
+noncomputable section
+
+variable {Ω : Type*}
+
+instance [inst : Nonempty Ω] : One (ProbabilityTheory.ProbabilitySpace Ω) where
+  one := @ProbabilityTheory.ProbabilitySpace.mk Ω
+    (@MeasureTheory.MeasureSpace.mk Ω ⊥
+      (@MeasureTheory.Measure.dirac _ ⊥ (Classical.choice inst)))
+    (by constructor; simp [MeasureTheory.Measure.dirac])
+
+end
+
 section IndependentProduct
 
 variable {m₁ : MeasurableSpace Ω} {m₂ : MeasurableSpace Ω}
@@ -105,14 +122,67 @@ def MeasureTheory.MeasureSpace.indepProduct (m₁ : MeasureSpace Ω) (m₂ : Mea
 /-- The partial operation of independent product on `ProbabilitySpace`s, when it exists -/
 def ProbabilityTheory.ProbabilitySpace.indepProduct (m₁ : ProbabilitySpace Ω) (m₂ : ProbabilitySpace Ω) : Option (ProbabilitySpace Ω) := by
   classical
-  by_cases h : (m₁.toMeasureSpace.indepProduct m₂.toMeasureSpace).isSome
-  · exact some (@ProbabilitySpace.mk Ω ((m₁.toMeasureSpace.indepProduct m₂.toMeasureSpace).get h) (by
-    sorry))
-  · exact none
+  -- Re-express in terms of existence of an independent product witness to build the space and certify probability.
+  by_cases h : Nonempty (Measure.IndependentProduct m₁.μ m₂.μ)
+  · -- Build the combined `MeasureSpace` from the witness and prove it's a `ProbabilitySpace` by μ(univ)=1.
+    refine some
+      { toMeasureSpace := @MeasureSpace.mk Ω (m₁.σAlg.sum m₂.σAlg) (Classical.choice h).μ
+        is_prob := by
+          -- `μ(univ) = 1` follows from the rectangle formula with X=univ, Y=univ.
+          have hX : MeasurableSet[m₁.σAlg] (Set.univ) := by simp
+          have hY : MeasurableSet[m₂.σAlg] (Set.univ) := by simp
+          have hμ : (Classical.choice h).μ (Set.univ) = m₁.μ Set.univ * m₂.μ Set.univ := by
+            simpa [Set.univ_inter] using (Classical.choice h).inter_eq_prod (X := Set.univ) (Y := Set.univ) hX hY
+          have hμ1 : m₁.μ Set.univ = 1 := by simpa using (inferInstance : IsProbabilityMeasure m₁.μ).measure_univ
+          have hμ2 : m₂.μ Set.univ = 1 := by simpa using (inferInstance : IsProbabilityMeasure m₂.μ).measure_univ
+          constructor
+          rw [hμ1, hμ2] at hμ
+          simp at hμ
+          simpa only [σAlg_apply, μ_apply] using hμ }
+  · -- No independent product witness exists at the measure level.
+    exact none
 
 end
 
 end IndependentProduct
+
+namespace ProbabilityTheory
+
+namespace ProbabilitySpace
+
+variable {Ω : Type*}
+
+/-- Symmetry: independent product is commutative (API statement). -/
+theorem indepProduct_comm (m₁ m₂ : ProbabilitySpace Ω) :
+    indepProduct m₁ m₂ = indepProduct m₂ m₁ := by
+  -- Proof via swapping factors and uniqueness of independent product.
+  sorry
+
+/-- Left unit: the unit probability space acts as a left identity for `indepProduct` (API).
+Requires `[Nonempty Ω]` to use the canonical Dirac-on-a-point unit. -/
+theorem indepProduct_one_left [Nonempty Ω] (m : ProbabilitySpace Ω) :
+    indepProduct (1 : ProbabilitySpace Ω) m = some m := by
+  -- Proof via rectangle formula on univ and uniqueness.
+  sorry
+
+/-- Right unit: the unit probability space acts as a right identity for `indepProduct` (API).
+Requires `[Nonempty Ω]` to use the canonical Dirac-on-a-point unit. -/
+theorem indepProduct_one_right [Nonempty Ω] (m : ProbabilitySpace Ω) :
+    indepProduct m (1 : ProbabilitySpace Ω) = some m := by
+  -- Proof via rectangle formula on univ and uniqueness.
+  sorry
+
+/-- Associativity: reassociating a triple independent product yields the same result (API). -/
+theorem indepProduct_assoc (m₁ m₂ m₃ : ProbabilitySpace Ω) :
+    (do let ab ← indepProduct m₁ m₂; indepProduct ab m₃) =
+    (do let bc ← indepProduct m₂ m₃; indepProduct m₁ bc) := by
+  -- Proof via measurable space isomorphism between (m₁ ⊕ m₂) ⊕ m₃ and m₁ ⊕ (m₂ ⊕ m₃)
+  -- and uniqueness of independent products.
+  sorry
+
+end ProbabilitySpace
+
+end ProbabilityTheory
 
 #check MeasureSpace
 

@@ -14,12 +14,24 @@ namespace Permission
 
 variable {α F : Type*} [UFraction F]
 
-/-/-- Construct permissions by taking pointwise `DFrac.own` of `p : α → Frac F`. -/
+/-- Construct permissions by taking pointwise `DFrac.own` of `p : α → Frac F`. -/
 def ofFrac (p : α → Frac F) : Permission α F :=
   fun a => DFrac.own (p a : F)
 
 /-- The all-one permission (own the whole fraction at every variable). -/
 def one : Permission α F := fun _ => DFrac.own (1 : F)
+
+/-- Zero-permission for `DFrac F` is represented by `discard`. -/
+def isZero (x : DFrac F) : Prop := x = DFrac.discard
+
+/-- Having some ownership means not `discard` (either `own _` or `ownDiscard _`). -/
+def hasOwnership (x : DFrac F) : Prop := x ≠ DFrac.discard
+
+/-- The set of variables where the permission is zero (`discard`). -/
+def zeroSupport (p : Permission α F) : α → Prop := fun a => p a = DFrac.discard
+
+/-- The set of variables with some ownership (not `discard`). -/
+def nonZeroSupport (p : Permission α F) : α → Prop := fun a => p a ≠ DFrac.discard
 
 end Permission
 

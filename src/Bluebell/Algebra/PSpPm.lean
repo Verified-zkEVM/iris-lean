@@ -8,17 +8,17 @@ open Iris ProbabilityTheory
 
 /-! ## ProbabilitySpace × Permission skeleton
 
-We define a placeholder compatibility predicate and the subtype. No instances yet. -/
+We define a compatibility predicate and the subtype. Algebraic laws and
+instances remain stubs for now. -/
 
 variable {α V F : Type*} [UFraction F]
 
 -- Placeholder `Permission` reference lives in `Bluebell.Algebra.Permission`.
 -- We only reference the name here to shape the subtype; concrete lemmas later.
-/-- Stub compatibility predicate between a probability resource `P : PSp (α → V)`
- and a permission `p : Permission α F`.
+/-- Compatibility between a `P : PSp (α → V)` and a permission `p : Permission α F`.
 
- Currently defined as `True` to unblock the refactor; replace with the actual
- splitting condition once the probability semantics are finalized. -/
+ Stubbed as `True` for now; will be replaced by the discard-based split semantics
+ once the probability-side algebra is in place. -/
 def compatiblePerm (P : PSp (α → V)) (p : Permission α F) : Prop := True
 
 def PSpPm (α V F : Type*) [UFraction F] :=
@@ -29,7 +29,7 @@ namespace PSpPm
 variable {α V F : Type*} [UFraction F]
 
 /-- Lift a probability space to a `PSpPm` by pairing with the all-one permission. -/
-def liftProb (μ : ProbabilityTheory.ProbabilitySpace (α → V)) : PSpPm α V F :=
+def liftProb (μ : ProbabilitySpace (α → V)) : PSpPm α V F :=
   ⟨⟨WithTop.some μ, Permission.one (α := α) (F := F)⟩, trivial⟩
 
 end PSpPm
@@ -47,7 +47,7 @@ variable {α V : Type*}
 def indepMul (x y : PSp (α → V)) : PSp (α → V) :=
   match x, y with
   | WithTop.some x, WithTop.some y =>
-      match ProbabilityTheory.ProbabilitySpace.indepProduct x y with
+      match ProbabilitySpace.indepProduct x y with
       | some z => WithTop.some z
       | none => none
   | _, _ => none
@@ -125,7 +125,7 @@ namespace ProbabilitySpace
 
 /-- Compatibility on `ProbabilitySpace` delegates to the `PSp` version. -/
 def compatiblePerm {α V F : Type*} [UFraction F]
-    (P : ProbabilityTheory.ProbabilitySpace (α → V)) (p : Bluebell.Permission α F) : Prop :=
+    (P : ProbabilitySpace (α → V)) (p : Permission α F) : Prop :=
   _root_.Bluebell.compatiblePerm (WithTop.some P) p
 
 end ProbabilitySpace
@@ -153,8 +153,49 @@ def liftProb (μ : I → ProbabilityTheory.ProbabilitySpace (α → V)) : Indexe
   fun i => PSpPm.liftProb (α := α) (V := V) (F := F) (μ i)
 
 instance : FunLike (IndexedPSpPm I α V F) I (PSpPm α V F) where
-coe := fun x => x
-coe_injective' := by intro x y h; simp [h]
+  coe := fun x => x
+  coe_injective' := by intro x y h; simp [h]
+
+/-! ### Stub OFE/CMRA instances for indexed model
+
+We provide discrete OFE and a trivial CMRA (pcore = none, validity = True) with
+pointwise op, sufficient to enable `own`/`sep` wiring in the program logic.
+Replace by proper algebra once probability-side algebraic laws are available. -/
+
+@[simp] instance : COFE (IndexedPSpPm I α V F) := COFE.ofDiscrete _ Eq_Equivalence
+instance : OFE.Leibniz (IndexedPSpPm I α V F) := ⟨fun x => sorry⟩
+instance : OFE.Discrete (IndexedPSpPm I α V F) := ⟨fun x => sorry⟩
+
+noncomputable instance : CMRA (IndexedPSpPm I α V F) where
+  pcore _ := none
+  op x y := fun i => PSpPm.op (α := α) (V := V) (F := F) (x i) (y i)
+  ValidN _ _ := True
+  Valid _ := True
+  op_ne := { ne _ _ _ H := by sorry }
+  pcore_ne {_} := by intro _ h; simp
+  validN_ne _ := id
+  valid_iff_validN := ⟨fun _ _ => True.intro, fun _ => True.intro⟩
+  validN_succ := id
+  validN_op_left := id
+  assoc := by
+    -- TODO: provide pointwise associativity once base op is algebraic
+    intros; sorry
+  comm := by
+    -- TODO: provide pointwise commutativity once base op is algebraic
+    intros; sorry
+  pcore_op_left := by intro _ _ h; cases h
+  pcore_idem := by intro _ _ h; cases h
+  pcore_op_mono := by intro _ _ h _; cases h
+  extend {n x y₁ y₂} _ _ := by
+    -- Trivial witnesses for extend
+    refine ⟨fun i => y₁ i, fun i => y₂ i, ?_, ?_, ?_⟩
+    · sorry
+    · simp
+    · simp
+
+instance : CMRA.Discrete (IndexedPSpPm I α V F) where
+  discrete_0 := id
+  discrete_valid := id
 
 end IndexedPSpPm
 
