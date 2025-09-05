@@ -13,3 +13,6 @@
 *.out
 *.synctex.gz
 *.synctex(busy)
+
+# Generated paper PDF
+paper/paper.pdf
