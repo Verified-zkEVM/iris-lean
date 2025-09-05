@@ -13,6 +13,11 @@ We re-use the existing Lean structure `UpperSet`, so an element of this type has
 We write `x ∈ P` to mean that the hyper-assertion `P` holds of the resource `x`. -/
 abbrev HyperAssertion (M : Type*) [LE M] := UpperSet M
 
+/-- `FunLike` instance for `HyperAssertion` so that we can write `P a` instead of `a ∈ P` -/
+instance {M : Type*} [LE M] : FunLike (HyperAssertion M) M Prop where
+  coe := fun P => P.carrier
+  coe_injective' := by intro P Q h; aesop
+
 namespace HyperAssertion
 
 section Defs
@@ -49,6 +54,19 @@ def «exists» {β : Sort*} (P : β → HyperAssertion M) : HyperAssertion M :=
 def «forall» {β : Sort*} (P : β → HyperAssertion M) : HyperAssertion M :=
   ⟨{x | ∀ b, x ∈ P b}, by
     intro x y hxy hx b; exact (P b).upper hxy (hx b)⟩
+
+/-- PROP-indexed universal quantification over hyper-assertions. -/
+def sForallProp (X : HyperAssertion M → Prop) : HyperAssertion M :=
+  ⟨{a | ∀ P, X P → a ∈ P}, by
+    intro a a' haa' ha P hXP
+    exact P.upper haa' (ha P hXP)⟩
+
+/-- PROP-indexed existential quantification over hyper-assertions. -/
+def sExistsProp (X : HyperAssertion M → Prop) : HyperAssertion M :=
+  ⟨{a | ∃ P, X P ∧ a ∈ P}, by
+    intro a a' haa'
+    rintro ⟨P, hXP, haP⟩
+    exact ⟨P, hXP, P.upper haa' haP⟩⟩
 
 /-- Entailment of hyper-assertions: `P ⊢ Q` iff `∀ x, P x → Q x`. -/
 def entails (P Q : HyperAssertion M) : Prop := ∀ x, x ∈ P → x ∈ Q
@@ -187,6 +205,71 @@ theorem or_comm {P Q : HyperAssertion M} : entails (or P Q) (or Q P) := by
   | inl hP => exact Or.inr hP
   | inr hQ => exact Or.inl hQ
 
+/-- Associativity of conjunction. -/
+theorem and_assoc {P Q R : HyperAssertion M} :
+    entails (and (and P Q) R) (and P (and Q R)) := by
+  intro a; intro h
+  rcases h with ⟨hPQ, hR⟩
+  rcases hPQ with ⟨hP, hQ⟩
+  exact And.intro hP (And.intro hQ hR)
+
+/-- Associativity of disjunction. -/
+theorem or_assoc {P Q R : HyperAssertion M} :
+    entails (or (or P Q) R) (or P (or Q R)) := by
+  intro a; intro h
+  cases h with
+  | inl hPQ => cases hPQ with
+    | inl hP => exact Or.inl hP
+    | inr hQ => exact Or.inr (Or.inl hQ)
+  | inr hR => exact Or.inr (Or.inr hR)
+
+/-- Left unit for conjunction with `pure True`. -/
+theorem and_true_left {P : HyperAssertion M} :
+    entails (and (pure True) P) P := by
+  intro a; intro h; exact h.right
+
+/-- Right unit for conjunction with `pure True`. -/
+theorem and_true_right {P : HyperAssertion M} :
+    entails (and P (pure True)) P := by
+  intro a; intro h; exact h.left
+
+/-- Left unit for disjunction with `pure False`. -/
+theorem or_false_left {P : HyperAssertion M} :
+    entails (or (pure False) P) P := by
+  intro a; intro h; cases h with
+  | inl hFalse => cases hFalse
+  | inr hP => exact hP
+
+/-- Right unit for disjunction with `pure False`. -/
+theorem or_false_right {P : HyperAssertion M} :
+    entails (or P (pure False)) P := by
+  intro a; intro h; cases h with
+  | inl hP => exact hP
+  | inr hFalse => cases hFalse
+
+/-- Left unit for sep: `emp ∗ P ⊢ P`. -/
+theorem sep_emp_left {P : HyperAssertion M} :
+    entails (sep emp P) P := by
+  intro a; intro h
+  rcases h with ⟨b, c, hb, hc, hbc⟩
+  -- hb : b ∈ emp, so False; emp’s carrier is empty, contradiction
+  cases hb
+
+/-- Right unit for sep: `P ∗ emp ⊢ P`. -/
+theorem sep_emp_right {P : HyperAssertion M} :
+    entails (sep P emp) P := by
+  intro a; intro h
+  rcases h with ⟨b, c, hb, hc, hbc⟩
+  cases hc
+
+/-- Monotonicity of separating conjunction. -/
+theorem sep_mono {P P' Q Q' : HyperAssertion M}
+    (h1 : entails P P') (h2 : entails Q Q') :
+    entails (sep P Q) (sep P' Q') := by
+  intro a; intro h
+  rcases h with ⟨b, c, hPb, hQc, hinc⟩
+  exact ⟨b, c, h1 _ hPb, h2 _ hQc, hinc⟩
+
 end CMRALemmas
 
 /-! ## BI wiring (no step-indexing) -/
@@ -218,15 +301,8 @@ instance : BIBase (HyperAssertion M) where
   and := and
   or := or
   imp := imp
-  sForall := fun (X : HyperAssertion M → Prop) =>
-    ⟨{a | ∀ P, X P → a ∈ P}, by
-      intro a a' haa' ha P hXP
-      exact P.upper haa' (ha P hXP)⟩
-  sExists := fun (X : HyperAssertion M → Prop) =>
-    ⟨{a | ∃ P, X P ∧ a ∈ P}, by
-      intro a a' haa'
-      rintro ⟨P, hXP, haP⟩
-      exact ⟨P, hXP, P.upper haa' haP⟩⟩
+  sForall := sForallProp
+  sExists := sExistsProp
   sep := sep
   wand := wand
   persistently := persistently
