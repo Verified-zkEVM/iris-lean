@@ -1,148 +1,95 @@
 import Iris
 import Bluebell.Algebra.Probability
 import Bluebell.Algebra.Permission
+import Bluebell.Algebra.CMRA
 
 namespace Bluebell
 
-open Iris ProbabilityTheory
+open Iris ProbabilityTheory MeasureTheory
 
-/-! ## ProbabilitySpace × Permission skeleton
+/-! ## ProbabilitySpace × Permission skeleton (predicated product)
 
-We define a compatibility predicate and the subtype. Algebraic laws and
-instances remain stubs for now. -/
+We use the generic predicated-product CMRA over `PSp (α → V)` and
+`Permission α F`, with the predicate `PSp.compatiblePerm` declared in
+`Bluebell/Algebra/Probability.lean`. -/
 
 variable {α V F : Type*} [UFraction F]
 
--- Placeholder `Permission` reference lives in `Bluebell.Algebra.Permission`.
--- We only reference the name here to shape the subtype; concrete lemmas later.
-/-- Compatibility between a `P : PSp (α → V)` and a permission `p : Permission α F`.
+/-! ### CompatibleRel instance for `compatiblePerm`
 
- Stubbed as `True` for now; will be replaced by the discard-based split semantics
- once the probability-side algebra is in place. -/
-def compatiblePerm (P : PSp (α → V)) (p : Permission α F) : Prop := True
+This lets us use the generic predicated-product CMRA on `PSp × Permission`.
+-/
+instance compatiblePerm_CompatibleRel {α V F : Type*} [Nonempty V] [UFraction F] :
+    CMRA.CompatibleRel (α := PSp (α → V)) (β := Permission α F)
+      (fun P p => PSp.compatiblePerm (α := α) (V := V) (F := F) P p) where
+  op_closed {x₁ x₂ y₁ y₂} hx hy := by
+    -- Case split on the `PSp` operands
+    cases x₁ <;> cases x₂ <;> simp [PSp.indepMul, PSp.compatiblePerm] at hx hy ⊢
+    · trivial
+    · trivial
+    · trivial
+    · -- both are `some`; delegate to Probability-space lemma when product exists
+      rename_i P1 P2
+      cases hprod : ProbabilityTheory.ProbabilitySpace.indepProduct P1 P2 with
+      | none =>
+        split <;>
+          simp [PSp.indepMul, PSp.compatiblePerm, hprod,
+                ProbabilityTheory.ProbabilitySpace.compatiblePerm,
+                MeasurableSpace.insensitive]
+        sorry
+      | some z =>
+        split
+        · trivial
+        · have eqz : PSp.indepMul (Ω := α → V) (WithTop.some P1) (WithTop.some P2) = WithTop.some z := by
+            simp [PSp.indepMul, hprod]
+          -- simp [PSp.indepMul, hprod] at eqz
+          rename_i P'' P' heq
+          have := PSp.compatiblePerm_indepMul (α := α) (V := V) (F := F)
+            (x := WithTop.some P1) (y := WithTop.some P2) (z := z)
+            (p₁ := y₁) (p₂ := y₂) (by simp [eqz, Option.bind]) hx hy
+          convert this
+          simp [instCMRAPSpOfNonempty] at heq
+          simp [WithTop.some] at eqz ⊢
+          simp_all only
+          rfl
+  dist_closed {n x₁ x₂ y₁ y₂} hx hy h := by
+    -- With discrete OFEs here, Dist collapses to equality, so we can rewrite
+    cases hx
+    have : y₁ = y₂ := funext_iff.mpr hy
+    rw [← this]; exact h
 
-def PSpPm (α V F : Type*) [UFraction F] :=
-  { Pp : PSp (α → V) × Permission α F // compatiblePerm (α := α) (V := V) (F := F) Pp.1 Pp.2 }
+abbrev PSpPm (α V F : Type*) [UFraction F] :=
+  CMRA.ProdRel (α := PSp (α → V)) (β := Permission α F)
+    (Φ := fun P p => PSp.compatiblePerm (α := α) (V := V) (F := F) P p)
 
 namespace PSpPm
 
 variable {α V F : Type*} [UFraction F]
 
 /-- Lift a probability space to a `PSpPm` by pairing with the all-one permission. -/
-def liftProb (μ : ProbabilitySpace (α → V)) : PSpPm α V F :=
-  ⟨⟨WithTop.some μ, Permission.one (α := α) (F := F)⟩, trivial⟩
+def liftProb (μ : ProbabilityTheory.ProbabilitySpace (α → V)) : PSpPm α V F :=
+  ⟨⟨WithTop.some μ, Permission.one (α := α) (F := F)⟩, by
+    -- `{a | 1 = discard} = ∅`, then `insensitive_empty` gives compatibility
+    have hS : {a | (Permission.one (α := α) (F := F)) a = DFrac.discard} = (∅ : _root_.Set α) := by
+      ext a; simp [Permission.one]
+    simp [CMRA.ProdRel, hS, PSp.compatiblePerm,
+          ProbabilityTheory.ProbabilitySpace.compatiblePerm,
+          MeasurableSpace.insensitive]
+    sorry
+  ⟩
 
 end PSpPm
 
-noncomputable section
+-- CMRA and OFE for `PSpPm` now derive from the generic `ProdRel` construction
+-- once a `CMRA.CompatibleRel` instance for `compatiblePerm` is available.
 
-namespace PSp
+-- No additional probability logic in this module; we use the
+-- wrappers defined in `Bluebell/Algebra/Probability.lean`.
 
-variable {α V : Type*}
-
-/-- Combine two probability spaces using independent product lifted to `PSp`.
-
- This is a thin wrapper over `ProbabilitySpace.indepProduct` that returns `none`
- when the independent product is not available. -/
-def indepMul (x y : PSp (α → V)) : PSp (α → V) :=
-  match x, y with
-  | WithTop.some x, WithTop.some y =>
-      match ProbabilitySpace.indepProduct x y with
-      | some z => WithTop.some z
-      | none => none
-  | _, _ => none
-
-end PSp
-
-namespace PSpPm
-
-open CMRA
-
-variable {α V F : Type*} [UFraction F]
-
-/-- Pointwise combination on `PSpPm`.
-
- Uses independent product on the probability component (via `PSp.indepMul`) and
- the CMRA operation on the permission component, done pointwise over `α`. -/
-def op (x y : PSpPm α V F) : PSpPm α V F :=
-  let P' := PSp.indepMul (α := α) (V := V) x.1.1 y.1.1
-  let p' : Permission α F := fun a => x.1.2 a • y.1.2 a
-  ⟨⟨P', p'⟩, trivial⟩
-
-end PSpPm
-
-/-- Discrete OFE structure for `PSpPm` (stub). We use Leibniz equality and mark
- this as discrete to simplify the early wiring. -/
-@[simp] instance : COFE (PSpPm α V F) := COFE.ofDiscrete _ Eq_Equivalence
-instance : OFE.Leibniz (PSpPm α V F) := ⟨(·)⟩
-instance : OFE.Discrete (PSpPm α V F) := ⟨congrArg id⟩
-
-/-- Stub `CMRA` instance for `PSpPm` sufficient to enable `own`/`sep` wiring.
-
- - `pcore = none`
- - `ValidN`/`Valid` are `True`
- - `op` uses `PSpPm.op` (independent product + pointwise permission op)
-
- TODO: prove associativity/commutativity of `indepProduct` and strengthen validity/core. -/
-noncomputable instance : CMRA (PSpPm α V F) where
-  pcore _ := none
-  op x y := PSpPm.op (α := α) (V := V) (F := F) x y
-  ValidN _ _ := True
-  Valid _ := True
-  op_ne := { ne _ _ _ H := by cases H; rfl }
-  pcore_ne {_} := by intro _ h; simp
-  validN_ne _ := id
-  valid_iff_validN := ⟨fun _ _ => True.intro, fun _ => True.intro⟩
-  validN_succ := id
-  validN_op_left := id
-  assoc := by
-    -- TODO: once independent product is associative, replace with the actual proof
-    intros; sorry
-  comm := by
-    -- TODO: once independent product is commutative, replace with the actual proof
-    intros; sorry
-  pcore_op_left := by intro _ _ h; cases h
-  pcore_idem := by intro _ _ h; cases h
-  pcore_op_mono := by intro _ _ h _; cases h
-  /- TODO: non-trivial `extend` once probability-side op is algebraic. -/
-  extend {n x y₁ y₂} _ _ := by
-    -- Provide the trivial decomposition witnesses
-    refine ⟨y₁, y₂, ?_, ?_, ?_⟩
-    · sorry
-    · simp
-    · simp
-
-/-- Discrete CMRA instance for the stub model. -/
-instance : CMRA.Discrete (PSpPm α V F) where
-  discrete_0 := id
-  discrete_valid := id
-
-end
-
-namespace ProbabilityTheory
-
-namespace ProbabilitySpace
-
-/-- Compatibility on `ProbabilitySpace` delegates to the `PSp` version. -/
-def compatiblePerm {α V F : Type*} [UFraction F]
-    (P : ProbabilitySpace (α → V)) (p : Permission α F) : Prop :=
-  _root_.Bluebell.compatiblePerm (WithTop.some P) p
-
-end ProbabilitySpace
-
-end ProbabilityTheory
-
-namespace PSp
-
-/-- Compatibility for `PSp` (alias to `compatiblePerm`). -/
-def compatiblePerm {α V F : Type*} [UFraction F]
-    (P : PSp (α → V)) (p : Permission α F) : Prop :=
-  _root_.Bluebell.compatiblePerm P p
-
-end PSp
-
-/-- The main model as indexed tuples of `PSpPm`. -/
-abbrev IndexedPSpPm (I α V F : Type*) [UFraction F] := I → PSpPm α V F
+/-! The main model as indexed tuples of `PSpPm`.
+We keep this as an abbreviation to functions; CMRA instances arise from the
+dependent function-space instance once `CMRA (PSpPm α V F)` is available. -/
+@[reducible] def IndexedPSpPm (I α V F : Type*) [UFraction F] := I → PSpPm α V F
 
 namespace IndexedPSpPm
 
@@ -152,50 +99,8 @@ variable {I α V F : Type*} [UFraction F]
 def liftProb (μ : I → ProbabilityTheory.ProbabilitySpace (α → V)) : IndexedPSpPm I α V F :=
   fun i => PSpPm.liftProb (α := α) (V := V) (F := F) (μ i)
 
-instance : FunLike (IndexedPSpPm I α V F) I (PSpPm α V F) where
-  coe := fun x => x
-  coe_injective' := by intro x y h; simp [h]
-
-/-! ### Stub OFE/CMRA instances for indexed model
-
-We provide discrete OFE and a trivial CMRA (pcore = none, validity = True) with
-pointwise op, sufficient to enable `own`/`sep` wiring in the program logic.
-Replace by proper algebra once probability-side algebraic laws are available. -/
-
-@[simp] instance : COFE (IndexedPSpPm I α V F) := COFE.ofDiscrete _ Eq_Equivalence
-instance : OFE.Leibniz (IndexedPSpPm I α V F) := ⟨fun x => sorry⟩
-instance : OFE.Discrete (IndexedPSpPm I α V F) := ⟨fun x => sorry⟩
-
-noncomputable instance : CMRA (IndexedPSpPm I α V F) where
-  pcore _ := none
-  op x y := fun i => PSpPm.op (α := α) (V := V) (F := F) (x i) (y i)
-  ValidN _ _ := True
-  Valid _ := True
-  op_ne := { ne _ _ _ H := by sorry }
-  pcore_ne {_} := by intro _ h; simp
-  validN_ne _ := id
-  valid_iff_validN := ⟨fun _ _ => True.intro, fun _ => True.intro⟩
-  validN_succ := id
-  validN_op_left := id
-  assoc := by
-    -- TODO: provide pointwise associativity once base op is algebraic
-    intros; sorry
-  comm := by
-    -- TODO: provide pointwise commutativity once base op is algebraic
-    intros; sorry
-  pcore_op_left := by intro _ _ h; cases h
-  pcore_idem := by intro _ _ h; cases h
-  pcore_op_mono := by intro _ _ h _; cases h
-  extend {n x y₁ y₂} _ _ := by
-    -- Trivial witnesses for extend
-    refine ⟨fun i => y₁ i, fun i => y₂ i, ?_, ?_, ?_⟩
-    · sorry
-    · simp
-    · simp
-
-instance : CMRA.Discrete (IndexedPSpPm I α V F) where
-  discrete_0 := id
-  discrete_valid := id
+noncomputable instance [Nonempty V] : CMRA (IndexedPSpPm I α V F) :=
+  inferInstanceAs (CMRA (I → PSpPm α V F))
 
 end IndexedPSpPm
 
