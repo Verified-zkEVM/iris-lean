@@ -84,10 +84,10 @@ end PSpPm
 -- No additional probability logic in this module; we use the
 -- wrappers defined in `Bluebell/Algebra/Probability.lean`.
 
-/-! The main model as indexed tuples of `PSpPm`.
+/-- The main model as indexed tuples of `PSpPm`.
 We keep this as an abbreviation to functions; CMRA instances arise from the
 dependent function-space instance once `CMRA (PSpPm α V F)` is available. -/
-@[reducible] def IndexedPSpPm (I α V F : Type*) [UFraction F] := I → PSpPm α V F
+def IndexedPSpPm (I α V F : Type*) [UFraction F] := I → PSpPm α V F
 
 namespace IndexedPSpPm
 
@@ -99,8 +99,8 @@ def liftProb (μ : I → ProbabilityTheory.ProbabilitySpace (α → V)) : Indexe
 
 -- Don't think we want this? Would lead to non-defeq diamond
 -- with `Pi.hasLe`
--- noncomputable instance [Nonempty V] : CMRA (IndexedPSpPm I α V F) :=
---   inferInstanceAs (CMRA (I → PSpPm α V F))
+noncomputable instance [Nonempty V] : CMRA (IndexedPSpPm I α V F) :=
+  inferInstanceAs (CMRA (I → PSpPm α V F))
 
 end IndexedPSpPm
 

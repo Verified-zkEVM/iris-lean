@@ -3,19 +3,19 @@ import Bluebell.Algebra.PSpPm
 import Bluebell.Algebra.HyperAssertion
 import Bluebell.Logic.JointCondition
 
-open Iris ProbabilityTheory MeasureTheory
+open Iris ProbabilityTheory
 
 namespace Bluebell
 namespace HyperAssertion
 
-variable {I α V F : Type*} [UFraction F] [MeasurableSpace V]
+variable {I α V F : Type*} [Nonempty V] [MeasurableSpace V] [UFraction F]
 
-/-- Weakest precondition of a program -/
-def wp (t : IndexedPSpPm I α V F → IndexedPSpPm I α V F)
+/-- Weakest precondition of a program. TODO: stub for now -/
+noncomputable def wp (t : IndexedPSpPm I α V F → IndexedPSpPm I α V F)
     (Q : HyperAssertion (IndexedPSpPm I α V F)) :
     HyperAssertion (IndexedPSpPm I α V F) :=
-  ⟨setOf (fun a => ∀ μ₀ c, (a * c) ≤ IndexedPSpPm.liftProb μ₀ →
-    ∃ b, (b * c) ≤ t (IndexedPSpPm.liftProb μ₀) ∧ Q b), by sorry⟩
+  ⟨setOf (fun a => ∀ μ₀ c, (a • c) ≤ IndexedPSpPm.liftProb μ₀ →
+    ∃ b, (b • c) ≤ t (IndexedPSpPm.liftProb μ₀) ∧ Q b), by sorry⟩
 
 variable {t t₁ t₂ : IndexedPSpPm I α V F → IndexedPSpPm I α V F}
   {P Q Q' Q₁ Q₂ : HyperAssertion (IndexedPSpPm I α V F)}

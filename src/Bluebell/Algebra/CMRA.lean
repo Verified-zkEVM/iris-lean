@@ -1,5 +1,4 @@
--- import Mathlib.Tactic.TypeStar
-import Mathlib
+import Mathlib.Tactic.TypeStar
 import Iris.Algebra.CMRA
 
 namespace Bluebell
@@ -18,13 +17,15 @@ requirements on `Φ` minimal (we only need closure under op and stability under 
 If a core is needed later, this construction can be refined to a core-preserving variant.
 -/
 
-variable {α β : Type _} [CMRA α] [CMRA β]
+variable {α β : Type*} [CMRA α] [CMRA β]
 
 namespace CMRA
 
--- /-- Inclusion gives a LE ordering for any CMRA. -/
--- instance : LE α where
---   le := CMRA.Included
+/-- Use CMRA inclusion `≼` as the order on `M` so `UpperSet M` matches upward-closed predicates.
+
+NOTE: when combined with `cmraFun`, this would cause a diamond with `Set.hasLe` (instances are
+prop'eq but not def'eq). We have chosen to go with the CMRA instance for now. -/
+instance instLE : LE α := ⟨CMRA.Included⟩
 
 /-- Compatibility of a predicate with the CMRA structure on `α` and `β`.
 Requires closure under componentwise op and stability under Dist in both arguments. -/

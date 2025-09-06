@@ -4,7 +4,7 @@ import Bluebell.Algebra.HyperAssertion
 import Bluebell.Logic.Ownership
 import Bluebell.ProbabilityTheory.IndepProduct
 
-open Iris ProbabilityTheory MeasureTheory
+open Iris ProbabilityTheory
 
 namespace Bluebell
 namespace HyperAssertion
@@ -54,7 +54,7 @@ noncomputable def jointCondition {β : Type*} [MeasurableSpace β] [MeasurableSp
     ∃ (P : I → ProbabilityTheory.ProbabilitySpace (α → V))
       (p : I → Permission α F)
       (h : ∀ i, ProbabilityTheory.ProbabilitySpace.compatiblePerm (P i) (p i))
-      (κ : (i : I) → β → @Measure (α → V) (P i).σAlg),
+      (κ : (i : I) → β → @MeasureTheory.Measure (α → V) (P i).σAlg),
       -- Pack current owned resource and require inclusion into `a`
       (fun i => ⟨⟨WithTop.some (P i), p i⟩, h i⟩) ≤ a ∧
       -- Each index measure factors as μ bind κ(i)
@@ -64,7 +64,7 @@ noncomputable def jointCondition {β : Type*} [MeasurableSpace β] [MeasurableSp
         K v
           (fun j => ⟨⟨WithTop.some
               (@ProbabilityTheory.ProbabilitySpace.mk _
-                (@MeasureSpace.mk _ (P j).σAlg (κ j v))
+                (@MeasureTheory.MeasureSpace.mk _ (P j).σAlg (κ j v))
                 (by
                   -- IsProbabilityMeasure for the kernel measure at index j and outcome v
                   -- deferred as a placeholder
@@ -107,7 +107,7 @@ theorem C_frame {P : HyperAssertion (IndexedPSpPm I α V F)} :
   sorry
 
 theorem C_unit_left [Countable β] [MeasurableSingletonClass β] {v₀ : β} :
-    𝑪_ (Measure.dirac v₀).toPMF K ⊣⊢ K v₀ := by
+    𝑪_ (MeasureTheory.Measure.dirac v₀).toPMF K ⊣⊢ K v₀ := by
   sorry
 
 theorem C_unit_right [DecidableEq β] {i : I} {E : (α → V) → β} {μ : PMF β} :
@@ -128,9 +128,7 @@ theorem C_unassoc {β₁ β₂ : Type _} [MeasurableSpace β₁] [MeasurableSpac
   sorry
 
 theorem C_and [DecidableEq I] [Fintype I]
-    (h : ∀ v, relevantIndices (K₁ v) ∩
-      relevantIndices (I := I) (M := PSpPm α V F)
-        (K₂ v : HyperAssertion (I → PSpPm α V F)) = ∅) :
+    (h : ∀ v, relevantIndices (K₁ v) ∩ relevantIndices (K₂ v) = ∅) :
     𝑪_ μ K₁ ∧ 𝑪_ μ K₂ ⊢ 𝑪_ μ (fun v => and (K₁ v) (K₂ v)) := by
   sorry
 

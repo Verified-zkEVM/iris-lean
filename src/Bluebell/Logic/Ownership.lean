@@ -1,18 +1,12 @@
-import Mathlib
-import Iris
-import Bluebell.Algebra.Probability
-import Bluebell.Algebra.Permission
-import Bluebell.Algebra.PSpPm
 import Bluebell.Algebra.HyperAssertion
+import Bluebell.Algebra.PSpPm
+import Mathlib.Probability.ProbabilityMassFunction.Monad
 
 namespace Bluebell
 
 open Iris ProbabilityTheory MeasureTheory HyperAssertion
 
 variable {I α V F : Type*} [Nonempty V] [UFraction F]
-
--- /-- Order on the IndexedPSpPm is CMRA inclusion. -/
--- noncomputable instance : LE (IndexedPSpPm I α V F) := instLE_bluebell
 
 noncomputable section
 
@@ -69,7 +63,8 @@ def assertPermissionVar (i : I) (x : α) (q : Frac F) : HyperAssertion (IndexedP
         (pure ((Pp i).1.2 x = DFrac.own (q : F))))
 
 /-- Conjoin a `P` with ownership derived from a compatible `p`. -/
-def assertPermission (P : HyperAssertion (IndexedPSpPm I α V F)) (p : I → Permission α F) : HyperAssertion (IndexedPSpPm I α V F) :=
+def assertPermission (P : HyperAssertion (IndexedPSpPm I α V F)) (p : I → Permission α F) :
+    HyperAssertion (IndexedPSpPm I α V F) :=
   and P <|
     «exists»
       (fun compatP :
@@ -92,8 +87,7 @@ variable [DecidableEq I]
 /-- If `P` and `Q` affect disjoint sets of indices, then `P ∧ Q` entails `P ∗ Q`. -/
 theorem sep_of_and [Fintype I]
     {P Q : HyperAssertion (IndexedPSpPm I α V F)}
-    (h : HyperAssertion.relevantIndices (I := I) P ∩
-         HyperAssertion.relevantIndices (M := PSpPm α V F) (I := I) Q = ∅) :
+    (h : HyperAssertion.relevantIndices P ∩ HyperAssertion.relevantIndices Q = ∅) :
     HyperAssertion.entails (HyperAssertion.and P Q) (HyperAssertion.sep P Q) := by
   sorry
 
@@ -144,5 +138,3 @@ theorem sampledFrom_prod {β₁ β₂ : Type _}
 end Rules
 
 end Bluebell
-
-#min_imports

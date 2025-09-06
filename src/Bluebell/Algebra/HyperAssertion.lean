@@ -1,7 +1,7 @@
-import Iris.Algebra.CMRA
 import Iris.BI.BIBase
 import Mathlib.Data.Fintype.Defs
 import Mathlib.Order.UpperLower.CompleteLattice
+import Bluebell.Algebra.CMRA
 
 namespace Bluebell
 
@@ -78,23 +78,6 @@ def equiv (P Q : HyperAssertion M) : Prop := entails P Q ∧ entails Q P
 
 end Defs
 
-variable {I M : Type*} [LE M]
-
-/-- A hyper-assertion `P` is irrelevant for a finite set of indices `J` if it is entailed by the set
-of all resources that agree with some `a'` outside `J`.
-
-Note: the original paper writes `a = a' \ J`. Here we keep the same equality-based placeholder as
-in the original attempt until a default value for unused indices is fixed. -/
-def isIrrelevant [DecidableEq I] [Fintype I]
-    (J : Set I) (P : HyperAssertion (I → M)) : Prop :=
-  ∀ a, (∃ a' : I → M, (∀ i, i ∉ J → a i = a' i) ∧ a' ∈ P) → a ∈ P
-
-/-- The relevant indices `idx(P)` of a hyper-assertion `P` is the smallest subset of `I` whose
-complement is irrelevant for `P`. -/
-def relevantIndices [DecidableEq I] [Fintype I]
-    (P : HyperAssertion (I → M)) : Set I :=
-  sInf (setOf (fun J : Set I => isIrrelevant (Jᶜ) P))
-
 end HyperAssertion
 
 /-! ## CMRA-based separating connectives -/
@@ -105,10 +88,30 @@ section CMRAModel
 
 variable {M : Type*} [CMRA M]
 
-/-- Use CMRA inclusion `≼` as the order on `M` so `UpperSet M` matches upward-closed predicates. -/
-scoped instance : LE M := ⟨fun x y => CMRA.Included x y⟩
-
 namespace HyperAssertion
+
+variable {I : Type*}
+
+/-- A hyper-assertion `P` is irrelevant for a finite set of indices `J` if it is entailed by the set
+  of all resources that agree with some `a'` outside `J`.
+
+Note: the original paper writes `a = a' \ J`. Here we keep the same equality-based placeholder as in
+the original attempt until a default value for unused indices is fixed.
+
+NOTE: we use `CMRA.instLE` here instead of `Pi.hasLe`. They are prop'eq but not def'eq, and we want
+to follow the CMRA instance for now. -/
+def isIrrelevant [DecidableEq I] [Fintype I] (J : Set I)
+    (P : @HyperAssertion (I → M) Bluebell.CMRA.instLE) : Prop :=
+  ∀ a, (∃ a' : I → M, (∀ i, i ∉ J → a i = a' i) ∧ a' ∈ P) → a ∈ P
+
+/-- The relevant indices `idx(P)` of a hyper-assertion `P` is the smallest subset of `I` whose
+complement is irrelevant for `P`.
+
+NOTE: we use `CMRA.instLE` here instead of `Pi.hasLe`. They are prop'eq but not def'eq, and we want
+to follow the CMRA instance for now. -/
+def relevantIndices [DecidableEq I] [Fintype I] (P : @HyperAssertion (I → M) Bluebell.CMRA.instLE) :
+    Set I :=
+  sInf (setOf (fun J : Set I => isIrrelevant (Jᶜ) P))
 
 /-- Ownership of a CMRA resource `b`, defined as the upward-closed predicate `b ≼ a`. -/
 def own (b : M) : HyperAssertion M :=
