@@ -1,4 +1,5 @@
-import Mathlib.Tactic.TypeStar
+-- import Mathlib.Tactic.TypeStar
+import Mathlib
 import Iris.Algebra.CMRA
 
 namespace Bluebell
@@ -20,6 +21,10 @@ If a core is needed later, this construction can be refined to a core-preserving
 variable {α β : Type _} [CMRA α] [CMRA β]
 
 namespace CMRA
+
+-- /-- Inclusion gives a LE ordering for any CMRA. -/
+-- instance : LE α where
+--   le := CMRA.Included
 
 /-- Compatibility of a predicate with the CMRA structure on `α` and `β`.
 Requires closure under componentwise op and stability under Dist in both arguments. -/

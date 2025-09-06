@@ -1,7 +1,5 @@
-import Iris
-import Bluebell.Algebra.Probability
-import Bluebell.Algebra.Permission
 import Bluebell.Algebra.CMRA
+import Bluebell.Algebra.Probability
 
 namespace Bluebell
 
@@ -99,8 +97,10 @@ variable {I α V F : Type*} [UFraction F]
 def liftProb (μ : I → ProbabilityTheory.ProbabilitySpace (α → V)) : IndexedPSpPm I α V F :=
   fun i => PSpPm.liftProb (α := α) (V := V) (F := F) (μ i)
 
-noncomputable instance [Nonempty V] : CMRA (IndexedPSpPm I α V F) :=
-  inferInstanceAs (CMRA (I → PSpPm α V F))
+-- Don't think we want this? Would lead to non-defeq diamond
+-- with `Pi.hasLe`
+-- noncomputable instance [Nonempty V] : CMRA (IndexedPSpPm I α V F) :=
+--   inferInstanceAs (CMRA (I → PSpPm α V F))
 
 end IndexedPSpPm
 

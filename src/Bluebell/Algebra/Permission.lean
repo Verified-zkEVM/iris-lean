@@ -1,5 +1,6 @@
-import Mathlib
 import Iris.Algebra.DFrac
+import Mathlib.Algebra.Order.Ring.Star
+import Mathlib.Data.Rat.Star
 
 namespace Bluebell
 

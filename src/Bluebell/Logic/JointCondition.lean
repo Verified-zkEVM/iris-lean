@@ -9,7 +9,7 @@ open Iris ProbabilityTheory MeasureTheory
 namespace Bluebell
 namespace HyperAssertion
 
-variable {I α V F : Type*} [UFraction F]
+variable {I α V F : Type*} [Nonempty V] [UFraction F]
 
 /-!
 `jointCondition` implements the modality from the paper (logic.tex, Def. “Supercond modality”).
@@ -47,7 +47,7 @@ Current stubs/assumptions in this implementation:
 - The order `≤` on the model is `CMRA.Included` (see HyperAssertion wiring).
 - All deeper properties are intentionally left as theorem statements with `sorry`.
 -/
-def jointCondition {β : Type*} [MeasurableSpace β] [MeasurableSpace V]
+noncomputable def jointCondition {β : Type*} [MeasurableSpace β] [MeasurableSpace V]
     (μ : PMF β) (K : β → HyperAssertion (IndexedPSpPm I α V F)) :
     HyperAssertion (IndexedPSpPm I α V F) :=
   ⟨setOf (fun a =>
@@ -56,9 +56,7 @@ def jointCondition {β : Type*} [MeasurableSpace β] [MeasurableSpace V]
       (h : ∀ i, ProbabilityTheory.ProbabilitySpace.compatiblePerm (P i) (p i))
       (κ : (i : I) → β → @Measure (α → V) (P i).σAlg),
       -- Pack current owned resource and require inclusion into `a`
-      (fun i => ⟨⟨WithTop.some (P i), p i⟩, by
-        -- coerce ProbabilitySpace-level compatibility to PSpPm-level via the bridge
-        simp [ProbabilityTheory.ProbabilitySpace.compatiblePerm]⟩) ≤ a ∧
+      (fun i => ⟨⟨WithTop.some (P i), p i⟩, h i⟩) ≤ a ∧
       -- Each index measure factors as μ bind κ(i)
       (∀ i, (P i).μ = μ.toMeasure.bind (κ i)) ∧
       -- For every outcome v of μ, K v holds on the tuple of kernels evaluated at v
@@ -72,20 +70,22 @@ def jointCondition {β : Type*} [MeasurableSpace β] [MeasurableSpace V]
                   -- deferred as a placeholder
                   sorry)),
             p j⟩,
-            by
-              -- Compatibility depends only on σ-algebra in our encoding (insensitivity),
-              -- so it holds for the same σ-algebra with a different measure.
-              simp [ProbabilityTheory.ProbabilitySpace.compatiblePerm]⟩))
+            h j⟩))
     ), by
     -- Upward-closure: witnesses remain valid and inclusion composes.
     intro a a' haa' ha
     rcases ha with ⟨P, p, h, κ, hinc, hμ, hK⟩
-    exact ⟨P, p, h, κ, CMRA.Included.trans hinc haa', hμ, hK⟩⟩
+    refine ⟨P, p, h, κ, ?_, hμ, hK⟩
+    unfold IndexedPSpPm at haa'
+    sorry⟩
 
 notation "𝑪_" => jointCondition
 
+-- def isPermissionAbstract (X : Set (I × α)) (P : HyperAssertion I α V) : Prop := sorry
+  -- ∀ Pp : IndexedPSpPm I α V, ∀ q : ℚ≥0, ∀ n : ℕ+, P Pp ≤ P → ∃ Pp' : IndexedPSpPm I α V, Pp' ≤ P ∧ Pp = Pp' ∧ True
+
 -- Lifting of a relation via the joint conditioning modality
-noncomputable def liftRelation [DecidableEq V] [MeasurableSpace V]
+noncomputable def liftRelation [Nonempty V] [DecidableEq V] [MeasurableSpace V]
     (s : _root_.Set (I × α)) (R : _root_.Set (s → V)) :
     HyperAssertion (IndexedPSpPm I α V F) :=
   «exists» (fun μ : PMF (s → V) =>

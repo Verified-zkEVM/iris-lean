@@ -1,6 +1,5 @@
-import Iris.Algebra.CMRA
-import Bluebell.ProbabilityTheory.IndepProduct
 import Bluebell.Algebra.Permission
+import Bluebell.ProbabilityTheory.IndepProduct
 
 namespace Bluebell
 

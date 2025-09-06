@@ -1,5 +1,7 @@
-import Mathlib
-import Iris
+import Iris.Algebra.CMRA
+import Iris.BI.BIBase
+import Mathlib.Data.Fintype.Defs
+import Mathlib.Order.UpperLower.CompleteLattice
 
 namespace Bluebell
 
