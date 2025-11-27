@@ -53,6 +53,8 @@ theorem wp_conseq (h : Q ⊢ Q') : (wp t Q) ⊢ (wp t Q') := by
   rcases hx μ₀ c hinc with ⟨b, hb, hQ⟩
   exact ⟨b, hb, h b hQ⟩
 
+-- The `IsTotal` assumption is a workaround for the missing UCMRA instance on `IndexedPSpPm`.
+-- Once `IndexedPSpPm` has a UCMRA instance, this will be automatically satisfied.
 omit [MeasurableSpace V] in
 theorem wp_frame [CMRA.IsTotal (IndexedPSpPm I α V F)] :
     P ∗ (wp t Q) ⊢ (wp t (sep P Q)) := by
