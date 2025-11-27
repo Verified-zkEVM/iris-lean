@@ -141,7 +141,6 @@ theorem op_commN {x y : α} : x • y ≡{n}≡ y • x := equiv_dist.mp comm n
 
 theorem op_assocN {x y z : α} : x • (y • z) ≡{n}≡ (x • y) • z := equiv_dist.mp assoc n
 
-/-- Right commutativity: swap the first two elements in a right-associated triple. -/
 theorem op_right_comm {x y z : α} : x • (y • z) ≡ y • (x • z) := calc
   x • (y • z) ≡ (x • y) • z := assoc
   _           ≡ z • (x • y) := comm
@@ -149,7 +148,6 @@ theorem op_right_comm {x y z : α} : x • (y • z) ≡ y • (x • z) := calc
   _           ≡ (y • x) • z := comm
   _           ≡ y • (x • z) := assoc.symm
 
-/-- Left commutativity: swap the first two elements in a left-associated triple. -/
 theorem op_left_comm {x y z : α} : (x • y) • z ≡ y • (x • z) :=
   assoc.symm.trans op_right_comm
 
