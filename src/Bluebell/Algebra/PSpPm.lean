@@ -30,11 +30,8 @@ instance compatiblePerm_CompatibleRel {α V F : Type*} [Nonempty V] [UFraction F
       rename_i P1 P2
       cases hprod : ProbabilityTheory.ProbabilitySpace.indepProduct P1 P2 with
       | none =>
-        split <;>
-          simp [PSp.indepMul, PSp.compatiblePerm, hprod,
-                ProbabilityTheory.ProbabilitySpace.compatiblePerm,
-                MeasurableSpace.insensitive]
-        sorry
+        -- When indepProduct fails, PSp.indepMul returns none (⊤), which is compatible with any perm
+        simp only [CMRA.op, PSp.indepMul, hprod]
       | some z =>
         split
         · trivial
@@ -70,10 +67,8 @@ def liftProb (μ : ProbabilityTheory.ProbabilitySpace (α → V)) : PSpPm α V F
     -- `{a | 1 = discard} = ∅`, then `insensitive_empty` gives compatibility
     have hS : {a | (Permission.one (α := α) (F := F)) a = DFrac.discard} = (∅ : _root_.Set α) := by
       ext a; simp [Permission.one]
-    simp [CMRA.ProdRel, hS, PSp.compatiblePerm,
-          ProbabilityTheory.ProbabilitySpace.compatiblePerm,
-          MeasurableSpace.insensitive]
-    sorry
+    simp only [PSp.compatiblePerm, ProbabilityTheory.ProbabilitySpace.compatiblePerm, hS]
+    exact MeasurableSpace.insensitive_empty μ.σAlg
   ⟩
 
 end PSpPm
@@ -122,11 +117,8 @@ instance compatiblePermRat_CompatibleRel {α V : Type*} [Nonempty V] :
     · rename_i P1 P2
       cases hprod : ProbabilityTheory.ProbabilitySpace.indepProduct P1 P2 with
       | none =>
-        split <;>
-          simp [PSp.indepMul, PSp.compatiblePermRat, hprod,
-                ProbabilityTheory.ProbabilitySpace.compatiblePermRat,
-                MeasurableSpace.insensitive]
-        sorry
+        -- When indepProduct fails, PSp.indepMul returns none (⊤), which is compatible with any perm
+        simp only [CMRA.op, PSp.indepMul, hprod]
       | some z =>
         split
         · trivial
@@ -161,11 +153,11 @@ theorem compatiblePermRat_unit_compat {α V : Type*} [Nonempty V] :
     PSp.compatiblePermRat (α := α) (V := V)
       (UCMRA.unit : PSp (α → V))
       (UCMRA.unit : PermissionRat α) := by
+  -- UCMRA.unit for PSp is the trivial probability space with σ-algebra ⊥
+  -- UCMRA.unit for PermissionRat is the zero function
+  -- The trivial σ-algebra ⊥ is insensitive to any set (insensitive_bot)
   simp only [PSp.compatiblePermRat, ProbabilityTheory.ProbabilitySpace.compatiblePermRat]
-  intro A hA s t heq
-  -- The trivial probability space (unit) has trivial σ-algebra, only ∅ and univ are measurable
-  -- For the unit space, all stores give the same probability (uniform), so membership is trivial
-  sorry
+  exact MeasurableSpace.insensitive_bot _
 
 namespace PSpPmRat
 
@@ -176,10 +168,8 @@ def liftProb (μ : ProbabilityTheory.ProbabilitySpace (α → V)) : PSpPmRat α 
   ⟨WithTop.some μ, PermissionRat.one (α := α), by
     have hS : {a | (PermissionRat.one (α := α)) a = 0} = (∅ : _root_.Set α) := by
       ext a; simp [PermissionRat.one]
-    simp [hS, PSp.compatiblePermRat,
-          ProbabilityTheory.ProbabilitySpace.compatiblePermRat,
-          MeasurableSpace.insensitive]
-    sorry
+    simp only [PSp.compatiblePermRat, ProbabilityTheory.ProbabilitySpace.compatiblePermRat, hS]
+    exact MeasurableSpace.insensitive_empty μ.σAlg
   ⟩
 
 /-- OFE instance for PSpPmRat (product OFE). -/
@@ -203,7 +193,7 @@ instance [Nonempty V] : OFE (PSpPmRat α V) where
 /-- CMRA instance for PSpPmRat with proper pcore for UCMRA. -/
 noncomputable instance [Nonempty V] : CMRA (PSpPmRat α V) where
   pcore _ := some ⟨UCMRA.unit, UCMRA.unit, compatiblePermRat_unit_compat⟩
-  op x y := ⟨x.psp • y.psp, x.perm • y.perm, sorry⟩
+  op x y := ⟨x.psp • y.psp, x.perm • y.perm, CMRA.CompatibleRel.op_closed x.compat y.compat⟩
   ValidN n x := ✓{n} x.psp ∧ ✓{n} x.perm
   Valid x := ✓ x.psp ∧ ✓ x.perm
   op_ne {x} := {
@@ -238,7 +228,21 @@ noncomputable instance [Nonempty V] : CMRA (PSpPmRat α V) where
     refine ⟨cx, ?_⟩
     simp only [hcx]
     exact ⟨UCMRA.unit_left_id.symm, UCMRA.unit_left_id.symm⟩
-  extend := sorry
+  extend {n x y₁ y₂} Hv He := by
+    -- Componentwise extend, then close the compatibility using dist_closed
+    let E₁ := CMRA.extend (x := x.psp) (y₁ := y₁.psp) (y₂ := y₂.psp) Hv.1 He.1
+    let E₂ := CMRA.extend (x := x.perm) (y₁ := y₁.perm) (y₂ := y₂.perm) Hv.2 He.2
+    refine ⟨⟨E₁.1, E₂.1, ?_⟩, ⟨E₁.2.1, E₂.2.1, ?_⟩, ?_, ?_, ?_⟩
+    · -- Compatibility for z₁: use dist_closed with y₁ ≡{n}≡ z₁
+      exact CMRA.CompatibleRel.dist_closed E₁.2.2.2.1.symm E₂.2.2.2.1.symm y₁.compat
+    · -- Compatibility for z₂: use dist_closed with y₂ ≡{n}≡ z₂
+      exact CMRA.CompatibleRel.dist_closed E₁.2.2.2.2.symm E₂.2.2.2.2.symm y₂.compat
+    · -- x ≡ z₁ • z₂
+      exact ⟨E₁.2.2.1, E₂.2.2.1⟩
+    · -- z₁ ≡{n}≡ y₁
+      exact ⟨E₁.2.2.2.1, E₂.2.2.2.1⟩
+    · -- z₂ ≡{n}≡ y₂
+      exact ⟨E₁.2.2.2.2, E₂.2.2.2.2⟩
 
 /-- UCMRA instance for PSpPmRat. -/
 noncomputable instance [Nonempty V] : UCMRA (PSpPmRat α V) where

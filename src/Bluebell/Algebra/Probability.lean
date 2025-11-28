@@ -33,6 +33,17 @@ theorem insensitive_empty {α V : Type*} (m : MeasurableSpace (α → V)) :
     funext a; exact h a (by simp)
   simp [hst]
 
+/-- The trivial σ-algebra `⊥` is insensitive to any set, since only `∅` and `univ` are measurable,
+and membership in these sets is independent of the function values. -/
+theorem insensitive_bot {α V : Type*} (S : _root_.Set α) :
+    insensitive (α := α) (V := V) ⊥ S := by
+  intro A hA s t _
+  -- In ⊥, only ∅ and univ are measurable
+  simp only [MeasurableSpace.measurableSet_bot_iff] at hA
+  cases hA with
+  | inl h => simp [h]  -- A = ∅
+  | inr h => simp [h]  -- A = univ
+
 /-- Antitonicity in the set: if `S ⊆ T` and the space is insensitive to `T`, it is insensitive to `S`. -/
 theorem insensitive_anti {α V : Type*} (m : MeasurableSpace (α → V))
     {S T : _root_.Set α} (hST : S ⊆ T) :
