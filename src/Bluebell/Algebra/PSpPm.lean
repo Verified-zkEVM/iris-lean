@@ -104,4 +104,169 @@ noncomputable instance [Nonempty V] : CMRA (IndexedPSpPm I α V F) :=
 
 end IndexedPSpPm
 
+/-! ## ProbabilitySpace × PermissionRat (paper-style, with UCMRA)
+
+We define the predicated product using `PermissionRat α` instead of `Permission α F`.
+This gives us a UCMRA instance since both `PSp` and `PermissionRat` have units. -/
+
+/-! ### CompatibleRel instance for `compatiblePermRat` -/
+
+instance compatiblePermRat_CompatibleRel {α V : Type*} [Nonempty V] :
+    CMRA.CompatibleRel (α := PSp (α → V)) (β := PermissionRat α)
+      (fun P p => PSp.compatiblePermRat (α := α) (V := V) P p) where
+  op_closed {x₁ x₂ y₁ y₂} hx hy := by
+    cases x₁ <;> cases x₂ <;> simp [PSp.indepMul, PSp.compatiblePermRat] at hx hy ⊢
+    · trivial
+    · trivial
+    · trivial
+    · rename_i P1 P2
+      cases hprod : ProbabilityTheory.ProbabilitySpace.indepProduct P1 P2 with
+      | none =>
+        split <;>
+          simp [PSp.indepMul, PSp.compatiblePermRat, hprod,
+                ProbabilityTheory.ProbabilitySpace.compatiblePermRat,
+                MeasurableSpace.insensitive]
+        sorry
+      | some z =>
+        split
+        · trivial
+        · have eqz : PSp.indepMul (Ω := α → V) (WithTop.some P1) (WithTop.some P2) = WithTop.some z := by
+            simp [PSp.indepMul, hprod]
+          rename_i P'' P' heq
+          have := PSp.compatiblePermRat_indepMul (α := α) (V := V)
+            (x := WithTop.some P1) (y := WithTop.some P2) (z := z)
+            (p₁ := y₁) (p₂ := y₂) (by simp [eqz, Option.bind]) hx hy
+          convert this
+          simp [instCMRAPSpOfNonempty] at heq
+          simp [WithTop.some] at eqz ⊢
+          simp_all only
+          rfl
+  dist_closed {n x₁ x₂ y₁ y₂} hx hy h := by
+    cases hx
+    have : y₁ = y₂ := OFE.eq_of_eqv (OFE.discrete hy)
+    rw [← this]; exact h
+
+/-- `PSpPmRat` as a structure for paper-style permissions with UCMRA instance.
+
+This is a pair of `PSp (α → V)` and `PermissionRat α` satisfying compatibility.
+Unlike `ProdRel`, this has a proper pcore for UCMRA. -/
+structure PSpPmRat (α V : Type*) where
+  psp : PSp (α → V)
+  perm : PermissionRat α
+  compat : PSp.compatiblePermRat (α := α) (V := V) psp perm
+
+/-- The compatibility predicate holds at the units: the trivial probability space
+(unit of PSp) is compatible with zero permissions (unit of PermissionRat). -/
+theorem compatiblePermRat_unit_compat {α V : Type*} [Nonempty V] :
+    PSp.compatiblePermRat (α := α) (V := V)
+      (UCMRA.unit : PSp (α → V))
+      (UCMRA.unit : PermissionRat α) := by
+  simp only [PSp.compatiblePermRat, ProbabilityTheory.ProbabilitySpace.compatiblePermRat]
+  intro A hA s t heq
+  -- The trivial probability space (unit) has trivial σ-algebra, only ∅ and univ are measurable
+  -- For the unit space, all stores give the same probability (uniform), so membership is trivial
+  sorry
+
+namespace PSpPmRat
+
+variable {α V : Type*}
+
+/-- Lift a probability space to a `PSpPmRat` by pairing with the all-one permission. -/
+def liftProb (μ : ProbabilityTheory.ProbabilitySpace (α → V)) : PSpPmRat α V :=
+  ⟨WithTop.some μ, PermissionRat.one (α := α), by
+    have hS : {a | (PermissionRat.one (α := α)) a = 0} = (∅ : _root_.Set α) := by
+      ext a; simp [PermissionRat.one]
+    simp [hS, PSp.compatiblePermRat,
+          ProbabilityTheory.ProbabilitySpace.compatiblePermRat,
+          MeasurableSpace.insensitive]
+    sorry
+  ⟩
+
+/-- OFE instance for PSpPmRat (product OFE). -/
+instance [Nonempty V] : OFE (PSpPmRat α V) where
+  Equiv x y := OFE.Equiv x.psp y.psp ∧ OFE.Equiv x.perm y.perm
+  Dist n x y := OFE.Dist n x.psp y.psp ∧ OFE.Dist n x.perm y.perm
+  dist_eqv := {
+    refl _ := ⟨OFE.Dist.rfl, OFE.Dist.rfl⟩
+    symm h := ⟨OFE.Dist.symm h.1, OFE.Dist.symm h.2⟩
+    trans h₁ h₂ := ⟨OFE.Dist.trans h₁.1 h₂.1, OFE.Dist.trans h₁.2 h₂.2⟩
+  }
+  equiv_dist := by
+    intro x y
+    constructor
+    · intro h n; exact ⟨OFE.equiv_dist.mp h.1 n, OFE.equiv_dist.mp h.2 n⟩
+    · intro h; exact ⟨OFE.equiv_dist.mpr (fun n => (h n).1), OFE.equiv_dist.mpr (fun n => (h n).2)⟩
+  dist_lt := by
+    intro n m x y h hnm
+    exact ⟨OFE.dist_lt h.1 hnm, OFE.dist_lt h.2 hnm⟩
+
+/-- CMRA instance for PSpPmRat with proper pcore for UCMRA. -/
+noncomputable instance [Nonempty V] : CMRA (PSpPmRat α V) where
+  pcore _ := some ⟨UCMRA.unit, UCMRA.unit, compatiblePermRat_unit_compat⟩
+  op x y := ⟨x.psp • y.psp, x.perm • y.perm, sorry⟩
+  ValidN n x := ✓{n} x.psp ∧ ✓{n} x.perm
+  Valid x := ✓ x.psp ∧ ✓ x.perm
+  op_ne {x} := {
+    ne n y z h := ⟨h.1.op_r, h.2.op_r⟩
+  }
+  pcore_ne {n x y cx} _heq hpc := by
+    -- pcore is constant, so pcore y = pcore x = some cx
+    exact ⟨cx, hpc, OFE.Dist.rfl⟩
+  validN_ne {n x y} H Hx := ⟨CMRA.validN_ne H.1 Hx.1, CMRA.validN_ne H.2 Hx.2⟩
+  valid_iff_validN {x} := by
+    constructor
+    · intro h n; exact ⟨CMRA.valid_iff_validN.mp h.1 n, CMRA.valid_iff_validN.mp h.2 n⟩
+    · intro h; exact ⟨CMRA.valid_iff_validN.mpr (fun n => (h n).1),
+                      CMRA.valid_iff_validN.mpr (fun n => (h n).2)⟩
+  validN_succ {x n} := by intro h; exact ⟨CMRA.validN_succ h.1, CMRA.validN_succ h.2⟩
+  validN_op_left {n x y} := by intro h; exact ⟨CMRA.validN_op_left h.1, CMRA.validN_op_left h.2⟩
+  assoc {x y z} := ⟨CMRA.assoc, CMRA.assoc⟩
+  comm {x y} := ⟨CMRA.comm, CMRA.comm⟩
+  pcore_op_left {x cx} hpc := by
+    -- From hpc : pcore x = some cx, we get cx = the constant unit
+    have hcx : cx = ⟨UCMRA.unit, UCMRA.unit, compatiblePermRat_unit_compat⟩ := Option.some.inj hpc.symm
+    simp only [hcx]
+    exact ⟨UCMRA.unit_left_id, UCMRA.unit_left_id⟩
+  pcore_idem {x cx} hpc := by
+    have hcx : cx = ⟨UCMRA.unit, UCMRA.unit, compatiblePermRat_unit_compat⟩ := Option.some.inj hpc.symm
+    simp only [hcx]
+    -- pcore cx = pcore x = some cx, so cx ≡ cx
+    exact ⟨OFE.Equiv.rfl, OFE.Equiv.rfl⟩
+  pcore_op_mono {x cx} hpc y := by
+    have hcx : cx = ⟨UCMRA.unit, UCMRA.unit, compatiblePermRat_unit_compat⟩ := Option.some.inj hpc.symm
+    -- pcore (x • y) = some unit, and cx = unit, so we take cy := cx
+    refine ⟨cx, ?_⟩
+    simp only [hcx]
+    exact ⟨UCMRA.unit_left_id.symm, UCMRA.unit_left_id.symm⟩
+  extend := sorry
+
+/-- UCMRA instance for PSpPmRat. -/
+noncomputable instance [Nonempty V] : UCMRA (PSpPmRat α V) where
+  unit := ⟨UCMRA.unit, UCMRA.unit, compatiblePermRat_unit_compat⟩
+  unit_valid := ⟨UCMRA.unit_valid, UCMRA.unit_valid⟩
+  unit_left_id {_} := ⟨UCMRA.unit_left_id, UCMRA.unit_left_id⟩
+  pcore_unit := OFE.Equiv.rfl
+
+end PSpPmRat
+
+/-- The main model as indexed tuples of `PSpPmRat`.
+This has a UCMRA instance since both components have units. -/
+def IndexedPSpPmRat (I α V : Type*) := I → PSpPmRat α V
+
+namespace IndexedPSpPmRat
+
+variable {I α V : Type*}
+
+/-- Lift an indexed family of probability spaces to indexed `PSpPmRat`. -/
+def liftProb (μ : I → ProbabilityTheory.ProbabilitySpace (α → V)) : IndexedPSpPmRat I α V :=
+  fun i => PSpPmRat.liftProb (α := α) (V := V) (μ i)
+
+noncomputable instance [Nonempty V] : CMRA (IndexedPSpPmRat I α V) :=
+  Bluebell.cmraFunUCMRA
+
+noncomputable instance [Nonempty V] : UCMRA (IndexedPSpPmRat I α V) :=
+  Bluebell.ucmraFun
+
+end IndexedPSpPmRat
+
 end Bluebell

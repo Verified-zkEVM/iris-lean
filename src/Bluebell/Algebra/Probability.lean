@@ -71,6 +71,23 @@ theorem compatiblePerm_indepProduct {α V F : Type*} [UFraction F]
     compatiblePerm P (fun a => p₁ a • p₂ a) := by
   intro _ _ _; sorry
 
+/-- Compatibility predicate for `PermissionRat` (paper-style rational permissions).
+It holds when the σ-algebra of `P` is insensitive to the set of variables where
+`p` has zero permission. -/
+def compatiblePermRat {α V : Type*}
+    (P : ProbabilitySpace (α → V)) (p : PermissionRat α) : Prop :=
+  MeasurableSpace.insensitive (α := α) (V := V) (P.σAlg) {a | p a = 0}
+
+/-- If the independent product exists and the factors are compatible with `p₁,p₂`,
+then the product is compatible with the pointwise permission op `p₁ + p₂`. -/
+theorem compatiblePermRat_indepProduct {α V : Type*}
+    (P₁ P₂ : ProbabilitySpace (α → V)) (p₁ p₂ : PermissionRat α)
+    (P : ProbabilitySpace (α → V)) :
+    ProbabilityTheory.ProbabilitySpace.indepProduct P₁ P₂ = some P →
+    compatiblePermRat P₁ p₁ → compatiblePermRat P₂ p₂ →
+    compatiblePermRat P (PermissionRat.op p₁ p₂) := by
+  intro _ _ _; sorry
+
 end ProbabilitySpace
 end ProbabilityTheory
 
@@ -172,6 +189,47 @@ theorem compatiblePerm_indepMul (x y z : PSp (α → V)) (p₁ p₂ : Permission
     · simp [PSp.indepMul, hprod] at hxy; cases hxy
       exact ProbabilityTheory.ProbabilitySpace.compatiblePerm_indepProduct
         (α := α) (V := V) (F := F) P1 P2 p₁ p₂ Z hprod hx hy
+
+end PSp
+
+/-! ### PSp-level compatibility wrapper for PermissionRat -/
+
+namespace PSp
+
+open ProbabilityTheory ProbabilityTheory.ProbabilitySpace
+
+variable {α V : Type*}
+
+/-- Compatibility on `PSp` for `PermissionRat`, delegates to the `ProbabilitySpace` predicate. -/
+def compatiblePermRat (P : PSp (α → V)) (p : PermissionRat α) : Prop :=
+  match P with
+  | none => True
+  | WithTop.some P => ProbabilityTheory.ProbabilitySpace.compatiblePermRat P p
+
+@[simp] lemma compatiblePermRat_none (p : PermissionRat α) :
+    compatiblePermRat (α := α) (V := V) (none) p := by
+  simp [compatiblePermRat]
+
+@[simp] lemma compatiblePermRat_some (P : ProbabilitySpace (α → V)) (p : PermissionRat α)
+    (h : ProbabilitySpace.compatiblePermRat P p) :
+    compatiblePermRat (α := α) (V := V) (WithTop.some P) p := by
+  simp [compatiblePermRat, h]
+
+/-- If `indepMul x y = some z` and the factors are compatible with `p₁,p₂`, then the product
+is compatible with `p₁ + p₂` (pointwise addition via `PermissionRat.op`). -/
+theorem compatiblePermRat_indepMul (x y z : PSp (α → V)) (p₁ p₂ : PermissionRat α) :
+    PSp.indepMul (Ω := α → V) x y = some z →
+    compatiblePermRat (α := α) (V := V) x p₁ →
+    compatiblePermRat (α := α) (V := V) y p₂ →
+    compatiblePermRat (α := α) (V := V) z (PermissionRat.op p₁ p₂) := by
+  intro hxy hx hy
+  cases x <;> cases y <;> cases z <;> simp [PSp.indepMul, compatiblePermRat] at hxy hx hy ⊢
+  · rename_i P1 P2 Z
+    rcases hprod : ProbabilityTheory.ProbabilitySpace.indepProduct P1 P2 with _|P
+    · simp [PSp.indepMul, hprod] at hxy
+    · simp [PSp.indepMul, hprod] at hxy; cases hxy
+      exact ProbabilityTheory.ProbabilitySpace.compatiblePermRat_indepProduct
+        (α := α) (V := V) P1 P2 p₁ p₂ Z hprod hx hy
 
 end PSp
 
