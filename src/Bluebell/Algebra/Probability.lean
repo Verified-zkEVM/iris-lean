@@ -48,7 +48,13 @@ theorem insensitive_bot {α V : Type*} (S : _root_.Set α) :
 theorem insensitive_anti {α V : Type*} (m : MeasurableSpace (α → V))
     {S T : _root_.Set α} (hST : S ⊆ T) :
     insensitive (α := α) (V := V) m T → insensitive (α := α) (V := V) m S := by
-  intro _; sorry
+  intro hT A hA s t hst
+  apply hT A hA s t
+  -- Need: setEqOutside T s t, i.e., ∀ a, a ∉ T → s a = t a
+  -- From hst: setEqOutside S s t, i.e., ∀ a, a ∉ S → s a = t a
+  -- Since S ⊆ T, we have T^c ⊆ S^c, so a ∉ T → a ∉ S
+  intro a ha
+  exact hst a (fun hs => ha (hST hs))
 
 /-- Closure under measurable-space sum: insensitivity combines by intersecting the sets. -/
 theorem insensitive_sum_inter {α V : Type*}
@@ -56,7 +62,28 @@ theorem insensitive_sum_inter {α V : Type*}
     insensitive (α := α) (V := V) m₁ S₁ →
     insensitive (α := α) (V := V) m₂ S₂ →
     insensitive (α := α) (V := V) (MeasurableSpace.sum m₁ m₂) (S₁ ∩ S₂) := by
-  intro _ _; sorry
+  intro h₁ h₂
+  -- Get insensitivity to the intersection from each factor
+  have h₁' : insensitive m₁ (S₁ ∩ S₂) := insensitive_anti m₁ _root_.Set.inter_subset_left h₁
+  have h₂' : insensitive m₂ (S₁ ∩ S₂) := insensitive_anti m₂ _root_.Set.inter_subset_right h₂
+  intro A hA s t hst
+  -- Use generateFrom_induction on the sum σ-algebra
+  simp only [MeasurableSpace.sum] at hA
+  induction A, hA using MeasurableSpace.generateFrom_induction with
+  | hC B hB _ =>
+    -- B is in the generating set: MeasurableSet[m₁] ∪ MeasurableSet[m₂]
+    cases hB with
+    | inl hm₁ => exact h₁' B hm₁ s t hst
+    | inr hm₂ => exact h₂' B hm₂ s t hst
+  | empty => simp
+  | compl B _ ih =>
+    simp only [_root_.Set.mem_compl_iff]
+    exact not_iff_not.mpr ih
+  | iUnion f _ ih =>
+    simp only [_root_.Set.mem_iUnion]
+    constructor
+    · rintro ⟨n, hn⟩; exact ⟨n, (ih n).mp hn⟩
+    · rintro ⟨n, hn⟩; exact ⟨n, (ih n).mpr hn⟩
 
 end MeasurableSpace
 
@@ -72,6 +99,11 @@ def compatiblePerm {α V F : Type*} [UFraction F]
     (P : ProbabilitySpace (α → V)) (p : Permission α F) : Prop :=
   MeasurableSpace.insensitive (α := α) (V := V) (P.σAlg) {a | p a = DFrac.discard}
 
+/-- The op of two DFrac values is `discard` iff both are `discard`. -/
+theorem DFrac.op_eq_discard_iff {F : Type*} [UFraction F] (x y : Iris.DFrac F) :
+    x • y = Iris.DFrac.discard ↔ x = Iris.DFrac.discard ∧ y = Iris.DFrac.discard := by
+  cases x <;> cases y <;> simp [Iris.DFrac_CMRA, Iris.op]
+
 /-- If the independent product exists and the factors are compatible with `p₁,p₂`,
 then the product is compatible with the pointwise permission op `p₁ • p₂`. -/
 theorem compatiblePerm_indepProduct {α V F : Type*} [UFraction F]
@@ -80,7 +112,26 @@ theorem compatiblePerm_indepProduct {α V F : Type*} [UFraction F]
     ProbabilityTheory.ProbabilitySpace.indepProduct P₁ P₂ = some P →
     compatiblePerm P₁ p₁ → compatiblePerm P₂ p₂ →
     compatiblePerm P (fun a => p₁ a • p₂ a) := by
-  intro _ _ _; sorry
+  intro hprod h₁ h₂
+  -- The zero-permission set of p₁ • p₂ is the intersection of zero-permission sets
+  have hset : {a | p₁ a • p₂ a = Iris.DFrac.discard} =
+      {a | p₁ a = Iris.DFrac.discard} ∩ {a | p₂ a = Iris.DFrac.discard} := by
+    ext a
+    simp only [_root_.Set.mem_setOf_eq, _root_.Set.mem_inter_iff, DFrac.op_eq_discard_iff]
+  simp only [compatiblePerm, hset]
+  -- Need to show: P.σAlg is insensitive to S₁ ∩ S₂
+  -- where S₁ = {a | p₁ a = discard}, S₂ = {a | p₂ a = discard}
+  -- and P.σAlg = P₁.σAlg.sum P₂.σAlg (from the indepProduct definition)
+  -- Extract that indepProduct gives P₁.σAlg.sum P₂.σAlg
+  simp only [ProbabilitySpace.indepProduct] at hprod
+  split at hprod
+  · -- The case where independent product exists
+    cases hprod
+    -- P.σAlg = P₁.σAlg.sum P₂.σAlg by construction
+    simp only [ProbabilitySpace.σAlg]
+    exact MeasurableSpace.insensitive_sum_inter P₁.σAlg P₂.σAlg _ _ h₁ h₂
+  · -- The case where independent product doesn't exist - contradiction
+    cases hprod
 
 /-- Compatibility predicate for `PermissionRat` (paper-style rational permissions).
 It holds when the σ-algebra of `P` is insensitive to the set of variables where
@@ -88,6 +139,17 @@ It holds when the σ-algebra of `P` is insensitive to the set of variables where
 def compatiblePermRat {α V : Type*}
     (P : ProbabilitySpace (α → V)) (p : PermissionRat α) : Prop :=
   MeasurableSpace.insensitive (α := α) (V := V) (P.σAlg) {a | p a = 0}
+
+/-- For non-negative rationals, sum is zero iff both summands are zero. -/
+theorem NNRat.add_eq_zero_iff (a b : ℚ≥0) : a + b = 0 ↔ a = 0 ∧ b = 0 := by
+  constructor
+  · intro h
+    have ha : a ≤ a + b := le_add_of_nonneg_right b.coe_nonneg
+    have hb : b ≤ a + b := le_add_of_nonneg_left a.coe_nonneg
+    rw [h] at ha hb
+    exact ⟨le_antisymm ha a.coe_nonneg, le_antisymm hb b.coe_nonneg⟩
+  · rintro ⟨rfl, rfl⟩
+    simp
 
 /-- If the independent product exists and the factors are compatible with `p₁,p₂`,
 then the product is compatible with the pointwise permission op `p₁ + p₂`. -/
@@ -97,7 +159,20 @@ theorem compatiblePermRat_indepProduct {α V : Type*}
     ProbabilityTheory.ProbabilitySpace.indepProduct P₁ P₂ = some P →
     compatiblePermRat P₁ p₁ → compatiblePermRat P₂ p₂ →
     compatiblePermRat P (PermissionRat.op p₁ p₂) := by
-  intro _ _ _; sorry
+  intro hprod h₁ h₂
+  -- The zero-permission set of p₁ + p₂ is the intersection of zero-permission sets
+  have hset : {a | PermissionRat.op p₁ p₂ a = 0} = {a | p₁ a = 0} ∩ {a | p₂ a = 0} := by
+    ext a
+    simp only [_root_.Set.mem_setOf_eq, _root_.Set.mem_inter_iff, PermissionRat.op,
+      NNRat.add_eq_zero_iff]
+  simp only [compatiblePermRat, hset]
+  -- Extract that indepProduct gives P₁.σAlg.sum P₂.σAlg
+  simp only [ProbabilitySpace.indepProduct] at hprod
+  split at hprod
+  · cases hprod
+    simp only [ProbabilitySpace.σAlg]
+    exact MeasurableSpace.insensitive_sum_inter P₁.σAlg P₂.σAlg _ _ h₁ h₂
+  · cases hprod
 
 end ProbabilitySpace
 end ProbabilityTheory
