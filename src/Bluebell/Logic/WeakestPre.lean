@@ -8,7 +8,7 @@ open Iris ProbabilityTheory
 namespace Bluebell
 namespace HyperAssertion
 
-variable {I α V F : Type*} [Nonempty V] [MeasurableSpace V] [UFraction F]
+variable {I α V : Type*} [Nonempty V] [MeasurableSpace V]
 
 /-!
 Weakest precondition (WP), ported from the paper (Section "Weakest Precondition").
@@ -24,28 +24,32 @@ This matches the paper's definition (Def. "Weakest Precondition"):
 
   WP t Q (a) ≜ ∀ μ₀. ∀ c. (a • c) ≤ μ₀ → ∃ b, (b • c) ≤ ⟦t⟧(μ₀) ∧ Q(b)
 
-In our formalization, we use `IndexedPSpPm.liftProb` to embed an indexed family
+In our formalization, we use `IndexedPSpPmRat.liftProb` to embed an indexed family
 of probability spaces `μ₀ : I → ProbabilitySpace (α → V)` into the model by
-pairing it with full permissions at every index. -/
-noncomputable def wp (t : IndexedPSpPm I α V F → IndexedPSpPm I α V F)
-    (Q : HyperAssertion (IndexedPSpPm I α V F)) :
-    HyperAssertion (IndexedPSpPm I α V F) :=
+pairing it with full permissions at every index.
+
+We use `IndexedPSpPmRat` (with rational permissions) instead of `IndexedPSpPm`
+because it has a UCMRA instance with a unit element, which is needed for the
+frame rule proof. -/
+noncomputable def wp (t : IndexedPSpPmRat I α V → IndexedPSpPmRat I α V)
+    (Q : HyperAssertion (IndexedPSpPmRat I α V)) :
+    HyperAssertion (IndexedPSpPmRat I α V) :=
   ⟨setOf (fun a =>
       ∀ μ₀ c,
-        (a • c) ≤ IndexedPSpPm.liftProb μ₀ →
-        ∃ b, (b • c) ≤ t (IndexedPSpPm.liftProb μ₀) ∧ Q b), by
+        (a • c) ≤ IndexedPSpPmRat.liftProb μ₀ →
+        ∃ b, (b • c) ≤ t (IndexedPSpPmRat.liftProb μ₀) ∧ Q b), by
     -- Upward-closure: if a ≤ a' and WP holds at a, then it holds at a'.
     intro a a' haa' ha
     intro μ₀ c hinc
     -- From a ≤ a', we have (a • c) ≤ (a' • c), then compose with hinc.
-    have h_pre : (a • c) ≤ IndexedPSpPm.liftProb μ₀ :=
+    have h_pre : (a • c) ≤ IndexedPSpPmRat.liftProb μ₀ :=
       CMRA.Included.trans (CMRA.op_mono_left c haa') hinc
     rcases ha μ₀ c h_pre with ⟨b, hb, hQ⟩
     exact ⟨b, hb, hQ⟩
   ⟩
 
-variable {t t₁ t₂ : IndexedPSpPm I α V F → IndexedPSpPm I α V F}
-  {P Q Q' Q₁ Q₂ : HyperAssertion (IndexedPSpPm I α V F)}
+variable {t t₁ t₂ : IndexedPSpPmRat I α V → IndexedPSpPmRat I α V}
+  {P Q Q' Q₁ Q₂ : HyperAssertion (IndexedPSpPmRat I α V)}
 
 omit [MeasurableSpace V] in
 theorem wp_conseq (h : Q ⊢ Q') : (wp t Q) ⊢ (wp t Q') := by
@@ -73,10 +77,16 @@ theorem wp_comp : (wp t₁ (wp t₂ Q)) ⊣⊢ (wp (t₁ ∘ t₂) Q) := by sorr
 /-- TODO: `relevantIndices` of a program and program composition placeholder -/
 theorem wp_conj : (wp t₁ Q₁) ∧ (wp t₂ Q₂) ⊣⊢ (wp (sorry) (and Q₁ Q₂)) := by sorry
 
-/-- TODO: what is `own_α` exactly (`own_𝕏` in the paper)? -/
+/- TODO: C_wp_swap requires integrating jointCondition with IndexedPSpPmRat.
+   This can be done by either:
+   1. Defining a version of jointCondition for PermissionRat
+   2. Creating a typeclass abstraction over the permission type
+   For now, this theorem is commented out since the main goal is wp_frame.
+
 theorem C_wp_swap {β : Type*} [MeasurableSpace β] {μ : PMF β}
-    {K : β → HyperAssertion (IndexedPSpPm I α V F)} :
+    {K : β → HyperAssertion (IndexedPSpPmRat I α V)} :
     𝑪_ μ (fun v => wp t (K v)) ∧ sorry ⊢ wp t (𝑪_ μ K) := by sorry
+-/
 
 end HyperAssertion
 end Bluebell
