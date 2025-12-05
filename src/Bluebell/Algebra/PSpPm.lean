@@ -102,6 +102,16 @@ def liftProb (μ : I → ProbabilityTheory.ProbabilitySpace (α → V)) : Indexe
 noncomputable instance [Nonempty V] : CMRA (IndexedPSpPm I α V F) :=
   inferInstanceAs (CMRA (I → PSpPm α V F))
 
+/-- `IndexedPSpPm` is never total because it uses `cmraFun` which has `pcore _ := none`.
+This means the `CMRA.IsTotal (IndexedPSpPm I α V F)` assumption used in `wp_frame`
+and `sep_assoc` is false and these theorems have unsatisfiable hypotheses. -/
+theorem not_isTotal [Nonempty V] [h : Nonempty (IndexedPSpPm I α V F)] :
+    ¬ Iris.CMRA.IsTotal (IndexedPSpPm I α V F) := by
+  intro ⟨htotal⟩
+  obtain ⟨f⟩ := h
+  have ⟨_, hcf⟩ := htotal f
+  exact Option.noConfusion hcf
+
 end IndexedPSpPm
 
 end Bluebell

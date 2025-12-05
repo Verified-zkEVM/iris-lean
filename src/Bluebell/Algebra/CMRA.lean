@@ -151,4 +151,22 @@ noncomputable instance cmraFun {ι : Type*} {β : ι → Type*} [∀ i, CMRA (β
       by intro i; exact (F i).2.2.2.1,
       by intro i; exact (F i).2.2.2.2⟩
 
+/-- The predicated product CMRA `ProdRel` is never total because `pcore` is constantly `none`. -/
+theorem ProdRel.not_isTotal [CompatibleRel (α := α) (β := β) Φ]
+    [Nonempty (ProdRel (α := α) (β := β) Φ)] :
+    ¬ CMRA.IsTotal (ProdRel (α := α) (β := β) Φ) := by
+  intro ⟨h⟩
+  obtain ⟨x⟩ : Nonempty (ProdRel Φ) := inferInstance
+  have ⟨_, hcx⟩ := h x
+  exact Option.noConfusion hcx
+
+/-- The function-space CMRA `cmraFun` is never total because `pcore` is constantly `none`. -/
+theorem cmraFun.not_isTotal {ι : Type*} {β : ι → Type*} [∀ i, CMRA (β i)]
+    [Nonempty ((i : ι) → β i)] :
+    ¬ CMRA.IsTotal ((i : ι) → β i) := by
+  intro ⟨h⟩
+  obtain ⟨f⟩ : Nonempty ((i : ι) → β i) := inferInstance
+  have ⟨_, hcf⟩ := h f
+  exact Option.noConfusion hcf
+
 end Bluebell
