@@ -39,8 +39,7 @@ noncomputable def wp (t : IndexedPSpPmRat I α V → IndexedPSpPmRat I α V)
         (a • c) ≤ IndexedPSpPmRat.liftProb μ₀ →
         ∃ b, (b • c) ≤ t (IndexedPSpPmRat.liftProb μ₀) ∧ Q b), by
     -- Upward-closure: if a ≤ a' and WP holds at a, then it holds at a'.
-    intro a a' haa' ha
-    intro μ₀ c hinc
+    intro a a' haa' ha μ₀ c hinc
     -- From a ≤ a', we have (a • c) ≤ (a' • c), then compose with hinc.
     have h_pre : (a • c) ≤ IndexedPSpPmRat.liftProb μ₀ :=
       CMRA.Included.trans (CMRA.op_mono_left c haa') hinc
@@ -57,20 +56,17 @@ theorem wp_conseq (h : Q ⊢ Q') : (wp t Q) ⊢ (wp t Q') := by
   rcases hx μ₀ c hinc with ⟨b, hb, hQ⟩
   exact ⟨b, hb, h b hQ⟩
 
--- The `IsTotal` assumption is a workaround for the missing UCMRA instance on `IndexedPSpPm`.
--- Once `IndexedPSpPm` has a UCMRA instance, this will be automatically satisfied.
 omit [MeasurableSpace V] in
-theorem wp_frame [CMRA.IsTotal (IndexedPSpPm I α V F)] :
-    P ∗ (wp t Q) ⊢ (wp t (sep P Q)) := by
+theorem wp_frame : P ∗ (wp t Q) ⊢ (wp t (sep P Q)) := by
   rintro x ⟨p, w, hp, hw, hpw⟩ μ₀ c hinc
-  have hframe : w • (p • c) ≼ IndexedPSpPm.liftProb μ₀ := calc
-    w • (p • c) ≡ (p • w) • c               := CMRA.op_left_comm.symm
-    _           ≼ x • c                     := CMRA.op_mono_left c hpw
-    _           ≼ IndexedPSpPm.liftProb μ₀  := hinc
+  have hframe : w • (p • c) ≼ IndexedPSpPmRat.liftProb μ₀ := calc
+    w • (p • c) ≡ (p • w) • c                 := CMRA.op_left_comm.symm
+    _           ≼ x • c                       := CMRA.op_mono_left c hpw
+    _           ≼ IndexedPSpPmRat.liftProb μ₀ := hinc
   rcases hw μ₀ (p • c) hframe with ⟨b, hb, hQ⟩
   refine ⟨p • b, ?_, p, b, hp, hQ, CMRA.inc_refl _⟩
-  calc (p • b) • c ≡ b • (p • c)            := CMRA.op_left_comm
-    _              ≼ t (IndexedPSpPm.liftProb μ₀) := hb
+  calc (p • b) • c ≡ b • (p • c)                 := CMRA.op_left_comm
+    _              ≼ t (IndexedPSpPmRat.liftProb μ₀) := hb
 
 theorem wp_comp : (wp t₁ (wp t₂ Q)) ⊣⊢ (wp (t₁ ∘ t₂) Q) := by sorry
 
