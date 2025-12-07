@@ -36,23 +36,36 @@ theorem sum_comm (m₁ m₂ : MeasurableSpace Ω) :
 
 /-- Characterization of measurability at the bottom measurable space (stated API). -/
 theorem measurableSet_bot_iff_empty_or_univ {s : Set Ω} :
-    MeasurableSet[⊥] s ↔ s = ∅ ∨ s = Set.univ := by
-  -- In the bottom σ-algebra, only `∅` and `univ` are measurable.
-  sorry
+    MeasurableSet[⊥] s ↔ s = ∅ ∨ s = Set.univ :=
+  measurableSet_bot_iff
 
 /-- Left unit: bottom sums to the other measurable space (API). -/
 theorem bot_sum (m : MeasurableSpace Ω) :
     MeasurableSpace.sum (⊥ : MeasurableSpace Ω) m = m := by
-  -- Follows since `MeasurableSet[⊥] = ∅`.
-  simp [MeasurableSpace.sum]
-  sorry
+  simp only [MeasurableSpace.sum]
+  have h : (MeasurableSet[⊥] ∪ MeasurableSet[m] : Set (Set Ω)) = MeasurableSet[m] := by
+    ext s
+    simp only [Set.mem_union]
+    constructor
+    · intro hs
+      rcases hs with hbot | hm
+      · have : MeasurableSet[⊥] s := hbot
+        rw [measurableSet_bot_iff] at this
+        rcases this with rfl | rfl
+        · exact @MeasurableSet.empty Ω m
+        · exact @MeasurableSet.univ Ω m
+      · exact hm
+    · intro hm
+      right
+      exact hm
+  rw [h]
+  exact @generateFrom_measurableSet Ω m
 
 /-- Right unit: summing with bottom yields the same space (API). -/
 theorem sum_bot (m : MeasurableSpace Ω) :
     MeasurableSpace.sum m (⊥ : MeasurableSpace Ω) = m := by
-  -- Follows since `MeasurableSet[⊥] = ∅`.
-  simp [MeasurableSpace.sum, Set.union_comm]
-  sorry
+  rw [sum_comm]
+  exact bot_sum m
 
 end MeasurableSpace
 
@@ -132,9 +145,14 @@ variable {m₁ m₂ : MeasurableSpace Ω} {μ₁ : Measure[m₁] Ω} {μ₂ : Me
 /-- Symmetry: swap factors of an independent product (API). -/
 def Measure.IndependentProduct.symm
     (w : Measure.IndependentProduct μ₁ μ₂) :
-    Measure.IndependentProduct μ₂ μ₁ := by
-  -- Build the symmetric witness using `MeasurableSpace.sum_comm` and `mul_comm`.
-  sorry
+    Measure.IndependentProduct μ₂ μ₁ where
+  μ := MeasurableSpace.sum_comm m₂ m₁ ▸ w.μ
+  inter_eq_prod := by
+    intro X Y hX hY
+    have heq : MeasurableSpace.sum m₂ m₁ = MeasurableSpace.sum m₁ m₂ := MeasurableSpace.sum_comm m₂ m₁
+    have key : (heq ▸ w.μ) (X ∩ Y) = w.μ (X ∩ Y) := by
+      revert heq; generalize MeasurableSpace.sum m₂ m₁ = m'; intro heq; subst heq; rfl
+    rw [key, Set.inter_comm, w.inter_eq_prod hY hX, mul_comm]
 
 /-- The independent product of two measures is unique, if it exists -/
 instance {μ₁ : Measure[m₁] Ω} {μ₂ : Measure[m₂] Ω} : Subsingleton (Measure.IndependentProduct μ₁ μ₂) := by
@@ -179,8 +197,13 @@ theorem indepProduct_assoc (m₁ m₂ m₃ : MeasureSpace Ω) :
 /-- Corollary: existence of the independent product is symmetric. -/
 theorem indepProduct_isSome_comm (m₁ m₂ : MeasureSpace Ω) :
     (indepProduct (Ω := Ω) m₁ m₂).isSome = (indepProduct (Ω := Ω) m₂ m₁).isSome := by
-  -- Immediate from commutativity.
-  sorry
+  simp only [indepProduct]
+  have h : Nonempty (Measure.IndependentProduct m₁.volume m₂.volume) ↔
+           Nonempty (Measure.IndependentProduct m₂.volume m₁.volume) :=
+    ⟨fun ⟨w⟩ => ⟨w.symm⟩, fun ⟨w⟩ => ⟨w.symm⟩⟩
+  by_cases h₁ : Nonempty (Measure.IndependentProduct m₁.volume m₂.volume)
+  · simp [h₁, h.mp h₁]
+  · simp [h₁, mt h.mpr h₁]
 
 end MeasureSpace
 end MeasureTheory
