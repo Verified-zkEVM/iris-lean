@@ -96,7 +96,6 @@ noncomputable instance cmraProdRel (Φ : α → β → Prop) [CompatibleRel (α 
     · -- z₂ ≡{n}≡ y₂
       exact OFE.dist_prod_ext (E₁.2.2.2.2) (E₂.2.2.2.2)
 
-
 /-- A generic dependent function-space CMRA instance that does not assume total cores.
 Operation and validity are pointwise; the partial core is constantly `none`.
 This is sufficient for indexed products where the component CMRA might be non-total
