@@ -271,8 +271,8 @@ theorem compatiblePerm_indepMul (x y z : PSp (α → V)) (p₁ p₂ : Permission
   · rename_i P1 P2 Z
     -- Use the base lemma when the independent product exists
     rcases hprod : ProbabilityTheory.ProbabilitySpace.indepProduct P1 P2 with _|P
-    · simp [PSp.indepMul, hprod] at hxy
-    · simp [PSp.indepMul, hprod] at hxy; cases hxy
+    · simp [hprod] at hxy
+    · simp [hprod] at hxy; cases hxy
       exact ProbabilityTheory.ProbabilitySpace.compatiblePerm_indepProduct
         (α := α) (V := V) (F := F) P1 P2 p₁ p₂ Z hprod hx hy
 
@@ -312,8 +312,8 @@ theorem compatiblePermRat_indepMul (x y z : PSp (α → V)) (p₁ p₂ : Permiss
   cases x <;> cases y <;> cases z <;> simp [PSp.indepMul, compatiblePermRat] at hxy hx hy ⊢
   · rename_i P1 P2 Z
     rcases hprod : ProbabilityTheory.ProbabilitySpace.indepProduct P1 P2 with _|P
-    · simp [PSp.indepMul, hprod] at hxy
-    · simp [PSp.indepMul, hprod] at hxy; cases hxy
+    · simp [hprod] at hxy
+    · simp [hprod] at hxy; cases hxy
       exact ProbabilityTheory.ProbabilitySpace.compatiblePermRat_indepProduct
         (α := α) (V := V) P1 P2 p₁ p₂ Z hprod hx hy
 

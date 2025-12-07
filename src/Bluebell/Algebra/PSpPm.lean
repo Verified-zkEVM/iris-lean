@@ -22,7 +22,7 @@ instance compatiblePerm_CompatibleRel {α V F : Type*} [Nonempty V] [UFraction F
       (fun P p => PSp.compatiblePerm (α := α) (V := V) (F := F) P p) where
   op_closed {x₁ x₂ y₁ y₂} hx hy := by
     -- Case split on the `PSp` operands
-    cases x₁ <;> cases x₂ <;> simp [PSp.indepMul, PSp.compatiblePerm] at hx hy ⊢
+    cases x₁ <;> cases x₂ <;> simp [PSp.compatiblePerm] at hx hy ⊢
     · trivial
     · trivial
     · trivial
@@ -110,7 +110,7 @@ instance compatiblePermRat_CompatibleRel {α V : Type*} [Nonempty V] :
     CMRA.CompatibleRel (α := PSp (α → V)) (β := PermissionRat α)
       (fun P p => PSp.compatiblePermRat (α := α) (V := V) P p) where
   op_closed {x₁ x₂ y₁ y₂} hx hy := by
-    cases x₁ <;> cases x₂ <;> simp [PSp.indepMul, PSp.compatiblePermRat] at hx hy ⊢
+    cases x₁ <;> cases x₂ <;> simp [PSp.compatiblePermRat] at hx hy ⊢
     · trivial
     · trivial
     · trivial
