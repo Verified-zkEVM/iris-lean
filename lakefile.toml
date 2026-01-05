@@ -1,14 +1,19 @@
 name = "iris"
 srcDir = "./src/"
-defaultTargets = ["Iris", "IrisTest"]
+defaultTargets = ["Iris", "Bluebell", "IrisTest"]
 
 [[require]]
-name = "Qq"
+name = "mathlib"
 scope = "leanprover-community"
-version = "git#stable"
+rev = "v4.26.0"
 
 [[lean_lib]]
 name = "Iris"
+globs = ["Iris.*"]
+
+[[lean_lib]]
+name = "Bluebell"
+globs = ["Bluebell.*"]
 
 [[lean_lib]]
 name = "IrisTest"

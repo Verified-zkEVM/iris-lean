@@ -13,7 +13,7 @@ on:
 jobs:
   ai_review_lean:
     if: |
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/review')) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/review') && (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')) ||
       (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:

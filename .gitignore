@@ -1,1 +1,19 @@
 /.lake
+/.claude
+/.cursor
+
+# LaTeX compilation files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.synctex(busy)
+
+# Generated paper PDF
+paper/paper.pdf
+
+.DS_Store
