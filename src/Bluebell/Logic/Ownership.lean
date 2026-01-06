@@ -222,7 +222,6 @@ theorem sep_of_and_assertTrue {i : I} {E : (α → V) → Bool}
     -- From b • c ≼ a, we have ∃ w, a ≡ (b • c) • w ≡ c • (b • w)
     -- Therefore c ≼ a, and by upward closure, a ∈ P
     obtain ⟨w, hw⟩ := hbc
-    -- Rearrange: (b • c) • w ≡ (c • b) • w ≡ c • (b • w)
     have h_rearrange : (b • c) • w ≡ c • (b • w) := calc
       (b • c) • w ≡ (c • b) • w := CMRA.op_left_eqv w CMRA.comm
       _           ≡ c • (b • w) := CMRA.assoc.symm
