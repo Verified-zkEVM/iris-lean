@@ -197,9 +197,10 @@ theorem sep_assertTrue_iff {i : I} {E₁ E₂ : (α → V) → Bool} :
       (assertTrue (I := I) (α := α) (V := V) i (fun x => E₁ x ∧ E₂ x)) := by
   sorry
 
+omit [DecidableEq I] in
 /-- If `pabs(𝑃, pvar(𝐸⟨𝑖⟩))` (to be defined), then `assertTrue i E ∧ P` entails `assertTrue i E ∗ P`. -/
 theorem sep_of_and_assertTrue {i : I} {E : (α → V) → Bool}
-    {P : HyperAssertion (IndexedPSpPmRat I α V)} (h : True) :
+    {P : HyperAssertion (IndexedPSpPmRat I α V)} :
     HyperAssertion.entails
       (HyperAssertion.sep
         (assertTrue (I := I) (α := α) (V := V) i E)
