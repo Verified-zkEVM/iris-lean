@@ -9,6 +9,7 @@ alias MeasureTheory.MeasureSpace.σAlg := MeasureSpace.toMeasurableSpace
 alias MeasureTheory.MeasureSpace.μ := MeasureSpace.volume
 
 variable {Ω : Type*}
+         {α β : Type*}
 
 noncomputable section
 
