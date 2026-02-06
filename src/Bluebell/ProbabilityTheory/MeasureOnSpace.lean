@@ -53,17 +53,61 @@ def MeasurableSpace.cast
 
 end noncomputable section
 
+section Sum
+
+@[simp]
+def MeasurableSpace.sumUnit : MeasurableSpace Ω := ⊥
+
+lemma MeasurableSpace.sum_identity {m : MeasurableSpace Ω}
+  : MeasurableSpace.sum sumUnit m = m := by
+  let f : Set (Set Ω) := MeasurableSet[sumUnit]
+  let g : Set (Set Ω) := MeasurableSet[m]
+  have : f ∪ g = g := by
+    ext u
+    simp
+    unfold f
+    intro hu
+    apply MeasurableSet.measurableSet_bot_induction
+    apply MeasurableSet.empty
+    apply MeasurableSet.univ
+    aesop
+  simp
+  have h : MeasurableSpace.generateFrom (f ∪ g) = MeasurableSpace.generateFrom g := by
+    grind
+  have : MeasurableSpace.generateFrom MeasurableSet[m] = m := by
+    apply MeasurableSpace.generateFrom_measurableSet
+  aesop
+
+lemma MeasurableSpace.sum_comm {m n : MeasurableSpace Ω}
+  : m.sum n = n.sum m := by
+  let f : Set (Set Ω) := MeasurableSet[m]
+  let g : Set (Set Ω) := MeasurableSet[n]
+  unfold MeasurableSpace.sum
+  have : f ∪ g = g ∪ f := by
+    ext u
+    grind
+  grind
+
+lemma MeasurableSpace.sum_le {m₁ m₂ : MeasurableSpace Ω}
+  : m₁ ≤ m₁.sum m₂ := by
+  simp
+  intro u hu
+  sorry
+
+lemma MeasurableSpace.sum_assoc {m₁ m₂ m₃ : MeasurableSpace Ω}
+  : (m₁.sum m₂).sum m₃ = m₁.sum (m₂.sum m₃) := by
+  let f : Set (Set Ω) := MeasurableSet[m₁]
+  let g : Set (Set Ω) := MeasurableSet[m₂]
+  let h : Set (Set Ω) := MeasurableSet[m₃]
+  sorry
+
+end Sum
+
 /- We define `(𝓕, μ) ≤ (𝓖, ν)` if `𝓕 ⊆ 𝓖` and `μ` is the restriction of `ν` to `𝓕` -/
 @[ext]
 structure MeasureOnSpace (Ω : Type*) where
   ms : MeasurableSpace Ω
   μ : Measure[ms] Ω
-
-/- Helper function to restrict the finer `MeasureOnSpace` to a coarser space -/
-def MeasureOnSpace.restrict (m₁ : MeasureOnSpace Ω) (m₂ : MeasurableSpace Ω) : MeasureOnSpace Ω := {
-  ms := m₂
-  μ := m₁.μ.cast _
-}
 
 instance (Ω : Type*) : Preorder (MeasureOnSpace Ω) where
   le (ps₁ ps₂) := ps₁.ms ≤ ps₂.ms ∧ ps₁.μ = ps₂.μ.cast _
@@ -101,7 +145,7 @@ lemma PSpace.isIndependentProduct_def {r p q : PSpace Ω} :
 
 open PSpace
 
-lemma PSPace.ms_eq_of_isIndependentProduct {r r' p q : PSpace Ω}
+lemma PSpace.ms_eq_of_isIndependentProduct {r r' p q : PSpace Ω}
   (h₁ : isIndependentProduct r p q) (h₂ : isIndependentProduct r' p q) :
   r.1.ms = r'.1.ms := by
   rcases h₁ with ⟨a, _⟩
@@ -146,6 +190,10 @@ lemma inter_mem_generator
   (hu : MeasurableSet[p.ms] u) (hv : MeasurableSet[q.ms] v) :
   u ∩ v ∈ generator p q := by
   use u, v
+
+lemma mem_generator_imp_mem_sum (h : u ∈ generator p q)
+  : MeasurableSet[p.ms.sum q.ms] u := by
+  sorry
 
 end
 
@@ -204,7 +252,7 @@ lemma PSpace.measure_ne_top {m : PSpace Ω} {u : Set Ω} : m.1.μ u ≠ ⊤ := b
   have h₃ : m.1.μ u ≤ m.1.μ Set.univ := measure_mono h₂
   exact lt_of_le_of_lt (b := 1) (by aesop) (by aesop)
 
-theorem PSPace.uniqueness {r r' p q : PSpace Ω}
+theorem PSpace.uniqueness {r r' p q : PSpace Ω}
   (h₁ : isIndependentProduct r p q) (h₂ : isIndependentProduct r' p q) : r = r' := by
   apply PSpace.ext_ms (h₁.1 ▸ h₂.1 ▸ rfl)
   -- have : IsPiSystem (generator p.1 q.1) := MeasureOnSpace.isPiSystem_generator p.1 q.1
@@ -228,6 +276,38 @@ theorem PSPace.uniqueness {r r' p q : PSpace Ω}
 
 end Uniqueness
 
+section Trim
+
+@[simp]
+def MeasureOnSpace.trim
+  {p : MeasureOnSpace Ω} {f : MeasurableSpace Ω} (h : f ≤ p.ms)
+  : MeasureOnSpace Ω := {
+  ms := f
+  μ := p.μ.trim h
+}
+
+lemma MeasureOnSpace.trim_eq
+  {p : MeasureOnSpace Ω} {f : MeasurableSpace Ω} (h : f ≤ p.ms)
+  {u : Set Ω} (hu : MeasurableSet[f] u)
+  : (p.trim h).μ u = p.μ u := by
+  have h₁ := (p.trim h).μ.trim_eq hu
+  have h₂ : (p.trim h).μ.toOuterMeasure u = p.μ u := by
+    sorry
+  rw [h₂] at h₁
+  aesop
+
+@[simp]
+def PSpace.trim
+  {p : PSpace Ω} {f : MeasurableSpace Ω} {h : f ≤ p.1.ms}
+  : PSpace Ω := ⟨p.1.trim h, by
+  simp
+  constructor
+  have : (p.1.trim h).μ Set.univ = 1 := by
+    sorry
+  aesop
+⟩
+
+end Trim
 
 section Identity
 
@@ -266,7 +346,7 @@ lemma empty_sigma_algebra_is_identity [Inhabited Ω] (p : MeasureOnSpace Ω)
     grind
   assumption
 
-theorem indep_product_identity [Inhabited Ω] {p : PSpace Ω}
+theorem indepenendentProduct_identity [Inhabited Ω] {p : PSpace Ω}
   : isIndependentProduct p unit p := by
   unfold isIndependentProduct
   constructor
@@ -303,14 +383,11 @@ theorem independentProduct_comm [Inhabited Ω] {r p q : PSpace Ω}
   (h : isIndependentProduct r p q)
   : isIndependentProduct r q p := by
   constructor
-  have h₁ : MeasurableSpace.sum p.1.ms q.1.ms = MeasurableSpace.sum q.1.ms p.1.ms := by
-    let u : Set (Set Ω) := p.1.ms.MeasurableSet'
-    let v : Set (Set Ω) := q.1.ms.MeasurableSet'
-    have : u ∪ v = v ∪ u := by grind
-    unfold MeasurableSpace.sum
-    grind
-  rw [← h₁]
-  apply h.1
+  have h₁ : MeasurableSpace.sum p.1.ms q.1.ms
+    = MeasurableSpace.sum q.1.ms p.1.ms := by
+    apply MeasurableSpace.sum_comm
+  have : r.1.ms = MeasurableSpace.sum p.1.ms q.1.ms := h.1
+  grind
   intro u hu v hv
   let μ := r.1.μ
   let μ₁ := q.1.μ
@@ -328,17 +405,58 @@ section Associativity
 --   1. (b * c) and a * (b * c) are defined
 --   2. (a * b) * c = a * (b * c)
 -- The above definition suffices because we proved commutativity
-theorem indepProduct_assoc {pq p q s r : PSpace Ω} [Inhabited Ω]
+theorem independentProduct_assoc {pq p q s r : PSpace Ω} [Inhabited Ω]
   (h_pq : isIndependentProduct pq p q)
   (h_pq_r : isIndependentProduct s pq r)
   : ∃ qr, isIndependentProduct qr q r ∧ isIndependentProduct s p qr
   := by
-  have qr : PSpace Ω := sorry
-  apply Exists.intro qr
+  let qr_ms : MeasurableSpace Ω := MeasurableSpace.sum q.1.ms r.1.ms
+  have h : qr_ms <= s.1.ms := by sorry
+  let qr : PSpace Ω := @s.trim Ω qr_ms h
+  have h_qr : isIndependentProduct qr q r := by
+    constructor
+    simp
+    aesop
+    intro u hu v hv
+    have hou : MeasurableSet[pq.1.ms] (Set.univ ∩ u) := by
+      simp
+      have h : pq.1.ms = p.1.ms.sum q.1.ms := h_pq.1
+      rw [h]
+      have h₂ : u ∈ generator p.1 q.1 := mem_generator_r hu
+      apply @mem_generator_imp_mem_sum Ω p.1 q.1 u h₂
+    have h := h_pq_r.2 (Set.univ ∩ u) hou v hv
+    have h₁ : pq.1.μ (Set.univ ∩ u) = q.1.μ u := by
+      have := h_pq.2 Set.univ MeasurableSet.univ u hu
+      have : p.1.μ Set.univ = 1 := p.2.measure_univ
+      aesop
+    have h₂ : s.1.μ (Set.univ ∩ u ∩ v) = qr.1.μ (u ∩ v) := by
+      have := h_pq_r.2 (Set.univ ∩ u) hou v hv
+      have h₃ : s.1.μ (Set.univ ∩ u ∩ v) = pq.1.μ (Set.univ ∩ u) * r.1.μ v := by
+        grind
+      have h₄ : pq.1.μ (Set.univ ∩ u) = p.1.μ Set.univ * q.1.μ u :=
+        h_pq.2 Set.univ MeasurableSet.univ u hu
+      rw [h₄] at h₃
+      have h₅ : p.1.μ Set.univ = 1 := p.2.measure_univ
+      rw [h₅] at h₃
+      unfold qr
+      apply Eq.symm
+      have h₇ : MeasurableSet[q.1.ms.sum r.1.ms] (u ∩ v) := by
+        apply mem_generator_imp_mem_sum
+        apply inter_mem_generator hu hv
+      have h₈ : q.1.ms.sum r.1.ms ≤ s.1.ms := sorry
+      have := @s.1.trim_eq Ω (q.1.ms.sum r.1.ms) h₈ (u ∩ v) h₇
+      have : s.1.μ (Set.univ ∩ u ∩ v) = s.1.μ (u ∩ v) := by
+        have : Set.univ ∩ u ∩ v = u ∩ v := by grind
+        aesop
+      aesop
+    aesop
+  use qr
   constructor
-  have h_qr : isIndependentProduct qr q r := sorry
   assumption
-  have h_p_qr : isIndependentProduct s p qr := sorry
+  have h_p_qr : isIndependentProduct s p qr := by
+    constructor
+    sorry
+    sorry
   assumption
 
 end Associativity
