@@ -32,6 +32,19 @@ def measurable_set_transport
   subst p
   simp_all only
 
+-- an induction principle with respect to the trivial σ-algebra
+-- to show that a property P u holds where u is a measurable set
+-- with respect to the trivial σ-algebra, it suffices to show that
+-- P ∅ and P Ω
+lemma trivial_sigma_algebra_induction
+  {P : Set Ω → Prop}
+  (h_base : P ∅) (h_ind : P Set.univ)
+  : (u : Set Ω) → MeasurableSet[⊥] u → P u := by
+  intro u h_u
+  have : u = ∅ ∨ u = Set.univ := by
+    apply MeasurableSpace.measurableSet_bot_iff.1 h_u
+  grind
+
 end MeasureTheory
 
 end noncomputable section
@@ -67,6 +80,7 @@ instance (Ω : Type*) : Preorder (PSpace Ω) where
 abbrev PSp (Ω : Type u) := WithTop (PSpace Ω)
 
 /- Holds if `r` is the independent product of `p` and `q` -/
+@[simp]
 def isIndependentProduct (r p q : PSpace Ω) :=
   r.1.ms = MeasureTheory.sum p.1.ms q.1.ms ∧
   let μ₁ := p.1.μ
@@ -279,3 +293,114 @@ theorem uniqueness {r r' p q : PSpace Ω}
   }
 
 end Uniqueness
+
+section Identity
+
+lemma dirac_is_prob [Inhabited Ω] : IsProbabilityMeasure (@Measure.dirac Ω ⊥ default) := by
+  apply isProbabilityMeasure_iff.2
+  simp
+
+def unit [Inhabited Ω] : PSpace Ω := ⟨{
+  ms := ⊥
+  μ := @Measure.dirac Ω ⊥ default
+}, dirac_is_prob⟩
+
+lemma empty_sigma_algebra_is_identity [Inhabited Ω] (p : MeasureOnSpace Ω)
+  : p.ms = MeasurableSpace.generateFrom (unit.1.ms.MeasurableSet' ∪ p.ms.MeasurableSet') := by
+  let a : Set (Set Ω) := p.ms.MeasurableSet'
+  let b : Set (Set Ω) := unit.1.ms.MeasurableSet'
+  have h : a = b ∪ a := by
+    ext u
+    constructor
+    grind
+    simp
+    intro h
+    rcases h with h1 | h2
+    apply trivial_sigma_algebra_induction
+    unfold a
+    apply MeasurableSpace.measurableSet_empty
+    have : Set.univ ∈ a := by
+      unfold a
+      apply MeasurableSet.univ
+    assumption
+    assumption
+    assumption
+  rw [← h]
+  have : p.ms = MeasurableSpace.generateFrom (p.ms.MeasurableSet') := by
+    have := @MeasurableSpace.generateFrom_measurableSet Ω p.ms
+    grind
+  assumption
+
+theorem indep_product_identity [Inhabited Ω] {p : PSpace Ω}
+  : isIndependentProduct p unit p := by
+  unfold isIndependentProduct
+  constructor
+  simp
+  ext u
+  have : p.1.ms = MeasurableSpace.generateFrom (unit.1.ms.MeasurableSet' ∪ p.1.ms.MeasurableSet') :=
+    empty_sigma_algebra_is_identity p.1
+  constructor
+  apply measurable_set_transport
+  assumption
+  apply measurable_set_transport
+  apply Eq.symm
+  assumption
+  intro μ₁ μ₂ μ u h_u v h_v
+  let P u := μ (u ∩ v) = μ₁ u * μ v
+  apply trivial_sigma_algebra_induction (P := P)
+  unfold P
+  simp
+  unfold P
+  simp_all
+  have h : μ₁ Set.univ = 1 := by
+    unfold μ₁
+    apply unit.2.measure_univ
+  rw [h]
+  grind
+  apply h_u
+
+end Identity
+
+section Commutativity
+
+theorem indep_product_comm [Inhabited Ω] {r p q : PSpace Ω}
+  (h : isIndependentProduct r p q)
+  : isIndependentProduct r q p := by
+  constructor
+  have h1 : MeasureTheory.sum p.1.ms q.1.ms = MeasureTheory.sum q.1.ms p.1.ms := by
+    let u : Set (Set Ω) := p.1.ms.MeasurableSet'
+    let v : Set (Set Ω) := q.1.ms.MeasurableSet'
+    have : u ∪ v = v ∪ u := by grind
+    unfold MeasureTheory.sum
+    grind
+  rw [← h1]
+  apply h.1
+  intro μ₁ μ₂ μ u h_u v h_v
+  have : μ (v ∩ u) = μ₂ v * μ₁ u := h.2 v h_v u h_u
+  grind
+
+end Commutativity
+
+section Associativity
+
+-- Recall the definiton of partial associativity (Kleene equality):
+--  (a * b) * c ≃ a * (b * c) means:
+-- If (a * b) and (a * b) * c are defined then
+--   1. (b * c) and a * (b * c) are defined
+--   2. (a * b) * c = a * (b * c)
+-- The above definition suffices because we proved commutativity
+theorem indep_product_assoc {pq p q s r : PSpace Ω} [Inhabited Ω]
+  (h_pq : isIndependentProduct pq p q)
+  (h_pq_r : isIndependentProduct s pq r)
+  : ∃ qr, isIndependentProduct qr q r ∧ isIndependentProduct s p qr
+  := by
+  -- qr(u) = s(Ω ∩ u)
+  have qr : PSpace Ω := sorry
+  apply Exists.intro qr
+  constructor
+  have h_qr : isIndependentProduct qr q r := sorry
+  assumption
+  have h_p_qr : isIndependentProduct s p qr := sorry
+  assumption
+
+end Associativity
