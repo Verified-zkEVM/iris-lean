@@ -25,11 +25,12 @@ abbrev Measure.cast {β : Type u} {ms₁ : MeasurableSpace β}
 lemma Measure.cast_eq_self {β : Type u} {ms₁ : MeasurableSpace β}
   (μ : Measure β) (ms₂ : MeasurableSpace β) : μ.cast ms₂ = @μ.map _ _ ms₁ ms₂ id := rfl
 
--- an induction principle with respect to the trivial σ-algebra
--- to show that a property P u holds where u is a measurable set
--- with respect to the trivial σ-algebra, it suffices to show that
--- P ∅ and P Ω
-
+/--
+  An induction principle with respect to the trivial σ-algebra
+  to show that a property P u holds where u is a measurable set
+  with respect to the trivial σ-algebra, it suffices to show that
+  P ∅ and P Ω
+-/
 lemma MeasurableSet.measurableSet_bot_induction
   {P : Set Ω → Prop}
   (h_base : P ∅) (h_ind : P Set.univ)
@@ -53,12 +54,73 @@ def MeasurableSpace.cast
 
 end noncomputable section
 
+section GeneratorMembership
+
+variable {Ω : Type*} (m₁ m₂ : MeasurableSpace Ω)
+
+def MeasurableSpace.sumGenerator (m₁ m₂ : MeasurableSpace Ω) : Set (Set Ω) :=
+  {S : Set Ω | ∃ F G, S = F ∩ G ∧ MeasurableSet[m₁] F ∧ MeasurableSet[m₂] G}
+
+variable
+  {u v w : Set Ω}
+
+/-- Every set in the generating set `w` is of the form `u ∩ v` -/
+lemma exists_inter_measurableSet_of_mem_sumGenerator
+  (hw : w ∈ MeasurableSpace.sumGenerator m₁ m₂)
+  : ∃ u v, w = u ∩ v ∧ MeasurableSet[m₁] u ∧ MeasurableSet[m₂] v := by
+  rcases hw with ⟨u, v, rfl, hu, hv⟩
+  grind
+
+@[aesop 50% apply]
+lemma mem_sumGenerator_l (hu : MeasurableSet[m₁] u) :
+  u ∈ MeasurableSpace.sumGenerator m₁ m₂ := by
+  use u, ⊤
+  aesop
+
+@[aesop 50% apply]
+lemma mem_sumGenerator_r (hu : MeasurableSet[m₂] u) :
+  u ∈ MeasurableSpace.sumGenerator m₁ m₂ := by
+  use ⊤, u
+  aesop
+
+lemma inter_mem_sumGenerator
+  (hu : MeasurableSet[m₁] u) (hv : MeasurableSet[m₂] v) :
+  u ∩ v ∈ MeasurableSpace.sumGenerator m₁ m₂ := by
+  use u, v
+
+theorem MeasurableSpace.generateFrom_sumGenerator_eq_sum :
+  MeasurableSpace.generateFrom (MeasurableSpace.sumGenerator m₁ m₂)
+    = MeasurableSpace.sum m₁ m₂ := by
+  ext s
+  refine ⟨?p, by apply MeasurableSpace.generateFrom_mono (fun _ _ ↦ by aesop)⟩
+  let sumSp := MeasurableSet[m₁.sum m₂]
+  apply MeasurableSpace.generateFrom_le
+  rintro t ⟨u, ⟨v, _, _, _⟩⟩
+  have h₂ : MeasurableSpace.sumGenerator m₁ m₂ ⊆ sumSp := fun w hw ↦ by
+    obtain ⟨u, v, rfl, hu, hv⟩ :=
+      @exists_inter_measurableSet_of_mem_sumGenerator Ω m₁ m₂ (w := w) hw
+    unfold sumSp
+    have h₁ : MeasurableSet[m₁.sum m₂] u := by
+      have : u ∈ MeasurableSpace.sumGenerator m₁ m₂ := by aesop
+      apply MeasurableSpace.measurableSet_generateFrom
+      aesop
+    have h₂ : MeasurableSet[m₁.sum m₂] v := by
+      have : v ∈ MeasurableSpace.sumGenerator m₁ m₂ := by aesop
+      apply MeasurableSpace.measurableSet_generateFrom
+      aesop
+    apply MeasurableSet.inter h₁ h₂
+  aesop (add simp (show u ∩ v ∈ sumGenerator m₁ m₂ by use u, v))
+
+end GeneratorMembership
+
 section Sum
+
+variable {Ω : Type*} (m m₁ m₂ : MeasurableSpace Ω)
 
 @[simp]
 def MeasurableSpace.sumUnit : MeasurableSpace Ω := ⊥
 
-lemma MeasurableSpace.sum_identity {m : MeasurableSpace Ω}
+lemma MeasurableSpace.sum_identity
   : MeasurableSpace.sum sumUnit m = m := by
   let f : Set (Set Ω) := MeasurableSet[sumUnit]
   let g : Set (Set Ω) := MeasurableSet[m]
@@ -78,28 +140,114 @@ lemma MeasurableSpace.sum_identity {m : MeasurableSpace Ω}
     apply MeasurableSpace.generateFrom_measurableSet
   aesop
 
-lemma MeasurableSpace.sum_comm {m n : MeasurableSpace Ω}
-  : m.sum n = n.sum m := by
-  let f : Set (Set Ω) := MeasurableSet[m]
-  let g : Set (Set Ω) := MeasurableSet[n]
+lemma MeasurableSpace.sum_comm
+  : m₁.sum m₂ = m₂.sum m₁ := by
+  let f : Set (Set Ω) := MeasurableSet[m₁]
+  let g : Set (Set Ω) := MeasurableSet[m₂]
   unfold MeasurableSpace.sum
   have : f ∪ g = g ∪ f := by
     ext u
     grind
   grind
 
-lemma MeasurableSpace.sum_le {m₁ m₂ : MeasurableSpace Ω}
-  : m₁ ≤ m₁.sum m₂ := by
+@[aesop 50% apply]
+lemma mem_sum_l {u : Set Ω} (hu : MeasurableSet[m₁] u) :
+  MeasurableSet[m₁.sum m₂] u := by
   simp
-  intro u hu
-  sorry
+  let f : Set (Set Ω) := MeasurableSet[m₁]
+  let g : Set (Set Ω) := MeasurableSet[m₁.sum m₂]
+  have : f ⊆ g := by
+    intro x hx
+    apply MeasurableSpace.measurableSet_generateFrom
+    aesop
+  have : MeasurableSpace.generateFrom f = m₁ := by
+    apply @MeasurableSpace.generateFrom_measurableSet Ω m₁
+  aesop
+
+@[aesop 50% apply]
+lemma mem_sum_r {u : Set Ω} (hu : MeasurableSet[m₂] u) :
+  MeasurableSet[m₁.sum m₂] u := by
+  rw [MeasurableSpace.sum_comm]
+  apply mem_sum_l
+  exact hu
+
+lemma mem_sum_inter {u v : Set Ω}
+  (hu : MeasurableSet[m₁] u) (hv : MeasurableSet[m₂] v)
+  : MeasurableSet[m₁.sum m₂] (u ∩ v) := by
+  have : MeasurableSet[m₁.sum m₂] u := by aesop
+  have : MeasurableSet[m₁.sum m₂] v := by aesop
+  aesop
+
+lemma subset_sum_l : m₁ ≤ m₁.sum m₂ := by
+  intro t ht
+  apply mem_sum_l
+  exact ht
+
+lemma subset_sum_r : m₂ ≤ m₁.sum m₂ := by
+  intro t ht
+  apply mem_sum_r
+  exact ht
+
+lemma MeasurableSpace.sum_assoc_left {m₁ m₂ m₃ : MeasurableSpace Ω}
+  : (m₁.sum m₂).sum m₃ ≤ m₁.sum (m₂.sum m₃) := by
+  have : m₁.sum m₂ ≤ m₁.sum (m₂.sum m₃) := by
+    apply MeasurableSpace.generateFrom_le
+    intro t ht
+    rcases ht with h₁ | h₂
+    aesop
+    aesop
+  have : m₃ ≤ m₁.sum (m₂.sum m₃) := by
+    have : m₃ ≤ m₂.sum m₃ := by apply subset_sum_r
+    have : m₂.sum m₃ ≤ m₁.sum (m₂.sum m₃) := by apply subset_sum_r
+    grind
+  apply MeasurableSpace.generateFrom_le
+  intro t ht
+  rcases ht with h₁ | h₂
+  aesop
+  aesop
+
+lemma MeasurableSpace.sum_assoc_right {m₁ m₂ m₃ : MeasurableSpace Ω}
+  : (m₁.sum m₂).sum m₃ ≥ m₁.sum (m₂.sum m₃) := by
+  have : m₁ ≤ (m₁.sum m₂).sum m₃ := by
+    have : m₁ ≤ m₁.sum m₂ := by apply subset_sum_l
+    have : m₁.sum m₂ ≤ (m₁.sum m₂).sum m₃ := by apply subset_sum_l
+    grind
+  have : m₂.sum m₃ ≤ (m₁.sum m₂).sum m₃ := by
+    have : m₂ ≤ (m₁.sum m₂).sum m₃ := by
+      have : m₂ ≤ m₁.sum m₂ := by apply subset_sum_r
+      have : m₁.sum m₂ ≤ (m₁.sum m₂).sum m₃ := by apply subset_sum_l
+      grind
+    have : m₃ ≤ (m₁.sum m₂).sum m₃ := by apply subset_sum_r
+    apply MeasurableSpace.generateFrom_le
+    intro t ht
+    rcases ht with h₁ | h₂
+    aesop
+    aesop
+  apply MeasurableSpace.generateFrom_le
+  intro t ht
+  rcases ht with h₁ | h₂
+  aesop
+  aesop
 
 lemma MeasurableSpace.sum_assoc {m₁ m₂ m₃ : MeasurableSpace Ω}
   : (m₁.sum m₂).sum m₃ = m₁.sum (m₂.sum m₃) := by
-  let f : Set (Set Ω) := MeasurableSet[m₁]
-  let g : Set (Set Ω) := MeasurableSet[m₂]
-  let h : Set (Set Ω) := MeasurableSet[m₃]
-  sorry
+  have : (m₁.sum m₂).sum m₃ ≤ m₁.sum (m₂.sum m₃) := by
+    apply MeasurableSpace.sum_assoc_left
+  have : (m₁.sum m₂).sum m₃ ≥ m₁.sum (m₂.sum m₃) := by
+    apply MeasurableSpace.sum_assoc_right
+  aesop
+
+lemma MeasurableSpace.sum_mono {m₁ m₂ : MeasurableSpace Ω}
+  : m₁ ≤ m₂.sum m₁ := by
+  simp
+  intro u hu
+  have : MeasurableSet[m₂.sum m₁] u := by
+    unfold MeasurableSpace.sum
+    apply MeasurableSpace.measurableSet_generateFrom
+    simp_all only [Set.mem_union]
+    apply Or.inr
+    exact hu
+  simp_all only [sum]
 
 end Sum
 
@@ -191,12 +339,6 @@ lemma inter_mem_generator
   u ∩ v ∈ generator p q := by
   use u, v
 
-lemma mem_generator_imp_mem_sum (h : u ∈ generator p q)
-  : MeasurableSet[p.ms.sum q.ms] u := by
-  sorry
-
-end
-
 attribute [local aesop safe apply] MeasurableSpace.measurableSet_generateFrom
 
 theorem MeasureOnSpace.generateFrom_generator_eq_sum :
@@ -217,6 +359,13 @@ lemma MeasureOnSpace.isPiSystem_generator : IsPiSystem (generator p q) := fun _ 
   obtain ⟨_, _, rfl, _, _⟩ := exists_inter_measurableSet_of_mem_generator hv
   rw [Set.inter_inter_inter_comm]
   aesop (add safe apply inter_mem_generator)
+
+lemma mem_generator_imp_mem_sum (h : u ∈ generator p q)
+  : MeasurableSet[p.ms.sum q.ms] u := by
+  have h₁ := @MeasureOnSpace.generateFrom_generator_eq_sum Ω p q
+  rw [← h₁]
+  apply MeasurableSpace.measurableSet_generateFrom h
+end
 
 end GeneratingPiSystem
 
@@ -260,7 +409,7 @@ theorem PSpace.uniqueness {r r' p q : PSpace Ω}
   -- so we just need to show that the measures agree on a generating π-system
   rw [PSpace.isIndependentProduct_def] at h₁ h₂
   apply MeasurableSpace.induction_on_inter
-  · exact MeasureOnSpace.isPiSystem_generator p.1 q.1
+  · exact @MeasureOnSpace.isPiSystem_generator Ω p.1 q.1
   · simp
   · intro t ht
     obtain ⟨u, v, rfl, hu, hv⟩ := exists_inter_measurableSet_of_mem_generator ht
@@ -290,10 +439,17 @@ lemma MeasureOnSpace.trim_eq
   {p : MeasureOnSpace Ω} {f : MeasurableSpace Ω} (h : f ≤ p.ms)
   {u : Set Ω} (hu : MeasurableSet[f] u)
   : (p.trim h).μ u = p.μ u := by
-  have h₁ := (p.trim h).μ.trim_eq hu
-  have h₂ : (p.trim h).μ.toOuterMeasure u = p.μ u := by
-    sorry
-  rw [h₂] at h₁
+  simp
+  unfold Measure.trim
+  aesop
+
+lemma Measure.trim_preserves_prob
+  (f g : MeasurableSpace Ω)
+  {μ : Measure[g] Ω}
+  (hf : f ≤ g) (hp : IsProbabilityMeasure μ)
+  : IsProbabilityMeasure (μ.trim hf) := by
+  constructor
+  unfold Measure.trim
   aesop
 
 @[simp]
@@ -303,7 +459,8 @@ def PSpace.trim
   simp
   constructor
   have : (p.1.trim h).μ Set.univ = 1 := by
-    sorry
+    have := @Measure.trim_preserves_prob Ω f p.1.ms p.1.μ h p.2
+    aesop
   aesop
 ⟩
 
@@ -411,7 +568,13 @@ theorem independentProduct_assoc {pq p q s r : PSpace Ω} [Inhabited Ω]
   : ∃ qr, isIndependentProduct qr q r ∧ isIndependentProduct s p qr
   := by
   let qr_ms : MeasurableSpace Ω := MeasurableSpace.sum q.1.ms r.1.ms
-  have h : qr_ms <= s.1.ms := by sorry
+  have h : qr_ms <= s.1.ms := by
+    unfold qr_ms
+    rw [h_pq_r.1, h_pq.1]
+    have : q.1.ms.sum r.1.ms ≤ p.1.ms.sum (q.1.ms.sum r.1.ms) := by
+      apply MeasurableSpace.sum_mono
+    rw [MeasurableSpace.sum_assoc]
+    aesop
   let qr : PSpace Ω := @s.trim Ω qr_ms h
   have h_qr : isIndependentProduct qr q r := by
     constructor
@@ -443,7 +606,9 @@ theorem independentProduct_assoc {pq p q s r : PSpace Ω} [Inhabited Ω]
       have h₇ : MeasurableSet[q.1.ms.sum r.1.ms] (u ∩ v) := by
         apply mem_generator_imp_mem_sum
         apply inter_mem_generator hu hv
-      have h₈ : q.1.ms.sum r.1.ms ≤ s.1.ms := sorry
+      have h₈ : q.1.ms.sum r.1.ms ≤ s.1.ms := by
+        rw [h_pq_r.1, h_pq.1, MeasurableSpace.sum_assoc]
+        apply MeasurableSpace.sum_mono
       have := @s.1.trim_eq Ω (q.1.ms.sum r.1.ms) h₈ (u ∩ v) h₇
       have : s.1.μ (Set.univ ∩ u ∩ v) = s.1.μ (u ∩ v) := by
         have : Set.univ ∩ u ∩ v = u ∩ v := by grind
@@ -455,8 +620,114 @@ theorem independentProduct_assoc {pq p q s r : PSpace Ω} [Inhabited Ω]
   assumption
   have h_p_qr : isIndependentProduct s p qr := by
     constructor
-    sorry
-    sorry
+    rw [h_pq_r.1, h_pq.1, h_qr.1]
+    apply @MeasurableSpace.sum_assoc Ω p.1.ms q.1.ms r.1.ms
+    have h :
+      ∀ u (hu : MeasurableSet[p.1.ms] u)
+        vw (hvw : MeasurableSet[q.1.ms.sum r.1.ms] vw),
+      s.1.μ (u ∩ vw) = p.1.μ u * qr.1.μ vw
+    := by
+      intro u hu
+      apply MeasurableSpace.induction_on_inter
+      apply MeasureOnSpace.isPiSystem_generator (p := q.1) (q := r.1)
+      aesop
+      intro t ht
+      obtain ⟨v, w, rfl, hv, hw⟩ := exists_inter_measurableSet_of_mem_generator ht
+      have h : u ∩ (v ∩ w) = (u ∩ v) ∩ w := by grind
+      rw [h, h_pq_r.2, h_pq.2, h_qr.2]
+      grind
+      repeat aesop
+      have := @mem_sum_inter Ω p.1.ms q.1.ms u v hu hv
+      have : p.1.ms.sum q.1.ms = pq.1.ms := by rw [h_pq.1]
+      aesop
+      exact hw
+      {
+        intro t ht h
+        have : u ∩ tᶜ = u \ (u ∩ t) := by grind
+        have : s.1.μ (u \ (u ∩ t)) = s.1.μ u - s.1.μ (u ∩ t) := by
+          have : s.1.μ Set.univ = 1 := s.2.measure_univ
+          apply @measure_diff Ω s.1.ms s.1.μ u (u ∩ t)
+          grind
+          have : MeasurableSet[s.1.ms] (u ∩ t) := by
+            rw [h_pq_r.1, h_pq.1, MeasurableSpace.sum_assoc]
+            apply mem_sum_inter
+            exact hu
+            exact ht
+          aesop
+          apply s.measure_ne_top
+        have : s.1.μ u = p.1.μ u := by
+          have : u = (u ∩ Set.univ) ∩ Set.univ := by grind
+          have h₁ : s.1.μ u = s.1.μ ((u ∩ Set.univ) ∩ Set.univ) := by grind
+          have h₂ : q.1.μ Set.univ = 1 := q.2.measure_univ
+          have h₃ : r.1.μ Set.univ = 1 := r.2.measure_univ
+          rw [h₁, h_pq_r.2, h_pq.2, h₂, h₃]
+          simp
+          exact hu
+          apply MeasurableSet.univ
+          have h₄ := @mem_sum_inter Ω p.1.ms q.1.ms u Set.univ hu MeasurableSet.univ
+          rw [h_pq.1]
+          exact h₄
+          apply MeasurableSet.univ
+        have : p.1.μ u - p.1.μ u * qr.1.μ t = p.1.μ u * (1 - qr.1.μ t) := by
+          have := @ENNReal.mul_sub (p.1.μ u) 1 (qr.1.μ t)
+          aesop
+        have h₃ : qr.1.μ tᶜ = 1 - qr.1.μ t := by
+          have h := @measure_compl Ω qr.1.ms (μ := qr.1.μ) (s := t) ht
+          have : qr.1.μ t ≠ ⊤ := qr.measure_ne_top
+          have := qr.2.measure_univ
+          aesop
+        calc
+              s.1.μ (u ∩ tᶜ)
+          _ = s.1.μ (u \ (u ∩ t)) := by aesop
+          _ = s.1.μ u - s.1.μ (u ∩ t) := by aesop
+          _ = s.1.μ u - p.1.μ u * qr.1.μ t := by aesop
+          _ = p.1.μ u - p.1.μ u * qr.1.μ t := by aesop
+          _ = p.1.μ u * (1 - qr.1.μ t) := by aesop
+          _ = p.1.μ u * qr.1.μ tᶜ := by aesop
+      }
+      {
+        intro us hdis hus ih
+        have : u ∩ ⋃ i, us i = ⋃ i, u ∩ us i := by aesop
+        have : s.1.μ (⋃ i, u ∩ us i) = ∑' i, s.1.μ (u ∩ us i) := by
+          have hus' : ∀ i, MeasurableSet[s.1.ms] (u ∩ us i) := by
+            intro i
+            have hus_i := hus i
+            rw [h_pq_r.1, h_pq.1, MeasurableSpace.sum_assoc]
+            apply mem_sum_inter
+            exact hu
+            exact hus_i
+          have h : Pairwise (Function.onFun Disjoint (fun k ↦ u ∩ us k)) := by
+            intro k l p
+            have h₁ := hdis p
+            have h₂ : Disjoint (us k) (us l) := by apply h₁
+            have h₃ := @Disjoint.inter_left' Ω (us k) (us l) u h₂
+            have := @Disjoint.inter_right' Ω (u ∩ us k) (us l) u h₃
+            aesop
+          have := @s.1.μ.m_iUnion (fun i ↦ u ∩ us i) hus' h
+          aesop
+        have : ∑' i, s.1.μ (u ∩ us i) = ∑' i, p.1.μ u * qr.1.μ (us i) := by
+          have : ∀ i, s.1.μ (u ∩ us i) = p.1.μ u * qr.1.μ (us i) := by
+            intro i
+            have := ih i
+            aesop
+          aesop
+        have : ∑' i, p.1.μ u * qr.1.μ (us i) = p.1.μ u *  ∑' i, qr.1.μ (us i) := by
+          apply ENNReal.tsum_mul_left
+        have : p.1.μ u *  ∑' i, qr.1.μ (us i) = p.1.μ u * qr.1.μ (⋃ i, us i) := by
+          congr
+          have := @qr.1.μ.m_iUnion us hus hdis
+          aesop
+        calc
+              s.1.μ (u ∩ ⋃ i, us i)
+          _ = s.1.μ (⋃ i, u ∩ us i) := by aesop
+          _ = ∑' i, s.1.μ (u ∩ us i) := by aesop
+          _ = ∑' i, p.1.μ u * qr.1.μ (us i) := by aesop
+          _ = p.1.μ u *  ∑' i, qr.1.μ (us i) := by aesop
+          _ = p.1.μ u * qr.1.μ (⋃ i, us i) := by aesop
+      }
+      have := @MeasurableSpace.generateFrom_sumGenerator_eq_sum Ω q.1.ms r.1.ms
+      grind
+    aesop
   assumption
 
 end Associativity
