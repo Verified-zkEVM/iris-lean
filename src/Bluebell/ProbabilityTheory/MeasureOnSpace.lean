@@ -636,7 +636,10 @@ theorem independentProduct_assoc {pq p q s r : PSpace Ω} [Inhabited Ω]
       have h : u ∩ (v ∩ w) = (u ∩ v) ∩ w := by grind
       rw [h, h_pq_r.2, h_pq.2, h_qr.2]
       grind
-      repeat aesop
+      aesop
+      aesop
+      aesop
+      aesop
       have := @mem_sum_inter Ω p.1.ms q.1.ms u v hu hv
       have : p.1.ms.sum q.1.ms = pq.1.ms := by rw [h_pq.1]
       aesop
