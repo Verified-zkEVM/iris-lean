@@ -100,7 +100,7 @@ variable {β : Type*} [MeasurableSpace β] {μ : PMF β}
 theorem C_conseq (h : ∀ v, K₁ v ⊢ K₂ v) : 𝑪_ μ K₁ ⊢ 𝑪_ μ K₂ := by
   intro a ha
   obtain ⟨P, p, hc, κ, hinc, hμ, hK⟩ := ha
-  exact ⟨P, p, hc, κ, hinc, hμ, fun v hv => h v _ (hK v hv)⟩
+  exact ⟨P, p, hc, κ, hinc, hμ, fun v hv ↦ h v _ (hK v hv)⟩
 
 theorem C_frame {P : HyperAssertion (IndexedPSpPmRat I α V)} :
     P ∗ 𝑪_ μ K ⊢ 𝑪_ μ (fun v => sep P (K v)) := by
