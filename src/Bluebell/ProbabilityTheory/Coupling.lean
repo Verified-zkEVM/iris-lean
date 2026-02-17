@@ -237,7 +237,7 @@ theorem IsCoupling.map
 theorem IsCoupling.symm {c : SPMF (α × β)} {p : SPMF α} {q : SPMF β}
     (hc : IsCoupling c p q) :
     IsCoupling (Prod.swap.{u, u} <$> c) q p := by
-  constructor <;> sorry
+  constructor <;> simp [hc.map_fst, hc.map_snd]
 
 /-- Monadic bind rule for relational lifting (PRHL bind). -/
 theorem Lift.bind {p : SPMF α} {q : SPMF β} {R : Set (α × β)}
