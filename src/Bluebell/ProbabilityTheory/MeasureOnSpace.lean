@@ -1,6 +1,6 @@
 import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Bluebell.Algebra.CMRA
+import Bluebell.Algebra.DiscreteCMRA
 
 /-! ## Independent product of probability measures -/
 
@@ -1013,41 +1013,6 @@ theorem PSp.mul_defined_imp_defined
   | some x, some y => by aesop
 
 end PSp
-
-/--
-  Copied from https://github.com/Verified-zkEVM/VCV-io/blob/Ferinko/measureMySpace/ToMathlib/ProbabilityTheory/Bluebell.lean.
-  A typeclass for expressing that a type `M` has a validity predicate `✓`
--/
-class Valid (M : Type*) where
-  valid : M → Prop
-
-export Valid (valid)
-
-prefix:50(priority := high) "✓" => Valid.valid
-
-instance {α : Type*} [Valid α] (p : α → Prop) : Valid (Subtype p) where
-  valid := fun x => Valid.valid x.1
-
-instance {α β : Type*} [Valid α] [Valid β] : Valid (α × β) where
-  valid := fun x => Valid.valid x.1 ∧ Valid.valid x.2
-
-/-- The class of **discrete** cameras, which do not care about step-indexing -/
-class DiscreteCMRA (α : Type*) extends CommSemigroup α, Valid α where
-  equiv : α → α → Prop
-  pcore : α → Option α
-
-  is_equiv : Equivalence equiv
-
-  mul_equiv {x y z} : equiv y z → equiv (x * y) (x * z)
-  pcore_equiv {x y cx} : equiv x y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ equiv cx cy
-
-  pcore_left {x cx} : pcore x = some cx → equiv (cx * x) x
-  pcore_idem {x cx cx'} : pcore x = some cx → pcore cx = some cx' → equiv cx cx'
-  pcore_mono' {x y cx} : pcore x = some cx → ∃ cy, pcore (x * y) = some (cx * cy)
-
-  -- TODO: check whether these are stated correctly
-  valid_equiv {x y} : equiv x y → valid x → valid y
-  valid_mul {x y} : valid (x * y) → valid x
 
 instance [Inhabited Ω] : DiscreteCMRA (PSp Ω) where
   mul := PSp.mul
