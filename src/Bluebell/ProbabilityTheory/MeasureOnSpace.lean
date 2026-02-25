@@ -250,6 +250,15 @@ lemma MeasurableSpace.sum_mono {m₁ m₂ : MeasurableSpace Ω}
     exact hu
   simp_all only [sum]
 
+lemma MeasurableSpace.sum_functorial {m m₁ m₂ : MeasurableSpace Ω}
+  (h : m₁ ≤ m₂)
+  : m₁.sum m ≤ m₂.sum m := by
+  apply MeasurableSpace.generateFrom_le
+  intro u hu
+  rcases hu with h₁ | h₂
+  · aesop
+  · aesop
+
 end Sum
 
 /- We define `(𝓕, μ) ≤ (𝓖, ν)` if `𝓕 ⊆ 𝓖` and `μ` is the restriction of `ν` to `𝓕` -/
@@ -384,6 +393,62 @@ lemma MeasureOnSpace.ext_ms {p q : MeasureOnSpace Ω}
   (h_eq_mea : ∀ E, MeasurableSet[p.ms] E → p.μ E = q.μ E) :
   p = q := by
   aesop (add safe cases MeasureOnSpace)
+/-
+lemma mylem {p q : MeasurableSpace Ω}
+  {h : p ≤ q} {μ : Measure[q] Ω}
+  : (@Measure.map Ω Ω q p id μ) = μ.map   := by
+  sorry
+-/
+lemma mylem {p q : MeasurableSpace Ω}
+  {h : p ≤ q} {μ : Measure[q] Ω}
+  {u : Set Ω}
+  {hu : MeasurableSet[p] u}
+  : (@Measure.map Ω Ω q p id μ) u = μ u := by
+  have hu' : MeasurableSet[q] u := by aesop
+  have := @Measure.map_id Ω q μ
+  conv_rhs => rw [← this]
+  have hae : @AEMeasurable Ω Ω p q id μ := sorry
+  rw [@Measure.map_def]
+  simp [hae]
+  by_contra c
+  rw [le_iff_eq_or_lt] at h
+  /-
+  rcases h with h | h
+  · aesop
+  · sorry
+  -/
+
+-- set_option pp.explicit true in
+lemma MeasureOnSpace.le_preserves_measure
+  {p q : MeasureOnSpace Ω} (h : p ≤ q)
+  : ∀ u, MeasurableSet[p.ms] u → p.μ u = q.μ u := by
+  intro u hp
+  obtain ⟨h₁, h₂⟩ := h
+  have hq : MeasurableSet[q.ms] u := by aesop
+  have that : p.μ u = @Measure.cast Ω q.ms q.μ p.ms u := by aesop
+  rw [that]
+  unfold Measure.cast Measure.map!
+  apply mylem
+  aesop; aesop
+
+instance [Inhabited Ω] : PartialOrder (MeasureOnSpace Ω) where
+  le_antisymm m₁ m₂ h₁ h₂ := by
+    have h : m₁.ms = m₂.ms := by
+      ext u
+      constructor
+      have := h₁.1 u; aesop
+      have := h₂.1 u; aesop
+    ext u; aesop
+    apply MeasureOnSpace.le_preserves_measure
+    aesop; aesop
+
+instance (Ω : Type*) [Inhabited Ω] : PartialOrder (PSpace Ω) where
+  le_antisymm := by
+    rintro ⟨m₁, p₁⟩ ⟨m₂, p₂⟩ h₁ h₂
+    have : m₁ ≤ m₂ := by aesop
+    have : m₂ ≤ m₁ := by aesop
+    have : m₁ = m₂ := @le_antisymm (MeasureOnSpace Ω) _ m₁ m₂ (by aesop) (by aesop)
+    aesop
 
 @[ext]
 lemma PSpace.ext_ms {p q : PSpace Ω}
@@ -831,6 +896,44 @@ theorem PSpace.incompatible_mono_left {p q r qr : PSpace Ω}
     aesop
   aesop
 
+theorem PSpace.functoriality [Inhabited Ω] {p q a pa qa : PSpace Ω}
+  (hpa : pa.isIndependentProduct p a)
+  (hqa : qa.isIndependentProduct q a)
+  (hlt : p ≤ q)
+  : pa ≤ qa := by
+  have hms : pa.1.ms ≤ qa.1.ms := by
+    have := @MeasurableSpace.sum_functorial Ω a.1.ms p.1.ms q.1.ms hlt.1
+    have := hpa.1
+    have := hqa.1
+    aesop
+  constructor; aesop
+  have := @MeasureOnSpace.le_preserves_measure Ω pa.1
+  sorry
+  /-
+  have hms : pa.1.ms ≤ qa.1.ms := by
+    have := @MeasurableSpace.sum_functorial Ω a.1.ms p.1.ms q.1.ms hlt.1
+    have := hpa.1
+    have := hqa.1
+    aesop
+  let qa' := @PSpace.trim Ω qa pa.1.ms hms
+  have hm : pa.1.μ = qa'.1.μ := by
+    sorry
+    -- apply @Measure.ext Ω pa.1.ms pa.1.μ qa'.1.μ
+    -- intro u hu
+    -- have := @MeasureOnSpace.trim_eq Ω qa.1 pa.1.ms hms u hu
+    -- sorry
+  have : ∀ u, MeasurableSet[pa.1.ms] u → pa.1.μ u = qa'.1.μ u := by aesop
+  constructor
+  aesop
+  have h₁ := @qa'.1.trim_eq Ω pa.1.ms (by aesop)
+  have := @Measure.cast_eq_self Ω qa.1.ms qa.1.μ pa.1.ms
+
+  apply @Measure.ext Ω pa.1.ms pa.1.μ (qa.1.μ.cast pa.1.ms)
+  intro u hu
+  -- have := @h₁ u hu
+  sorry
+  -/
+
 lemma PSpace.incompatible_mono_right [Inhabited Ω] {p q r pq : PSpace Ω}
   (hinc : q.incompatible r) (hpq : pq.isIndependentProduct p q)
   : pq.incompatible r := by
@@ -854,6 +957,18 @@ def PSp.mul [Inhabited Ω] (p q : PSp Ω) : PSp Ω :=
 @[simp]
 def PSp.unit [Inhabited Ω] : PSp Ω :=
   some PSpace.unit
+
+instance [Inhabited Ω] : Valid (PSp Ω) where
+  valid x := x ≠ ⊤
+
+instance [Inhabited Ω] : One (PSp Ω) where
+  one := PSp.unit
+
+instance [Inhabited Ω] : Mul (PSp Ω) where
+  mul := PSp.mul
+
+instance [Inhabited Ω] : HMul (PSp Ω) (PSp Ω) (PSp Ω) where
+  hMul := PSp.mul
 
 /-- an inversion lemma extracting the property of independent products in mul -/
 lemma mul_inversion [Inhabited Ω] {x y xy : PSpace Ω}
@@ -879,18 +994,21 @@ lemma mul_respect_independentProduct [Inhabited Ω] {x y xy : PSpace Ω}
     have := @PSpace.uniqueness Ω xy xy' x y h (by aesop)
     aesop
 
-theorem PSp.mul_idem [Inhabited Ω] {p : PSp Ω} (h : p ≠ ⊤) : PSp.unit.mul p = p := by
-  simp_all
-  have h₁ : ∃ x, p = some x := by cases p; contradiction; grind
-  rw [h₁.choose_spec]
-  simp
-  have h₂ : h₁.choose.isIndependentProduct PSpace.unit h₁.choose := by
-    apply indepenendentProduct_identity
-  have h₃ : (∃ s : PSpace Ω, s.isIndependentProduct PSpace.unit h₁.choose) := by grind
-  have h₄ : h₃.choose = h₁.choose := by
-    have := @PSpace.uniqueness Ω h₃.choose h₁.choose PSpace.unit h₁.choose
-    grind
-  simp [h₃, h₄]
+theorem PSp.mul_idem [Inhabited Ω] {p : PSp Ω} : PSp.unit.mul p = p := by
+  cases h : p with
+  | none => aesop
+  | some x =>
+    simp_all
+    by_cases h : ∃ s : PSpace Ω, s.isIndependentProduct PSpace.unit x
+    · have := @indepenendentProduct_identity Ω _
+      have h₁ : h.choose = x :=
+        @PSpace.uniqueness Ω h.choose x (PSpace.unit) x h.choose_spec (by aesop)
+      aesop
+    · have h₃ : (∃ s : PSpace Ω, s.isIndependentProduct PSpace.unit x) := by
+        use x
+        have := @indepenendentProduct_identity Ω _
+        aesop
+      contradiction
 
 theorem PSp.mul_comm [Inhabited Ω] {p q : PSp Ω} : p.mul q = q.mul p :=
   match p, q with
@@ -923,8 +1041,7 @@ theorem PSp.mul_comm [Inhabited Ω] {p q : PSp Ω} : p.mul q = q.mul p :=
 lemma exists_of_ne_none {α} {a : Option α} (h : a ≠ none) :
   ∃ b, a = some b := by
   cases a with
-  | none =>
-      contradiction
+  | none => contradiction
   | some b => exact ⟨b, rfl⟩
 
 lemma PSp.inversion [Inhabited Ω] {p : PSp Ω}
@@ -1014,11 +1131,11 @@ theorem PSp.mul_defined_imp_defined
 
 end PSp
 
+/-
 instance [Inhabited Ω] : DiscreteCMRA (PSp Ω) where
   mul := PSp.mul
   mul_assoc p q r := by apply PSp.mul_assoc
   mul_comm p q := by apply PSp.mul_comm
-  valid p := p ≠ ⊤
   equiv p q := p = q
   pcore _ := some (some unit)
   is_equiv := by constructor; grind; grind; grind
@@ -1028,7 +1145,7 @@ instance [Inhabited Ω] : DiscreteCMRA (PSp Ω) where
     cases x with
     | none => aesop
     | some x' =>
-      have := @PSp.mul_idem Ω _ (some x') (by aesop)
+      have := @PSp.mul_idem Ω _ (some x')
       have h : cx = PSp.unit := by aesop
       rw [h]
       assumption
@@ -1038,9 +1155,137 @@ instance [Inhabited Ω] : DiscreteCMRA (PSp Ω) where
     have h₁ : cx = some unit := by grind
     rw [h₁]
     congr
-    have h₂ := @PSp.mul_idem Ω _ (some unit) (by aesop)
+    have h₂ := @PSp.mul_idem Ω _ (some unit)
     apply Eq.symm
     simp_all
     aesop
   valid_equiv {x y} := by grind
   valid_mul {x y} := by apply PSp.mul_defined_imp_defined
+-/
+
+instance [Inhabited Ω] : CommMonoid (PSp Ω) := {
+  mul_assoc p q r := by apply PSp.mul_assoc
+  mul_comm p q := by apply PSp.mul_comm
+  one_mul a := PSp.mul_idem
+  mul_one a := by
+    calc
+      a * 1
+    _ = 1 * a := by apply PSp.mul_comm
+    _ = a := by apply PSp.mul_idem
+}
+
+instance [Inhabited Ω] : PartialOrder (PSp Ω) := {
+  le_antisymm := by
+    intro p₁ p₂ h₁ h₂
+    cases p₁ with
+    | none => cases p₂ with
+      | none => aesop
+      | some q₂ => contradiction
+    | some q₁ => cases p₂ with
+      | none => contradiction
+      | some q₂ =>
+        have : q₁ ≤ q₂ := by grind
+        have : q₂ ≤ q₁ := by grind
+        have : q₁ = q₂ := by
+          have := @le_antisymm (PSpace Ω) _ q₁ q₂
+          aesop
+        aesop
+}
+
+lemma PSp.ge_top_imp_top {p : PSp Ω} (h : ⊤ ≤ p) : p = ⊤ := by
+  cases p; rfl; contradiction
+
+lemma PSp.le_top' {p : PSp Ω} : p ≤ ⊤ := by
+  apply le_top
+
+instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
+  valid_one := by
+    unfold valid
+    have : (1 : PSp Ω) ≠ ⊤ := by intro; contradiction
+    aesop
+  elim := by
+    intro a x y ha
+    unfold Function.swap
+    cases a; simp;
+    have h : PSp.mul x none = PSp.mul y none := by aesop
+    simp [HMul.hMul, Mul.mul]
+    aesop
+    simp [HMul.hMul, Mul.mul]
+    cases x; simp
+    cases y; simp
+    · rename_i x
+      have : some x = none := by
+        have := @PSp.ge_top_imp_top Ω (some x) ha
+        aesop
+      contradiction
+    cases y
+    simp
+    rename_i y x
+    by_cases h : ∃ s : PSpace Ω, s.isIndependentProduct x y
+    · simp [h]
+      apply PSp.le_top'
+    · simp [h]
+    rename_i a x y
+    simp_all
+    have hxy : x ≤ y := by
+      apply WithTop.coe_le_coe.1
+      exact ha
+    by_cases h₁ : ∃ t : PSpace Ω, t.isIndependentProduct y a
+    by_cases h₂ : ∃ s : PSpace Ω, s.isIndependentProduct x a
+    · simp [h₁, h₂]
+      have h := @PSpace.functoriality Ω _ x y a h₂.choose h₁.choose h₂.choose_spec h₁.choose_spec hxy
+      apply WithTop.coe_le_coe.2
+      exact h
+    · simp [h₁, h₂]
+      have : ∃ xa : PSpace Ω, xa.isIndependentProduct x a := by
+        obtain ⟨ya, h₁⟩ := h₁
+        let xams := x.1.ms.sum a.1.ms
+        have hxams : xams ≤ ya.1.ms := by
+          have : ya.1.ms = y.1.ms.sum a.1.ms := h₁.1
+          have := @MeasurableSpace.sum_functorial Ω a.1.ms x.1.ms y.1.ms hxy.1
+          aesop
+        let xa := @ya.trim Ω xams (by assumption)
+        use xa
+        constructor
+        · rfl
+        · intro u hu v hv
+          have hu' : MeasurableSet[y.1.ms] u := hxy.1 u hu
+          have huv : MeasurableSet[xams] (u ∩ v) := by
+            apply MeasurableSet.inter; aesop; aesop
+          have : xa.1.μ (u ∩ v) = ya.1.μ (u ∩ v) := by
+            have := @ya.1.trim_eq Ω xams (by aesop) (u ∩ v) (by aesop)
+            aesop
+          calc
+                xa.1.μ (u ∩ v)
+            _ = ya.1.μ (u ∩ v) := by aesop
+            _ = y.1.μ u * a.1.μ v := h₁.2 u hu' v hv
+            _ = x.1.μ u * a.1.μ v := by
+              have := @MeasureOnSpace.le_preserves_measure Ω x.1 y.1 hxy u hu
+              aesop
+      contradiction
+    · simp [h₁]
+      by_cases h₂ : ∃ s : PSpace Ω, s.isIndependentProduct x a
+      · simp [h₂, LE.le]
+        apply PSp.le_top'
+      · simp [h₂]
+  valid_mono := by
+    intro ps₁ ps₂ h₁ h₂
+    cases ps₁ with
+    | none =>
+      have : ps₂ = ⊤ := @PSp.ge_top_imp_top Ω ps₂ h₁
+      aesop
+    | some p₁ => cases ps₂ with
+      | none => contradiction
+      | some p₂ => intro h; contradiction
+  valid_mul := by apply PSp.mul_defined_imp_defined
+}
+
+section PSpPm
+
+def compatible {S X : Type*}
+  (_P : PSp S) (_p : Permission X) :=
+  True
+
+def PSpPm {_S _X : Type u} : Prop := True
+
+end PSpPm

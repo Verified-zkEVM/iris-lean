@@ -173,43 +173,8 @@ instance : OrderedUnitalResourceAlgebra (Permission α) := {
   mul_one := by aesop
 }
 
-instance
-  [i : OrderedUnitalResourceAlgebra α]
-  [j : OrderedUnitalResourceAlgebra β]
-  : OrderedUnitalResourceAlgebra (α × β) := {
-  elim := by
-    intro a b c h
-    unfold Function.swap
-    simp_all
-    obtain ⟨a₁, a₂⟩ := a
-    obtain ⟨b₁, b₂⟩ := b
-    obtain ⟨c₁, c₂⟩ := c
-    simp_all
-    constructor
-    · have := @i.elim a₁ b₁ c₁ h.1
-      aesop
-    · have := @j.elim a₂ b₂ c₂ h.2
-      aesop
-  valid_one := by constructor; aesop; aesop
-  valid_mono := by
-    intro a b h₁ h₂
-    obtain ⟨a₁, a₂⟩ := a
-    obtain ⟨b₁, b₂⟩ := b
-    have : ✓ a₁ := @i.valid_mono a₁ b₁ h₁.1 h₂.1
-    have : ✓ a₂ := @j.valid_mono a₂ b₂ h₁.2 h₂.2
-    constructor; aesop; aesop
-  valid_mul := by
-    intro a b h
-    obtain ⟨a₁, a₂⟩ := a
-    obtain ⟨b₁, b₂⟩ := b
-    simp_all
-    have : ✓ a₁ := @i.valid_mul a₁ b₁ h.1
-    have : ✓ a₂ := @j.valid_mul a₂ b₂ h.2
-    constructor; aesop; aesop
-}
-
 def OrderedUnitalResourceAlgebra.subalgebra
-  {α : Type*} {p : α → Prop} [i : OrderedUnitalResourceAlgebra α]
+  {α : Type*} {p : α → Prop} (i : OrderedUnitalResourceAlgebra α)
   (hu : p i.one) (hc : ∀ x y : α, p x → p y → p (i.mul x y))
   : OrderedUnitalResourceAlgebra {x : α // p x} := {
   mul x y := ⟨i.mul x.val y.val, hc x.val y.val x.property y.property⟩
@@ -242,4 +207,61 @@ def OrderedUnitalResourceAlgebra.subalgebra
     intro a b h
     have := @i.valid_mul a b h
     aesop
+}
+
+def OrderedUnitalResourceAlgebra.indexedProduct
+  {I : Type} {α : I → Type*}
+  (f : (i : I) → OrderedUnitalResourceAlgebra (α i))
+  : OrderedUnitalResourceAlgebra ((i : I) → α i) := {
+  mul x y i := (f i).mul (x i) (y i)
+  mul_assoc x y z := by funext; simp; grind
+  one i := (f i).one
+  one_mul x := by simp
+  mul_one x := by simp
+  mul_comm x y := by funext; simp; grind
+  valid x := ∀ i : I, valid (x i)
+  le x y := ∀ i : I, (f i).le (x i) (y i)
+  le_refl x i := by grind
+  le_trans x y z h₁ h₂ := by grind
+  elim := by intro a b c h i; unfold Function.swap; simp; have := (f i).elim; aesop
+  valid_one i := by aesop
+  valid_mono x y i := by have := fun i ↦ (f i).valid_mono (x i) (y i); aesop
+  valid_mul x := by have := fun i ↦ (f i).valid_mul (x i); aesop
+}
+
+/-- Technically binary product is just an instnace of indexed product, but
+    it is convenient to redefine it -/
+def OrderedUnitalResourceAlgebra.product
+  {α β : Type u}
+  (r₁ : OrderedUnitalResourceAlgebra α) (r₂ : OrderedUnitalResourceAlgebra β)
+  : OrderedUnitalResourceAlgebra (α × β) := {
+  elim := by
+    intro a b c h
+    unfold Function.swap
+    simp_all
+    obtain ⟨a₁, a₂⟩ := a
+    obtain ⟨b₁, b₂⟩ := b
+    obtain ⟨c₁, c₂⟩ := c
+    simp_all
+    constructor
+    · have := @r₁.elim a₁ b₁ c₁ h.1
+      aesop
+    · have := @r₂.elim a₂ b₂ c₂ h.2
+      aesop
+  valid_one := by constructor; aesop; aesop
+  valid_mono := by
+    intro a b h₁ h₂
+    obtain ⟨a₁, a₂⟩ := a
+    obtain ⟨b₁, b₂⟩ := b
+    have : ✓ a₁ := @r₁.valid_mono a₁ b₁ h₁.1 h₂.1
+    have : ✓ a₂ := @r₂.valid_mono a₂ b₂ h₁.2 h₂.2
+    constructor; aesop; aesop
+  valid_mul := by
+    intro a b h
+    obtain ⟨a₁, a₂⟩ := a
+    obtain ⟨b₁, b₂⟩ := b
+    simp_all
+    have : ✓ a₁ := @r₁.valid_mul a₁ b₁ h.1
+    have : ✓ a₂ := @r₂.valid_mul a₂ b₂ h.2
+    constructor; aesop; aesop
 }
