@@ -393,43 +393,21 @@ lemma MeasureOnSpace.ext_ms {p q : MeasureOnSpace Ω}
   (h_eq_mea : ∀ E, MeasurableSet[p.ms] E → p.μ E = q.μ E) :
   p = q := by
   aesop (add safe cases MeasureOnSpace)
-/-
-lemma mylem {p q : MeasurableSpace Ω}
-  {h : p ≤ q} {μ : Measure[q] Ω}
-  : (@Measure.map Ω Ω q p id μ) = μ.map   := by
-  sorry
--/
+
+open MeasurableSpace in
 lemma mylem {p q : MeasurableSpace Ω}
   {h : p ≤ q} {μ : Measure[q] Ω}
   {u : Set Ω}
   {hu : MeasurableSet[p] u}
-  : (@Measure.map Ω Ω q p id μ) u = μ u := by
-  have hu' : MeasurableSet[q] u := by aesop
-  have := @Measure.map_id Ω q μ
-  conv_rhs => rw [← this]
-  have hae : @AEMeasurable Ω Ω p q id μ := sorry
-  rw [@Measure.map_def]
-  simp [hae]
-  by_contra c
-  rw [le_iff_eq_or_lt] at h
-  /-
-  rcases h with h | h
-  · aesop
-  · sorry
-  -/
-
--- set_option pp.explicit true in
-lemma MeasureOnSpace.le_preserves_measure
-  {p q : MeasureOnSpace Ω} (h : p ≤ q)
-  : ∀ u, MeasurableSet[p.ms] u → p.μ u = q.μ u := by
-  intro u hp
-  obtain ⟨h₁, h₂⟩ := h
-  have hq : MeasurableSet[q.ms] u := by aesop
-  have that : p.μ u = @Measure.cast Ω q.ms q.μ p.ms u := by aesop
-  rw [that]
+  : μ.cast p u = μ u := by
+  have hu' : MeasurableSet[q] u := by apply h; exact hu
   unfold Measure.cast Measure.map!
-  apply mylem
-  aesop; aesop
+  rw [Measure.map_apply] <;> aesop
+
+lemma MeasureOnSpace.le_preserves_measure
+  {p q : MeasureOnSpace Ω} (h : p ≤ q) {u} (hp : MeasurableSet[p.ms] u) : p.μ u = q.μ u := by
+  rcases h with ⟨h₁, h₂⟩
+  aesop (add simp mylem)
 
 instance [Inhabited Ω] : PartialOrder (MeasureOnSpace Ω) where
   le_antisymm m₁ m₂ h₁ h₂ := by
