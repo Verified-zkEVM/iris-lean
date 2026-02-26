@@ -395,7 +395,7 @@ lemma MeasureOnSpace.ext_ms {p q : MeasureOnSpace Ω}
   aesop (add safe cases MeasureOnSpace)
 
 open MeasurableSpace in
-lemma mylem {p q : MeasurableSpace Ω}
+lemma Measure.le_preserves_measure {p q : MeasurableSpace Ω}
   {h : p ≤ q} {μ : Measure[q] Ω}
   {u : Set Ω}
   {hu : MeasurableSet[p] u}
@@ -407,7 +407,7 @@ lemma mylem {p q : MeasurableSpace Ω}
 lemma MeasureOnSpace.le_preserves_measure
   {p q : MeasureOnSpace Ω} (h : p ≤ q) {u} (hp : MeasurableSet[p.ms] u) : p.μ u = q.μ u := by
   rcases h with ⟨h₁, h₂⟩
-  aesop (add simp mylem)
+  aesop (add simp Measure.le_preserves_measure)
 
 instance [Inhabited Ω] : PartialOrder (MeasureOnSpace Ω) where
   le_antisymm m₁ m₂ h₁ h₂ := by
@@ -874,6 +874,15 @@ theorem PSpace.incompatible_mono_left {p q r qr : PSpace Ω}
     aesop
   aesop
 
+lemma PSpace.measure_compl {p : PSpace Ω} {u : Set Ω}
+  (h : MeasurableSet[p.1.ms] u)
+  : p.1.μ uᶜ = 1 - p.1.μ u := by
+  have : p.1.μ Set.univ = 1 := p.2.measure_univ
+  rw [← this]
+  apply MeasureTheory.measure_compl
+  exact h
+  aesop
+
 theorem PSpace.functoriality [Inhabited Ω] {p q a pa qa : PSpace Ω}
   (hpa : pa.isIndependentProduct p a)
   (hqa : qa.isIndependentProduct q a)
@@ -885,32 +894,49 @@ theorem PSpace.functoriality [Inhabited Ω] {p q a pa qa : PSpace Ω}
     have := hqa.1
     aesop
   constructor; aesop
-  have := @MeasureOnSpace.le_preserves_measure Ω pa.1
-  sorry
-  /-
-  have hms : pa.1.ms ≤ qa.1.ms := by
-    have := @MeasurableSpace.sum_functorial Ω a.1.ms p.1.ms q.1.ms hlt.1
-    have := hpa.1
-    have := hqa.1
-    aesop
-  let qa' := @PSpace.trim Ω qa pa.1.ms hms
-  have hm : pa.1.μ = qa'.1.μ := by
-    sorry
-    -- apply @Measure.ext Ω pa.1.ms pa.1.μ qa'.1.μ
-    -- intro u hu
-    -- have := @MeasureOnSpace.trim_eq Ω qa.1 pa.1.ms hms u hu
-    -- sorry
-  have : ∀ u, MeasurableSet[pa.1.ms] u → pa.1.μ u = qa'.1.μ u := by aesop
-  constructor
-  aesop
-  have h₁ := @qa'.1.trim_eq Ω pa.1.ms (by aesop)
-  have := @Measure.cast_eq_self Ω qa.1.ms qa.1.μ pa.1.ms
-
-  apply @Measure.ext Ω pa.1.ms pa.1.μ (qa.1.μ.cast pa.1.ms)
+  have := hlt.2
+  have : ∀ {u : Set Ω}, MeasurableSet[pa.1.ms] u → pa.1.μ u = qa.1.μ u := by
+    apply MeasurableSpace.induction_on_inter
+    · exact @MeasureOnSpace.isPiSystem_generator Ω p.1 a.1
+    · aesop
+    · intro t ht
+      obtain ⟨u, v, h, hu, hv⟩ :=
+        @exists_inter_measurableSet_of_mem_sumGenerator Ω p.1.ms a.1.ms t ht
+      rw [h, hpa.2, hqa.2]
+      have : p.1.μ u = q.1.μ u := by
+        have : p.1.μ = q.1.μ.cast p.1.ms := hlt.2
+        rw [this]
+        apply Measure.le_preserves_measure
+        exact hlt.1
+        exact hu
+      aesop
+      exact hlt.1 u hu; exact hv; exact hu; exact hv
+    · intro t ht h
+      calc
+            pa.1.μ tᶜ
+        _ = 1 - pa.1.μ t := by
+          have := @PSpace.measure_compl Ω pa t (by
+            have := @MeasurableSet.compl Ω t pa.1.ms ht; aesop)
+          aesop
+        _ = 1 - qa.1.μ t := by aesop
+        _ = qa.1.μ tᶜ := by
+          have := @PSpace.measure_compl Ω qa t
+          have := hms t ht
+          aesop
+    · intro us hdis hus heq
+      calc
+            pa.1.μ (⋃ i, us i)
+        _ = ∑' i, pa.1.μ (us i) := measure_iUnion hdis hus
+        _ = ∑' i, qa.1.μ (us i) := by aesop
+        _ = qa.1.μ (⋃ i, us i) := Eq.symm (measure_iUnion hdis fun i => hms (us i) (hus i))
+    · have := @MeasurableSpace.generateFrom_sumGenerator_eq_sum Ω p.1.ms a.1.ms
+      have : p.1.ms.sumGenerator a.1.ms = generator p.1 a.1 := by rfl
+      rw [hpa.1]
+      aesop
+  apply @Measure.ext Ω pa.1.ms
   intro u hu
-  -- have := @h₁ u hu
-  sorry
-  -/
+  have := @Measure.le_preserves_measure Ω pa.1.ms qa.1.ms hms qa.1.μ u hu
+  aesop
 
 lemma PSpace.incompatible_mono_right [Inhabited Ω] {p q r pq : PSpace Ω}
   (hinc : q.incompatible r) (hpq : pq.isIndependentProduct p q)
@@ -1109,38 +1135,6 @@ theorem PSp.mul_defined_imp_defined
 
 end PSp
 
-/-
-instance [Inhabited Ω] : DiscreteCMRA (PSp Ω) where
-  mul := PSp.mul
-  mul_assoc p q r := by apply PSp.mul_assoc
-  mul_comm p q := by apply PSp.mul_comm
-  equiv p q := p = q
-  pcore _ := some (some unit)
-  is_equiv := by constructor; grind; grind; grind
-  mul_equiv {x y z} h := by aesop
-  pcore_equiv {x y cx} h₁ h₂ := by aesop
-  pcore_left {x cx} h := by
-    cases x with
-    | none => aesop
-    | some x' =>
-      have := @PSp.mul_idem Ω _ (some x')
-      have h : cx = PSp.unit := by aesop
-      rw [h]
-      assumption
-  pcore_idem {x cx} h := by grind
-  pcore_mono' {x y cx} h := by
-    use (some unit)
-    have h₁ : cx = some unit := by grind
-    rw [h₁]
-    congr
-    have h₂ := @PSp.mul_idem Ω _ (some unit)
-    apply Eq.symm
-    simp_all
-    aesop
-  valid_equiv {x y} := by grind
-  valid_mul {x y} := by apply PSp.mul_defined_imp_defined
--/
-
 instance [Inhabited Ω] : CommMonoid (PSp Ω) := {
   mul_assoc p q r := by apply PSp.mul_assoc
   mul_comm p q := by apply PSp.mul_comm
@@ -1260,9 +1254,14 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
 
 section PSpPm
 
-def compatible {S X : Type*}
-  (_P : PSp S) (_p : Permission X) :=
-  True
+def PSpRA [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) :=
+  inferInstance
+
+def Perm {X : Type*} : Prop := True
+
+def compatible {S X : Type*} [Inhabited S]
+  (P : PSp S) (p : Permission X) :=
+  OrderedUnitalResourceAlgebra.product (@PSpRA S _) (@PSpRA S _)
 
 def PSpPm {_S _X : Type u} : Prop := True
 
