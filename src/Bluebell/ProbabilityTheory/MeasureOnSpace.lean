@@ -409,6 +409,9 @@ lemma MeasureOnSpace.le_preserves_measure
   rcases h with ⟨h₁, h₂⟩
   aesop (add simp Measure.le_preserves_measure)
 
+instance [Inhabited Ω] : One (MeasureOnSpace Ω) where
+  one := {ms := ⊥, μ := @Measure.dirac Ω ⊥ default}
+
 instance [Inhabited Ω] : PartialOrder (MeasureOnSpace Ω) where
   le_antisymm m₁ m₂ h₁ h₂ := by
     have h : m₁.ms = m₂.ms := by
@@ -520,6 +523,9 @@ def PSpace.unit [Inhabited Ω] : PSpace Ω := ⟨{
   ms := ⊥
   μ := @Measure.dirac Ω ⊥ default
 }, dirac_is_prob⟩
+
+instance [Inhabited Ω] : One (PSpace Ω) where
+  one := PSpace.unit
 
 lemma empty_sigma_algebra_is_identity [Inhabited Ω] (p : MeasureOnSpace Ω)
   : p.ms = MeasurableSpace.generateFrom (unit.1.ms.MeasurableSet' ∪ p.ms.MeasurableSet') := by
@@ -1173,8 +1179,8 @@ lemma PSp.le_top' {p : PSp Ω} : p ≤ ⊤ := by
 instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
   valid_one := by
     unfold valid
-    have : (1 : PSp Ω) ≠ ⊤ := by intro; contradiction
-    aesop
+    have : (1 : PSp Ω) ≠ ⊤ := by aesop
+    assumption
   elim := by
     intro a x y ha
     unfold Function.swap
@@ -1254,15 +1260,97 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
 
 section PSpPm
 
-def PSpRA [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) :=
+/-- 𝕏 in the paper -/
+abbrev Var : Type := Nat
+
+/-- 𝕍 in the paper -/
+abbrev Val : Type := Int
+
+/-- 𝕊 in the paper -/
+abbrev State : Type := Var → Val
+
+def equivProd {α V : Type*} (p : Permission α) :
+  (α → V) ≃ ({ a // p a > 0 } → V) × ({ a // p a = 0 } → V) :=
+  {
+    toFun f := ⟨(f ·), (f ·)⟩,
+    invFun f x := if h : p x > 0 then f.1 ⟨x, h⟩ else f.2 ⟨x, by simpa using h⟩,
+    left_inv := by simp [Function.LeftInverse]
+    right_inv := by
+      simp only [Function.RightInverse, Function.LeftInverse, gt_iff_lt, Subtype.coe_eta,
+        Prod.forall, Prod.mk.injEq]
+      intros f₁ f₂
+      constructor <;> ext x <;> simp [x.2]
+  }
+
+-- Needs to encode the term `P = P' ⊗ 𝟙_ (p.support → V)` in the paper
+/-- Compatibility of a probability space with a permission, defined as the existence of a splitting between:
+- the trivial probability space on the zero part of the permission `𝟙_ ({a // p a = 0} → V)`
+- another probability space `P'` on the non-zero part of the permission -/
+def PSpace.compatiblePerm (μ : PSpace (Var → Val)) (p : Permission Var) : Prop :=
+  (h : Nonempty ({a // p a = 0} → Val)) →
+  ∃ (μ' : PSpace ({a // p a > 0} → Val)),
+  PSpace.isIndependentProduct μ' one = μ.map (equivProd p)
+
+/-
+def MeasureOnSpace.compatiblePerm
+  (M : MeasureOnSpace (Var → Val))
+  (p : Permission Var) :
+  Prop
+:= ∀ _ : Nonempty ({a // p a = 0} → Val),
+  let one : MeasureOnSpace ({ a // p a = 0 } → Val) := One.one
+  let _ := one.ms
+  ∃ (M' : MeasureOnSpace ({a // p a > 0} → Val)),
+      let _ : MeasurableSpace ({ a // p a > 0 } → Val) := M'.measurableSpace
+      let measureProduct : MeasureOnSpace (({ a // p a > 0 } → Val) × ({ a // p a = 0 } → Val)) :=
+        M'.toMeasure.prod one.toMeasure |> ofMeasure
+      let M' : MeasureOnSpace (({ a // p a > 0 } → V) × ({ a // p a = 0 } → V)) :=
+        M.map (store_prod_equiv p).2
+      measureProduct = M'
+-/
+
+/-- Generalize compatibility of `ProbabilitySpace` with `Permission` to `PSp` by letting `⊤` be
+  compatible with all permission maps -/
+-- def PSp.compatiblePerm (P : PSp (α → Val)) (p : Permission α) : Prop :=
+--   P.elim True (·.compatiblePerm p)
+
+/-
+def PSpace.compatiblePerm
+  (P : PSpace State) (p : Permission Var) : Prop :=
+  ∃ P' : PSpace ({x : Var | p x > 0} → Val), P = P'.1.μ.prod 1
+-/
+
+def PSp.compatiblePerm
+  (P : PSp State) (p : Permission Var) : Prop :=
+  match P with
+  | some P' => PSpace.compatiblePerm P' p
+  | none => True
+
+instance : Inhabited State where
+  default := fun _ ↦ 0
+
+def PSpRA : OrderedUnitalResourceAlgebra (PSp State) :=
   inferInstance
 
-def Perm {X : Type*} : Prop := True
+def PermissionRA : OrderedUnitalResourceAlgebra (Permission Var) :=
+  inferInstance
 
-def compatible {S X : Type*} [Inhabited S]
-  (P : PSp S) (p : Permission X) :=
-  OrderedUnitalResourceAlgebra.product (@PSpRA S _) (@PSpRA S _)
+def ProductRA : OrderedUnitalResourceAlgebra (PSp State × Permission Var) :=
+  PSpRA.product PermissionRA
 
-def PSpPm {_S _X : Type u} : Prop := True
+-- Will fix the name
+@[simp]
+def P (x : PSp State × Permission Var) : Prop :=
+  x.1.compatiblePerm x.2
+
+lemma hone : P ⟨1, 1⟩ :=
+  sorry
+
+lemma hprod : ∀ x y, P x → P y → P (ProductRA.mul x y) :=
+  sorry
+
+def PSpPm :=
+  ProductRA.subalgebra
+    (p := fun (P, p) ↦ PSp.compatiblePerm P p)
+    hone hprod
 
 end PSpPm
