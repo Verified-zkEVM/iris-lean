@@ -9,7 +9,7 @@ open ProbabilityTheory MeasureTheory
 alias MeasureTheory.MeasureSpace.σAlg := MeasureSpace.toMeasurableSpace
 alias MeasureTheory.MeasureSpace.μ := MeasureSpace.volume
 
-variable {Ω : Type*}
+variable {Ω Ω' : Type*}
          {α β : Type*}
 
 noncomputable section
@@ -1269,6 +1269,7 @@ abbrev Val : Type := Int
 /-- 𝕊 in the paper -/
 abbrev State : Type := Var → Val
 
+@[simp]
 def equivProd {α V : Type*} (p : Permission α) :
   (α → V) ≃ ({ a // p a > 0 } → V) × ({ a // p a = 0 } → V) :=
   {
@@ -1282,43 +1283,49 @@ def equivProd {α V : Type*} (p : Permission α) :
       constructor <;> ext x <;> simp [x.2]
   }
 
--- Needs to encode the term `P = P' ⊗ 𝟙_ (p.support → V)` in the paper
-/-- Compatibility of a probability space with a permission, defined as the existence of a splitting between:
-- the trivial probability space on the zero part of the permission `𝟙_ ({a // p a = 0} → V)`
-- another probability space `P'` on the non-zero part of the permission -/
-def PSpace.compatiblePerm (μ : PSpace (Var → Val)) (p : Permission Var) : Prop :=
-  (h : Nonempty ({a // p a = 0} → Val)) →
-  ∃ (μ' : PSpace ({a // p a > 0} → Val)),
-  PSpace.isIndependentProduct μ' one = μ.map (equivProd p)
+@[simp]
+def MeasureOnSpace.map (h : Ω → Ω') (ms : MeasureOnSpace Ω) : MeasureOnSpace Ω' :=
+  letI := ms.ms.map h
+  ⟨this, @Measure.map _ _ ms.ms _ h ms.μ⟩
 
-/-
-def MeasureOnSpace.compatiblePerm
-  (M : MeasureOnSpace (Var → Val))
-  (p : Permission Var) :
-  Prop
-:= ∀ _ : Nonempty ({a // p a = 0} → Val),
-  let one : MeasureOnSpace ({ a // p a = 0 } → Val) := One.one
-  let _ := one.ms
-  ∃ (M' : MeasureOnSpace ({a // p a > 0} → Val)),
-      let _ : MeasurableSpace ({ a // p a > 0 } → Val) := M'.measurableSpace
-      let measureProduct : MeasureOnSpace (({ a // p a > 0 } → Val) × ({ a // p a = 0 } → Val)) :=
-        M'.toMeasure.prod one.toMeasure |> ofMeasure
-      let M' : MeasureOnSpace (({ a // p a > 0 } → V) × ({ a // p a = 0 } → V)) :=
-        M.map (store_prod_equiv p).2
-      measureProduct = M'
--/
+@[simp]
+def MeasurableSpace.transfer (h : Ω ≃ Ω') (m : MeasurableSpace Ω) : MeasurableSpace Ω' :=
+  MeasurableSpace.map h m
 
-/-- Generalize compatibility of `ProbabilitySpace` with `Permission` to `PSp` by letting `⊤` be
-  compatible with all permission maps -/
--- def PSp.compatiblePerm (P : PSp (α → Val)) (p : Permission α) : Prop :=
---   P.elim True (·.compatiblePerm p)
+@[simp]
+def PSpace.map (f : Ω → Ω') (ps : PSpace Ω) : PSpace Ω' := ⟨ps.1.map f, by
+  refine isProbabilityMeasure_iff.mpr ?_
+  have := @Measure.map_apply Ω Ω' ps.1.ms (ps.1.ms.map f) ps.1.μ f (fun ⦃t⦄ a => a) Set.univ (by simp)
+  have : ps.1.μ (f ⁻¹' Set.univ) = 1 := by
+    have : f ⁻¹' Set.univ = Set.univ := by simp
+    have := ps.2.measure_univ
+    aesop
+  aesop
+⟩
 
-/-
-def PSpace.compatiblePerm
-  (P : PSpace State) (p : Permission Var) : Prop :=
-  ∃ P' : PSpace ({x : Var | p x > 0} → Val), P = P'.1.μ.prod 1
--/
+@[simp]
+def MeasureOnSpace.tensor (m : MeasureOnSpace Ω) (n : MeasureOnSpace Ω') : MeasureOnSpace (Ω × Ω') := {
+  ms := m.ms.prod n.ms
+  μ := @Measure.prod Ω Ω' m.ms n.ms m.μ n.μ
+}
 
+@[simp]
+def PSpace.tensor (P : PSpace Ω) (Q : PSpace Ω') : PSpace (Ω × Ω') := {
+  val := P.1.tensor Q.1,
+  property := by
+    refine isProbabilityMeasure_iff.mpr ?_
+    have := P.2
+    have := Q.2
+    have := @Measure.prod_prod Ω Ω' P.1.ms Q.1.ms P.1.μ Q.1.μ _ Set.univ Set.univ
+    aesop
+}
+
+@[simp]
+def PSpace.compatiblePerm (P : PSpace (Var → Val)) (p : Permission Var) : Prop :=
+  ∃ (P' : PSpace ({a : Var // p a > 0} → Val)),
+    P'.tensor 1 = P.map (equivProd p)
+
+@[simp]
 def PSp.compatiblePerm
   (P : PSp State) (p : Permission Var) : Prop :=
   match P with
@@ -1342,10 +1349,16 @@ def ProductRA : OrderedUnitalResourceAlgebra (PSp State × Permission Var) :=
 def P (x : PSp State × Permission Var) : Prop :=
   x.1.compatiblePerm x.2
 
-lemma hone : P ⟨1, 1⟩ :=
-  sorry
+lemma hone : P ⟨1, 1⟩ := by
+  simp
+  split
+  · rename_i p P
 
-lemma hprod : ∀ x y, P x → P y → P (ProductRA.mul x y) :=
+    sorry
+  · simp
+
+lemma hprod (x y : PSp State × Permission Var) (h₁ : P x) (h₂ : P y)
+  : P (ProductRA.mul x y) := by
   sorry
 
 def PSpPm :=
