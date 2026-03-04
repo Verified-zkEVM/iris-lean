@@ -1269,7 +1269,6 @@ abbrev Val : Type := Int
 /-- 𝕊 in the paper -/
 abbrev State : Type := Var → Val
 
-@[simp]
 def equivProd {α V : Type*} (p : Permission α) :
   (α → V) ≃ ({ a // p a > 0 } → V) × ({ a // p a = 0 } → V) :=
   {
@@ -1289,10 +1288,6 @@ def MeasureOnSpace.map (h : Ω → Ω') (ms : MeasureOnSpace Ω) : MeasureOnSpac
   ⟨this, @Measure.map _ _ ms.ms _ h ms.μ⟩
 
 @[simp]
-def MeasurableSpace.transfer (h : Ω ≃ Ω') (m : MeasurableSpace Ω) : MeasurableSpace Ω' :=
-  MeasurableSpace.map h m
-
-@[simp]
 def PSpace.map (f : Ω → Ω') (ps : PSpace Ω) : PSpace Ω' := ⟨ps.1.map f, by
   refine isProbabilityMeasure_iff.mpr ?_
   have := @Measure.map_apply Ω Ω' ps.1.ms (ps.1.ms.map f) ps.1.μ f (fun ⦃t⦄ a => a) Set.univ (by simp)
@@ -1308,6 +1303,7 @@ def MeasureOnSpace.tensor (m : MeasureOnSpace Ω) (n : MeasureOnSpace Ω') : Mea
   ms := m.ms.prod n.ms
   μ := @Measure.prod Ω Ω' m.ms n.ms m.μ n.μ
 }
+variable {Ω : Type}
 
 @[simp]
 def PSpace.tensor (P : PSpace Ω) (Q : PSpace Ω') : PSpace (Ω × Ω') := {
@@ -1320,7 +1316,26 @@ def PSpace.tensor (P : PSpace Ω) (Q : PSpace Ω') : PSpace (Ω × Ω') := {
     aesop
 }
 
-@[simp]
+lemma MeasureOnSpace.map_measurable
+  {Ω Ω' : Type u}
+  {m : MeasureOnSpace Ω} {f : Ω ≃ Ω'} {u : Set Ω}
+  : MeasurableSet[m.ms] u ↔ MeasurableSet[m.ms.map f] (f '' u) := by
+  constructor
+  · intro hu
+    let u' := f '' u
+    have := @MeasurableSpace.map_def Ω Ω' m.ms f u'
+    aesop
+  · intro hu
+    let u' := f '' u
+    have := @MeasurableSpace.map_def Ω Ω' m.ms f u'
+    aesop
+
+lemma MeasureOnSpace.map_measurable_inv
+  {Ω Ω' : Type u}
+  {m : MeasureOnSpace Ω} {f : Ω ≃ Ω'} {u : Set Ω'}
+  : MeasurableSet[m.ms] (f ⁻¹' u) ↔ MeasurableSet[m.ms.map f] u := by
+  aesop
+
 def PSpace.compatiblePerm (P : PSpace (Var → Val)) (p : Permission Var) : Prop :=
   ∃ (P' : PSpace ({a : Var // p a > 0} → Val)),
     P'.tensor 1 = P.map (equivProd p)
@@ -1349,12 +1364,35 @@ def ProductRA : OrderedUnitalResourceAlgebra (PSp State × Permission Var) :=
 def P (x : PSp State × Permission Var) : Prop :=
   x.1.compatiblePerm x.2
 
+@[simp]
+def PermissionOk (p : Permission α) :=
+  {a : α // p a > 0} -> Val
+
+@[simp]
+def PermissionFail (p : Permission α) :=
+  {a : α // p a = 0} -> Val
+
 lemma hone : P ⟨1, 1⟩ := by
+  let Ω₁ := PermissionOk (1 : Permission Var)
+  let Ω₂ := PermissionFail (1 : Permission Var)
+  have mlhs := MeasurableSpace Ω₁
   simp
   split
-  · rename_i p P
-
-    sorry
+  · rename_i p m
+    unfold PSpace.compatiblePerm
+    use unit
+    ext u
+    · have h₀ := @MeasurableSpace.map_def State (Ω₁ × Ω₂) p.1.ms (equivProd 1) u
+      simp_all only [tensor, MeasureOnSpace.tensor, map, MeasureOnSpace.map]
+      apply Iff.intro
+      · intro hu
+        have h := (@MeasureOnSpace.map_measurable_inv State (Ω₁ × Ω₂) p.1 (equivProd 1) u).mpr
+        apply h
+        sorry
+      · intro a
+        simp_all only [iff_true]
+        sorry
+    · sorry
   · simp
 
 lemma hprod (x y : PSp State × Permission Var) (h₁ : P x) (h₂ : P y)
