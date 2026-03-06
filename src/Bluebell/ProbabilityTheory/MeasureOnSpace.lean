@@ -1359,9 +1359,8 @@ def PermissionRA : OrderedUnitalResourceAlgebra (Permission Var) :=
 def ProductRA : OrderedUnitalResourceAlgebra (PSp State × Permission Var) :=
   PSpRA.product PermissionRA
 
--- Will fix the name
 @[simp]
-def P (x : PSp State × Permission Var) : Prop :=
+def Compatible (x : PSp State × Permission Var) : Prop :=
   x.1.compatiblePerm x.2
 
 @[simp]
@@ -1372,32 +1371,140 @@ def PermissionOk (p : Permission α) :=
 def PermissionFail (p : Permission α) :=
   {a : α // p a = 0} -> Val
 
-lemma hone : P ⟨1, 1⟩ := by
+instance {p : Permission α} : Inhabited (PermissionOk p) where
+  default := fun _ ↦ 0
+
+instance {p : Permission α} : Inhabited (PermissionFail p) where
+  default := fun _ ↦ 0
+
+@[simp]
+def honeLHS : PSpace (@PermissionOk Var 1 × @PermissionFail Var 1) :=
+  PSpace.tensor
+    (unit : PSpace (PermissionOk 1))
+    (1 : PSpace (PermissionFail 1))
+
+@[simp]
+def honeRHS : PSpace (@PermissionOk Var 1 × @PermissionFail Var 1) :=
+  PSpace.map (equivProd 1) unit
+
+example : (⊥ : MeasurableSpace α).prod (⊥ : MeasurableSpace β) = ⊥ := by
+  simp [MeasurableSpace.prod]
+
+lemma honeLHSms_eq_bot : honeLHS.1.ms = ⊥ := by
+  let unitL : PSpace (@PermissionOk Var 1) := unit
+  let unitR : PSpace (@PermissionFail Var 1) := unit
+  let unitLR : PSpace (@PermissionOk Var 1 × @PermissionFail Var 1) := unit
+  have : unitL.1.ms.prod unitR.1.ms = unitLR.1.ms := by
+    have : unitL.1.ms = ⊥ := by aesop
+    have : unitR.1.ms = ⊥ := by aesop
+    have : unitLR.1.ms = ⊥ := by aesop
+    simp [MeasurableSpace.prod]
+    aesop
+  aesop
+
+lemma preimage_empty_or_univ_of_bijective
+  {Ω Ω' : Type u}
+  (f : Ω ≃ Ω') {u : Set Ω'} (h : f ⁻¹' u = ∅ ∨ f ⁻¹' u = Set.univ)
+  :  u = ∅ ∨ u = Set.univ := by
+  have : u = f '' (f ⁻¹' u) := by aesop
+  rcases h with h₁ | h₂
+  · rw [h₁] at this
+    aesop
+  · rw [h₂] at this
+    aesop
+
+lemma MeasurableSpace.map_bot_eq_bot {Ω Ω' : Type u} (f : Ω ≃ Ω')
+  : MeasurableSpace.map f ⊥ = ⊥ := by
+  ext u; constructor
+  · intro hu
+    have hbot := (@MeasurableSpace.map_def (f := f) Ω Ω' ⊥ u).1 hu
+    have : f ⁻¹' u = ∅ ∨ f ⁻¹' u = Set.univ := measurableSet_bot_iff.mp hu
+    have : u = ∅ ∨ u = Set.univ := by
+      have := @preimage_empty_or_univ_of_bijective Ω Ω'
+      aesop
+    aesop
+  · intro hu
+    have := MeasurableSpace.measurableSet_bot_iff.mp hu
+    aesop
+
+lemma honeRHSms_eq_bot : honeRHS.1.ms = ⊥ := by
+  ext u; constructor
+  · intro hu
+    refine MeasurableSpace.measurableSet_bot_iff.mpr ?_
+    simp [PSpace.unit] at hu
+    have h := @MeasurableSpace.map_bot_eq_bot
+      (Var → Val) (@PermissionOk Var 1 × @PermissionFail Var 1)
+      (@equivProd Var Val 1)
+    simp [PermissionOk, PermissionFail] at h
+    rw [h] at hu
+    exact MeasurableSpace.measurableSet_bot_iff.mp hu
+  · intro hu
+    have : u = ∅ ∨ u = Set.univ := MeasurableSpace.measurableSet_bot_iff.mp hu
+    aesop
+
+lemma honeLHS_eq_honeRHS : honeLHS = honeRHS := by
+  have honeLHSms_eq_honeRHSms : honeLHS.1.ms = honeRHS.1.ms := by
+    have := honeLHSms_eq_bot
+    have := honeRHSms_eq_bot
+    aesop
+  ext u
+  · aesop
+  · rename_i hu
+    rw [honeLHSms_eq_bot] at hu
+    have h : u = ∅ ∨ u = Set.univ := MeasurableSpace.measurableSet_bot_iff.mp hu
+    rcases h with h₁ | h₂
+    · aesop
+    · have := honeLHS.2.measure_univ
+      have := honeRHS.2.measure_univ
+      aesop
+
+lemma hone : Compatible ⟨1, 1⟩ := by
   let Ω₁ := PermissionOk (1 : Permission Var)
   let Ω₂ := PermissionFail (1 : Permission Var)
-  have mlhs := MeasurableSpace Ω₁
   simp
   split
-  · rename_i p m
+  · rename_i p hunit
     unfold PSpace.compatiblePerm
-    use unit
-    ext u
-    · have h₀ := @MeasurableSpace.map_def State (Ω₁ × Ω₂) p.1.ms (equivProd 1) u
-      simp_all only [tensor, MeasureOnSpace.tensor, map, MeasureOnSpace.map]
-      apply Iff.intro
-      · intro hu
-        have h := (@MeasureOnSpace.map_measurable_inv State (Ω₁ × Ω₂) p.1 (equivProd 1) u).mpr
-        apply h
-        sorry
-      · intro a
-        simp_all only [iff_true]
-        sorry
-    · sorry
+    use unit;
+    have : p = unit := by
+      simp [OfNat.ofNat, One.one] at hunit
+      grind
+    have := honeLHS_eq_honeRHS
+    aesop
   · simp
 
-lemma hprod (x y : PSp State × Permission Var) (h₁ : P x) (h₂ : P y)
-  : P (ProductRA.mul x y) := by
-  sorry
+lemma hprod (x y : PSp State × Permission Var)
+  (h₁ : Compatible x) (h₂ : Compatible y)
+  : Compatible (ProductRA.mul x y) := by
+  obtain ⟨P₁, f₁⟩ := x
+  obtain ⟨P₂, f₂⟩ := y
+  cases hp₁ : P₁ with
+  | none => trivial
+  | some p₁ => cases hp₂ : P₂ with
+  | none => trivial
+  | some p₂ =>
+    cases h : ProductRA.mul (some p₁, f₁) (some p₂, f₂) with
+    | mk P₃ f₃ => cases hP : P₃ with
+    | none => trivial
+    | some p₃ =>
+      simp [
+        ProductRA, OrderedUnitalResourceAlgebra.product,
+        Prod.instCommMonoid, Prod.instMonoid, Prod.instSemigroup, Prod.instMul
+      ] at h
+      have hind : p₃.isIndependentProduct p₁ p₂ := by
+        refine mul_inversion ?_
+        aesop
+      have hsum : f₃ = f₁ * f₂ := by aesop
+      simp_all
+      unfold compatiblePerm at *
+      obtain ⟨q₁, h₁⟩ := h₁
+      obtain ⟨q₂, h₂⟩ := h₂
+      let P' : PSpace ({a // (f₁ * f₂) a > 0} → Val) := ⟨{
+        ms := sorry
+        μ := sorry
+      }, sorry⟩
+      use P'
+      sorry
 
 def PSpPm :=
   ProductRA.subalgebra
