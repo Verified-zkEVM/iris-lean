@@ -131,22 +131,6 @@ We need to have the `Multiplicative` tag in order to specify that multiplication
 addition, and unit is the constant zero map. -/
 @[reducible] def Permission (α : Type*) := Multiplicative (α → ℚ≥0)
 
-/-- A helper that converts treats an additive monoid as a multiplicative monoid -/
-@[simp, reducible]
-def addToMulCommMonoid {α : Type*} [i : AddCommMonoid α] : CommMonoid α := {
-  mul := i.add
-  mul_assoc := i.add_assoc
-  one := i.zero
-  one_mul := i.zero_add
-  mul_one := i.add_zero
-  mul_comm := i.add_comm
-}
-
-/-- We are defining the commutative monoid structure manually as Lean automatically
-    infers the multiplicative structure instead of the additive one. -/
-instance {α : Type*} : CommMonoid (Permission α) :=
-  @addToMulCommMonoid (Permission α) (inferInstanceAs (AddCommMonoid (α → ℚ≥0)))
-
 variable {α β : Type*}
 
 /-- Permissions form an `OrderedUnitalResourceAlgebra` where `≤` is defined pointwise,
