@@ -1298,6 +1298,12 @@ def PSpace.map (f : Ω → Ω') (ps : PSpace Ω) : PSpace Ω' := ⟨ps.1.map f, 
   aesop
 ⟩
 
+theorem PSpace.map_preserves_independentProduct
+  {p q pq : PSpace Ω} {f : Ω ≃ Ω'}
+  (hind : pq.isIndependentProduct p q)
+  : (pq.map f).isIndependentProduct (p.map f) (q.map f) :=
+  sorry
+
 @[simp]
 def MeasureOnSpace.tensor (m : MeasureOnSpace Ω) (n : MeasureOnSpace Ω') : MeasureOnSpace (Ω × Ω') := {
   ms := m.ms.prod n.ms
@@ -1473,6 +1479,24 @@ lemma hone : Compatible ⟨1, 1⟩ := by
     aesop
   · simp
 
+lemma PSpace.compatiblePerm_implies_independentProduct_compatiblePerm
+  {P₁ P₂ P : PSpace (Var → Val)} {p₁ p₂ : Permission Var}
+  (h₁ : P₁.compatiblePerm p₁) (h₂ : P₂.compatiblePerm p₂)
+  (hind : P.isIndependentProduct P₁ P₂)
+  : P.compatiblePerm (p₁ * p₂) := by
+  let S₁ := {x : Var // p₁ x = 0}
+  let S₁c := {x : Var // p₁ x > 0}
+  let S₂ := {x : Var // p₂ x = 0}
+  let S₂c := {x : Var // p₂ x > 0}
+  have h₁ : ∃ P₁' : PSpace (S₁c → Val), P₁'.tensor 1 = P₁.map (equivProd p₁) := by aesop
+  have h₂ : ∃ P₂' : PSpace (S₂c → Val), P₂'.tensor 1 = P₂.map (equivProd p₂) := by aesop
+  obtain ⟨P₁', h₁⟩ := h₁
+  obtain ⟨P₂', h₂⟩ := h₂
+  have : (P.map (equivProd (p₁ * p₂))).isIndependentProduct
+    (P₁.map (equivProd (p₁ * p₂)))
+    (P₂.map (equivProd (p₁ * p₂))) := map_preserves_independentProduct hind
+  sorry
+
 lemma hprod (x y : PSp State × Permission Var)
   (h₁ : Compatible x) (h₂ : Compatible y)
   : Compatible (ProductRA.mul x y) := by
@@ -1492,19 +1516,13 @@ lemma hprod (x y : PSp State × Permission Var)
         Prod.instCommMonoid, Prod.instMonoid, Prod.instSemigroup, Prod.instMul
       ] at h
       have hind : p₃.isIndependentProduct p₁ p₂ := by
-        refine mul_inversion ?_
-        aesop
-      have hsum : f₃ = f₁ * f₂ := by aesop
-      simp_all
-      unfold compatiblePerm at *
-      obtain ⟨q₁, h₁⟩ := h₁
-      obtain ⟨q₂, h₂⟩ := h₂
-      let P' : PSpace ({a // (f₁ * f₂) a > 0} → Val) := ⟨{
-        ms := sorry
-        μ := sorry
-      }, sorry⟩
-      use P'
-      sorry
+        refine mul_inversion ?_; aesop
+      have : f₃ = f₁ * f₂ := by aesop
+      simp_all only [Compatible, PSp.compatiblePerm]
+      have : p₁.compatiblePerm f₁ := by assumption
+      have : p₂.compatiblePerm f₂ := by assumption
+      have := @PSpace.compatiblePerm_implies_independentProduct_compatiblePerm
+      aesop
 
 def PSpPm :=
   ProductRA.subalgebra
