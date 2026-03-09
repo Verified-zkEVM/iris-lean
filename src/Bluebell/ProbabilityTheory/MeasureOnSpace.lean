@@ -303,8 +303,10 @@ lemma PSpace.isIndependentProduct_def {r p q : PSpace Ω} :
 
 open PSpace
 
+notation:60 (priority := high) r " =ᵢ " p " ⊕ᵢ " q:arg => isIndependentProduct r p q
+
 lemma PSpace.ms_eq_of_isIndependentProduct {r r' p q : PSpace Ω}
-  (h₁ : isIndependentProduct r p q) (h₂ : isIndependentProduct r' p q) :
+  (h₁ : r =ᵢ p ⊕ᵢ q) (h₂ : r' =ᵢ p ⊕ᵢ q) :
   r.1.ms = r'.1.ms := by
   rcases h₁ with ⟨a, _⟩
   rcases h₂ with ⟨c, _⟩
@@ -449,7 +451,7 @@ lemma PSpace.measure_ne_top {m : PSpace Ω} {u : Set Ω} : m.1.μ u ≠ ⊤ := b
   exact lt_of_le_of_lt (b := 1) (by aesop) (by aesop)
 
 theorem PSpace.uniqueness {r r' p q : PSpace Ω}
-  (h₁ : isIndependentProduct r p q) (h₂ : isIndependentProduct r' p q) : r = r' := by
+  (h₁ : r =ᵢ p ⊕ᵢ q) (h₂ : r' =ᵢ p ⊕ᵢ q) : r = r' := by
   apply PSpace.ext_ms (h₁.1 ▸ h₂.1 ▸ rfl)
   -- have : IsPiSystem (generator p.1 q.1) := MeasureOnSpace.isPiSystem_generator p.1 q.1
   -- Applying the π-λ theorem: the σ-algebra is by definition a λ-system,
@@ -486,7 +488,7 @@ lemma MeasureOnSpace.trim_eq
   {p : MeasureOnSpace Ω} {f : MeasurableSpace Ω} (h : f ≤ p.ms)
   {u : Set Ω} (hu : MeasurableSet[f] u)
   : (p.trim h).μ u = p.μ u := by
-  simp
+  simp only [trim]
   unfold Measure.trim
   aesop
 
@@ -503,7 +505,7 @@ lemma Measure.trim_preserves_prob
 def PSpace.trim
   {p : PSpace Ω} {f : MeasurableSpace Ω} {h : f ≤ p.1.ms}
   : PSpace Ω := ⟨p.1.trim h, by
-  simp
+  simp only [MeasureOnSpace.trim]
   constructor
   have : (p.1.trim h).μ Set.univ = 1 := by
     have := @Measure.trim_preserves_prob Ω f p.1.ms p.1.μ h p.2
@@ -535,7 +537,7 @@ lemma empty_sigma_algebra_is_identity [Inhabited Ω] (p : MeasureOnSpace Ω)
     ext u
     constructor
     grind
-    simp
+    simp only [Set.mem_union]
     intro h
     rcases h with h1 | h2
     apply MeasurableSet.measurableSet_bot_induction
@@ -554,7 +556,7 @@ lemma empty_sigma_algebra_is_identity [Inhabited Ω] (p : MeasureOnSpace Ω)
   assumption
 
 theorem indepenendentProduct_identity [Inhabited Ω] {p : PSpace Ω}
-  : isIndependentProduct p unit p := by
+  : p =ᵢ unit ⊕ᵢ p := by
   unfold isIndependentProduct
   constructor
   simp
@@ -587,8 +589,8 @@ end Identity
 section Commutativity
 
 theorem independentProduct_comm [Inhabited Ω] {r p q : PSpace Ω}
-  (h : isIndependentProduct r p q)
-  : isIndependentProduct r q p := by
+  (h : r =ᵢ p ⊕ᵢ q)
+  : r =ᵢ q ⊕ᵢ p := by
   constructor
   have h₁ : MeasurableSpace.sum p.1.ms q.1.ms
     = MeasurableSpace.sum q.1.ms p.1.ms := by
@@ -613,9 +615,9 @@ section Associativity
 --   2. (a * b) * c = a * (b * c)
 -- The above definition suffices because we proved commutativity
 theorem independentProduct_assoc [Inhabited Ω] {pq p q s r : PSpace Ω}
-  (h_pq : isIndependentProduct pq p q)
-  (h_pq_r : isIndependentProduct s pq r)
-  : ∃ qr, isIndependentProduct qr q r ∧ isIndependentProduct s p qr
+  (h_pq : pq =ᵢ p ⊕ᵢ q)
+  (h_pq_r : s =ᵢ pq ⊕ᵢ r)
+  : ∃ qr, qr =ᵢ q ⊕ᵢ r ∧ s =ᵢ p ⊕ᵢ qr
   := by
   let qr_ms : MeasurableSpace Ω := MeasurableSpace.sum q.1.ms r.1.ms
   have h : qr_ms <= s.1.ms := by
@@ -626,7 +628,7 @@ theorem independentProduct_assoc [Inhabited Ω] {pq p q s r : PSpace Ω}
     rw [MeasurableSpace.sum_assoc]
     aesop
   let qr : PSpace Ω := @s.trim Ω qr_ms h
-  have h_qr : isIndependentProduct qr q r := by
+  have h_qr : qr =ᵢ q ⊕ᵢ r := by
     constructor
     simp
     aesop
@@ -668,7 +670,7 @@ theorem independentProduct_assoc [Inhabited Ω] {pq p q s r : PSpace Ω}
   use qr
   constructor
   assumption
-  have h_p_qr : isIndependentProduct s p qr := by
+  have h_p_qr : s =ᵢ p ⊕ᵢ qr := by
     constructor
     rw [h_pq_r.1, h_pq.1, h_qr.1]
     apply @MeasurableSpace.sum_assoc Ω p.1.ms q.1.ms r.1.ms
@@ -784,24 +786,24 @@ theorem independentProduct_assoc [Inhabited Ω] {pq p q s r : PSpace Ω}
   assumption
 
 theorem independentProduct_assoc_right [Inhabited Ω] {p q r qr s : PSpace Ω}
-  (h_qr : isIndependentProduct qr q r)
-  (h_p_qr : isIndependentProduct s p qr)
-  : ∃ pq, isIndependentProduct pq p q ∧ isIndependentProduct s pq r := by
-  have h₁ : qr.isIndependentProduct r q := by
+  (h_qr : qr =ᵢ q ⊕ᵢ r)
+  (h_p_qr : s =ᵢ p ⊕ᵢ qr)
+  : ∃ pq, pq =ᵢ p ⊕ᵢ q ∧ s =ᵢ pq ⊕ᵢ r := by
+  have h₁ : qr =ᵢ r ⊕ᵢ q := by
     apply @independentProduct_comm Ω _ qr q r h_qr
-  have h₂ : s.isIndependentProduct qr p := by
+  have h₂ : s =ᵢ qr ⊕ᵢ p := by
     apply @independentProduct_comm Ω _ s p qr h_p_qr
   have h₃ := @independentProduct_assoc Ω _ qr r q s p h₁ h₂
   obtain ⟨qp, h₃⟩ := h₃
-  have h₄ : qp.isIndependentProduct p q := by
-    have : qp.isIndependentProduct p q := by
+  have h₄ : qp =ᵢ p ⊕ᵢ q := by
+    have : qp =ᵢ p ⊕ᵢ q := by
       have := @independentProduct_comm Ω _ qp q p
       aesop
-    have : s.isIndependentProduct r qp := by
+    have : s =ᵢ r ⊕ᵢ qp := by
       have := h₃.2
       aesop
     aesop
-  have h₅ : s.isIndependentProduct qp r := by
+  have h₅ : s =ᵢ qp ⊕ᵢ r := by
     have := @independentProduct_comm Ω _
     aesop
   aesop
@@ -814,22 +816,22 @@ variable {Ω : Type*}
 
 @[simp, grind]
 def PSpace.incompatible (p q : PSpace Ω) :=
-  ¬∃r : PSpace Ω, r.isIndependentProduct p q
+  ¬∃r : PSpace Ω, r =ᵢ p ⊕ᵢ q
 
 theorem PSpace.incompatible_symm [Inhabited Ω] {p q : PSpace Ω}
   (h : p.incompatible q) : q.incompatible p := by
   simp_all
   intro x hx
-  have : x.isIndependentProduct p q := by apply independentProduct_comm hx
+  have : x =ᵢ p ⊕ᵢ q := by apply independentProduct_comm hx
   have := h x (by aesop)
   contradiction
 
 theorem PSpace.incompatible_mono_left {p q r qr : PSpace Ω}
-  (hinc : p.incompatible q) (hqr : qr.isIndependentProduct q r)
+  (hinc : p.incompatible q) (hqr : qr =ᵢ q ⊕ᵢ r)
   : p.incompatible qr := by
   simp_all
   intro x hx
-  have : ∃ y : PSpace Ω, y.isIndependentProduct p q := by
+  have : ∃ y : PSpace Ω, y =ᵢ p ⊕ᵢ q := by
     let pqms := p.1.ms.sum q.1.ms
     have hmsle : pqms ≤ x.1.ms := by
       unfold pqms
@@ -842,7 +844,7 @@ theorem PSpace.incompatible_mono_left {p q r qr : PSpace Ω}
       rw [h₂]
       grind
     let x' := @x.trim Ω pqms (by aesop)
-    have : x'.isIndependentProduct p q := by
+    have : x' =ᵢ p ⊕ᵢ q := by
       unfold PSpace.isIndependentProduct
       constructor
       aesop
@@ -890,8 +892,8 @@ lemma PSpace.measure_compl {p : PSpace Ω} {u : Set Ω}
   aesop
 
 theorem PSpace.functoriality [Inhabited Ω] {p q a pa qa : PSpace Ω}
-  (hpa : pa.isIndependentProduct p a)
-  (hqa : qa.isIndependentProduct q a)
+  (hpa : pa =ᵢ p ⊕ᵢ a)
+  (hqa : qa =ᵢ q ⊕ᵢ a)
   (hlt : p ≤ q)
   : pa ≤ qa := by
   have hms : pa.1.ms ≤ qa.1.ms := by
@@ -945,10 +947,10 @@ theorem PSpace.functoriality [Inhabited Ω] {p q a pa qa : PSpace Ω}
   aesop
 
 lemma PSpace.incompatible_mono_right [Inhabited Ω] {p q r pq : PSpace Ω}
-  (hinc : q.incompatible r) (hpq : pq.isIndependentProduct p q)
+  (hinc : q.incompatible r) (hpq : pq =ᵢ p ⊕ᵢ q)
   : pq.incompatible r := by
   have : r.incompatible q := by apply PSpace.incompatible_symm (by aesop)
-  have : pq.isIndependentProduct q p := by apply independentProduct_comm (by aesop)
+  have : pq =ᵢ q ⊕ᵢ p := by apply independentProduct_comm (by aesop)
   have := @PSpace.incompatible_mono_left Ω r q (by aesop) pq (by aesop) (by aesop)
   have : pq.incompatible r := by
     apply PSpace.incompatible_symm (by aesop)
@@ -960,7 +962,7 @@ def PSp.mul [Inhabited Ω] (p q : PSp Ω) : PSp Ω :=
   | none, _ => none
   | _, none => none
   | some p, some q => by
-    by_cases h : ∃ s, PSpace.isIndependentProduct s p q
+    by_cases h : ∃ s, s =ᵢ p ⊕ᵢ q
     exact (some h.choose)
     exact none
 
@@ -977,28 +979,25 @@ instance [Inhabited Ω] : One (PSp Ω) where
 instance [Inhabited Ω] : Mul (PSp Ω) where
   mul := PSp.mul
 
-instance [Inhabited Ω] : HMul (PSp Ω) (PSp Ω) (PSp Ω) where
-  hMul := PSp.mul
-
 /-- an inversion lemma extracting the property of independent products in mul -/
 lemma mul_inversion [Inhabited Ω] {x y xy : PSpace Ω}
   (h : PSp.mul (some x) (some y) = some xy)
-  : xy.isIndependentProduct x y := by
+  : xy =ᵢ x ⊕ᵢ y := by
   simp_all
-  by_cases h₁ : ∃ s : PSpace Ω, s.isIndependentProduct x y
+  by_cases h₁ : ∃ s : PSpace Ω, s =ᵢ x ⊕ᵢ y
   simp_all
   have : h₁.choose = xy := by grind
   grind
   simp_all
 
 lemma mul_respect_independentProduct [Inhabited Ω] {x y xy : PSpace Ω}
-  (h : xy.isIndependentProduct x y) : PSp.mul (some x) (some y) = some xy := by
+  (h : xy =ᵢ x ⊕ᵢ y) : PSp.mul (some x) (some y) = some xy := by
   cases h₁ : PSp.mul (some x) (some y) with
   | none =>
     have := @mul_inversion Ω _ x y xy
     aesop
   | some xy' =>
-    have : xy'.isIndependentProduct x y := by
+    have : xy' =ᵢ x ⊕ᵢ y := by
       apply mul_inversion
       exact h₁
     have := @PSpace.uniqueness Ω xy xy' x y h (by aesop)
@@ -1009,12 +1008,12 @@ theorem PSp.mul_idem [Inhabited Ω] {p : PSp Ω} : PSp.unit.mul p = p := by
   | none => aesop
   | some x =>
     simp_all
-    by_cases h : ∃ s : PSpace Ω, s.isIndependentProduct PSpace.unit x
+    by_cases h : ∃ s : PSpace Ω, s =ᵢ PSpace.unit ⊕ᵢ x
     · have := @indepenendentProduct_identity Ω _
       have h₁ : h.choose = x :=
         @PSpace.uniqueness Ω h.choose x (PSpace.unit) x h.choose_spec (by aesop)
       aesop
-    · have h₃ : (∃ s : PSpace Ω, s.isIndependentProduct PSpace.unit x) := by
+    · have h₃ : (∃ s : PSpace Ω, s =ᵢ PSpace.unit ⊕ᵢ x) := by
         use x
         have := @indepenendentProduct_identity Ω _
         aesop
@@ -1026,10 +1025,10 @@ theorem PSp.mul_comm [Inhabited Ω] {p q : PSp Ω} : p.mul q = q.mul p :=
   | _, none => by grind
   | some x, some y => by
     simp
-    by_cases h : ∃ s : PSpace Ω, s.isIndependentProduct x y
-    · have h₁ : h.choose.isIndependentProduct y x := by
+    by_cases h : ∃ s : PSpace Ω, s =ᵢ x ⊕ᵢ y
+    · have h₁ : h.choose =ᵢ y ⊕ᵢ x := by
         apply independentProduct_comm; grind
-      have h₂ : ∃ s' : PSpace Ω, s'.isIndependentProduct y x := by use h.choose
+      have h₂ : ∃ s' : PSpace Ω, s' =ᵢ y ⊕ᵢ x := by use h.choose
       simp_all
       congr
       ext z
@@ -1038,12 +1037,12 @@ theorem PSp.mul_comm [Inhabited Ω] {p q : PSp Ω} : p.mul q = q.mul p :=
       apply independentProduct_comm
     · simp_all
       intro a
-      have : ¬a.isIndependentProduct x y := by
+      have : ¬a =ᵢ x ⊕ᵢ y := by
         intro h₁
         have := h a
         contradiction
       intro h₂
-      have : a.isIndependentProduct x y := by
+      have : a =ᵢ x ⊕ᵢ y := by
         apply independentProduct_comm
         aesop
       contradiction
@@ -1070,7 +1069,7 @@ theorem PSp.mul_assoc [Inhabited Ω] {p q r : PSp Ω}
   cases h₄ : mul (some x) (some y) with
   | none =>
     simp_all
-    by_cases h' : ∃ s : PSpace Ω, s.isIndependentProduct y z
+    by_cases h' : ∃ s : PSpace Ω, s =ᵢ y ⊕ᵢ z
     simp_all
     intro a ha
     have h₆ : x.incompatible y := by simp_all
@@ -1081,13 +1080,13 @@ theorem PSp.mul_assoc [Inhabited Ω] {p q r : PSp Ω}
   cases h₅ : mul (some y) (some z) with
   | none =>
     simp_all
-    by_cases h₆ : ∃ s : PSpace Ω, s.isIndependentProduct x y
+    by_cases h₆ : ∃ s : PSpace Ω, s =ᵢ x ⊕ᵢ y
     have h₇ : y.incompatible z := by simp_all
     have := @PSpace.incompatible_mono_right Ω _ x y z h₆.choose h₇ h₆.choose_spec
     grind
     simp_all
   | some yz =>
-    have h₈ : xy.isIndependentProduct x y := by
+    have h₈ : xy =ᵢ x ⊕ᵢ y := by
       apply @mul_inversion Ω _ x y xy h₄
     cases h₉ : mul (some xy) (some z) with
     | none =>
@@ -1096,16 +1095,16 @@ theorem PSp.mul_assoc [Inhabited Ω] {p q r : PSp Ω}
         have := @PSp.inversion Ω _ (mul (some x) (some yz)) (by aesop)
         grind
       obtain ⟨x_yz, hcon⟩ := hcon
-      have : x_yz.isIndependentProduct x yz := by
+      have : x_yz =ᵢ x ⊕ᵢ yz := by
         apply mul_inversion
         grind
-      have : x_yz.isIndependentProduct xy z := by
-        have : yz.isIndependentProduct y z := by
+      have : x_yz =ᵢ xy ⊕ᵢ z := by
+        have : yz =ᵢ y ⊕ᵢ z := by
           apply mul_inversion
           assumption
         have hgoal := @independentProduct_assoc_right Ω _ x y z yz x_yz (by aesop) (by aesop)
         have : hgoal.choose = xy := by
-          have hxy : xy.isIndependentProduct x y := by
+          have hxy : xy =ᵢ x ⊕ᵢ y := by
             apply mul_inversion
             assumption
           have := @PSpace.uniqueness Ω hgoal.choose xy x y (by grind) hxy
@@ -1117,13 +1116,13 @@ theorem PSp.mul_assoc [Inhabited Ω] {p q r : PSp Ω}
       have : some x_yz = none := by aesop
       grind
     | some xy_z =>
-      have h₁₀ : xy_z.isIndependentProduct xy z := by
+      have h₁₀ : xy_z =ᵢ xy ⊕ᵢ z := by
         apply mul_inversion
         assumption
       have h_goal := @independentProduct_assoc Ω _ xy x y xy_z z h₈ h₁₀
       have h' : h_goal.choose = yz := by
-        have h₁ : h_goal.choose.isIndependentProduct y z := by grind
-        have h_yz : yz.isIndependentProduct y z := by
+        have h₁ : h_goal.choose =ᵢ y ⊕ᵢ z := by grind
+        have h_yz : yz =ᵢ y ⊕ᵢ z := by
           apply mul_inversion
           assumption
         have := @PSpace.uniqueness Ω h_goal.choose yz y z h₁ h_yz
@@ -1199,7 +1198,7 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
     cases y
     simp
     rename_i y x
-    by_cases h : ∃ s : PSpace Ω, s.isIndependentProduct x y
+    by_cases h : ∃ s : PSpace Ω, s =ᵢ x ⊕ᵢ y
     · simp [h]
       apply PSp.le_top'
     · simp [h]
@@ -1208,14 +1207,14 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
     have hxy : x ≤ y := by
       apply WithTop.coe_le_coe.1
       exact ha
-    by_cases h₁ : ∃ t : PSpace Ω, t.isIndependentProduct y a
-    by_cases h₂ : ∃ s : PSpace Ω, s.isIndependentProduct x a
+    by_cases h₁ : ∃ t : PSpace Ω, t =ᵢ y ⊕ᵢ a
+    by_cases h₂ : ∃ s : PSpace Ω, s =ᵢ x ⊕ᵢ a
     · simp [h₁, h₂]
       have h := @PSpace.functoriality Ω _ x y a h₂.choose h₁.choose h₂.choose_spec h₁.choose_spec hxy
       apply WithTop.coe_le_coe.2
       exact h
     · simp [h₁, h₂]
-      have : ∃ xa : PSpace Ω, xa.isIndependentProduct x a := by
+      have : ∃ xa : PSpace Ω, xa =ᵢ x ⊕ᵢ a := by
         obtain ⟨ya, h₁⟩ := h₁
         let xams := x.1.ms.sum a.1.ms
         have hxams : xams ≤ ya.1.ms := by
@@ -1242,7 +1241,7 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
               aesop
       contradiction
     · simp [h₁]
-      by_cases h₂ : ∃ s : PSpace Ω, s.isIndependentProduct x a
+      by_cases h₂ : ∃ s : PSpace Ω, s =ᵢ x ⊕ᵢ a
       · simp [h₂, LE.le]
         apply PSp.le_top'
       · simp [h₂]
@@ -1298,18 +1297,11 @@ def PSpace.map (f : Ω → Ω') (ps : PSpace Ω) : PSpace Ω' := ⟨ps.1.map f, 
   aesop
 ⟩
 
-theorem PSpace.map_preserves_independentProduct
-  {p q pq : PSpace Ω} {f : Ω ≃ Ω'}
-  (hind : pq.isIndependentProduct p q)
-  : (pq.map f).isIndependentProduct (p.map f) (q.map f) :=
-  sorry
-
 @[simp]
 def MeasureOnSpace.tensor (m : MeasureOnSpace Ω) (n : MeasureOnSpace Ω') : MeasureOnSpace (Ω × Ω') := {
   ms := m.ms.prod n.ms
   μ := @Measure.prod Ω Ω' m.ms n.ms m.μ n.μ
 }
-variable {Ω : Type}
 
 @[simp]
 def PSpace.tensor (P : PSpace Ω) (Q : PSpace Ω') : PSpace (Ω × Ω') := {
@@ -1341,6 +1333,92 @@ lemma MeasureOnSpace.map_measurable_inv
   {m : MeasureOnSpace Ω} {f : Ω ≃ Ω'} {u : Set Ω'}
   : MeasurableSet[m.ms] (f ⁻¹' u) ↔ MeasurableSet[m.ms.map f] u := by
   aesop
+
+lemma MeasurableSpace.generateFrom_respects_map
+  {C : Set (Set Ω)} {f : Ω → Ω'}
+  : (MeasurableSpace.generateFrom C).map f =
+    MeasurableSpace.generateFrom {f '' u | u ∈ C} := by
+  let m₁ := MeasurableSpace.generateFrom C
+  ext u
+  constructor
+  · intro hu
+    have : ∃ v : Set Ω, u = f '' v ∧ MeasurableSet[m₁] v := by
+      sorry
+    obtain ⟨v, ⟨heq, hv⟩⟩ := this
+
+    sorry
+  · sorry
+
+lemma MeasurableSpace.map_preserves_sum
+  {m₁ m₂ : MeasurableSpace Ω} {f : Ω ≃ Ω'}
+  : (m₁.sum m₂).map f = (m₁.map f).sum (m₂.map f) := by
+  unfold MeasurableSpace.sum
+  have := @MeasurableSpace.generateFrom_respects_map Ω Ω'
+    (m₁.MeasurableSet' ∪ m₂.MeasurableSet') f
+  conv_lhs =>
+    unfold MeasurableSet
+    rw [this]
+  simp
+  let A : Set (Set Ω') :=
+    {x | ∃ u : Set Ω,
+      (m₁.MeasurableSet' u ∨ m₂.MeasurableSet' u)
+      ∧ f '' u = x}
+  let B : Set (Set Ω') := (m₁.map f).MeasurableSet' ∪ (m₂.map f).MeasurableSet'
+  have : A ⊆ B := sorry
+  have := @MeasurableSpace.generateFrom_mono Ω' A B (by aesop)
+  sorry
+
+lemma PSpace.map_preserves_measure
+  {m : PSpace Ω} {f : Ω → Ω'} {u : Set Ω'}
+  {hu : MeasurableSet[m.1.ms.map f] u}
+  : (m.map f).1.μ u = m.1.μ (f ⁻¹' u) := by
+  simp_all
+  let mfms := MeasurableSpace.map f m.1.ms
+  have : @Measurable Ω Ω' m.1.ms mfms f := fun ⦃t⦄ a => a
+  have := @Measure.map_apply Ω Ω' m.1.ms mfms m.1.μ f (by aesop)
+  aesop
+
+theorem PSpace.map_preserves_independentProduct
+  {Ω Ω' : Type u}
+  {p q pq : PSpace Ω} {f : Ω ≃ Ω'}
+  (hind : pq =ᵢ p ⊕ᵢ q)
+  : (pq.map f) =ᵢ (p.map f) ⊕ᵢ (q.map f) := by
+  have hm := @PSpace.map_preserves_measure Ω Ω' pq f
+  constructor
+  · have := @MeasurableSpace.map_preserves_sum Ω Ω'
+    have := hind.1
+    aesop
+  · intro u hu v hv
+    have := @MeasureOnSpace.map_measurable_inv Ω Ω' pq.1 f u
+    have : MeasurableSet[p.1.ms] (f ⁻¹' u) := by aesop
+    have hupq : MeasurableSet[pq.1.ms] (f ⁻¹' u) := by
+      have : p.1.ms ≤ pq.1.ms := by
+        intro u
+        have := @mem_sum_l Ω p.1.ms q.1.ms u
+        have := hind.1
+        aesop
+      aesop
+    have hvpq : MeasurableSet[pq.1.ms] (f ⁻¹' v) := by
+      have : q.1.ms ≤ pq.1.ms := by
+        intro v
+        have := @mem_sum_r Ω p.1.ms q.1.ms v
+        have := hind.1
+        aesop
+      aesop
+    have : (PSpace.map f pq).1.μ (u ∩ v) = pq.1.μ (f ⁻¹' (u ∩ v)) := by
+      have : MeasurableSet[pq.1.ms.map f] (u ∩ v) := MeasurableSet.inter hupq hvpq
+      aesop
+    rw [this]
+    have : f ⁻¹' (u ∩ v) = f ⁻¹' u ∩ f ⁻¹' v := by aesop
+    rw [this]
+    have := hind.2 (f ⁻¹' u) (by aesop) (f ⁻¹' v) (by aesop)
+    have : (PSpace.map f p).1.μ u = p.1.μ (f ⁻¹' u) :=
+      @PSpace.map_preserves_measure Ω Ω' p f u hu
+    have : (PSpace.map f q).1.μ v = q.1.μ (f ⁻¹' v) :=
+      @PSpace.map_preserves_measure Ω Ω' q f v hv
+    aesop
+
+variable {Ω : Type}
 
 def PSpace.compatiblePerm (P : PSpace (Var → Val)) (p : Permission Var) : Prop :=
   ∃ (P' : PSpace ({a : Var // p a > 0} → Val)),
@@ -1482,7 +1560,7 @@ lemma hone : Compatible ⟨1, 1⟩ := by
 lemma PSpace.compatiblePerm_implies_independentProduct_compatiblePerm
   {P₁ P₂ P : PSpace (Var → Val)} {p₁ p₂ : Permission Var}
   (h₁ : P₁.compatiblePerm p₁) (h₂ : P₂.compatiblePerm p₂)
-  (hind : P.isIndependentProduct P₁ P₂)
+  (hind : P =ᵢ P₁ ⊕ᵢ P₂)
   : P.compatiblePerm (p₁ * p₂) := by
   let S₁ := {x : Var // p₁ x = 0}
   let S₁c := {x : Var // p₁ x > 0}
@@ -1492,9 +1570,10 @@ lemma PSpace.compatiblePerm_implies_independentProduct_compatiblePerm
   have h₂ : ∃ P₂' : PSpace (S₂c → Val), P₂'.tensor 1 = P₂.map (equivProd p₂) := by aesop
   obtain ⟨P₁', h₁⟩ := h₁
   obtain ⟨P₂', h₂⟩ := h₂
-  have : (P.map (equivProd (p₁ * p₂))).isIndependentProduct
-    (P₁.map (equivProd (p₁ * p₂)))
-    (P₂.map (equivProd (p₁ * p₂))) := map_preserves_independentProduct hind
+  have : (P.map (equivProd (p₁ * p₂)))
+    =ᵢ (P₁.map (equivProd (p₁ * p₂))) ⊕ᵢ (P₂.map (equivProd (p₁ * p₂)))
+  := map_preserves_independentProduct hind
+
   sorry
 
 lemma hprod (x y : PSp State × Permission Var)
@@ -1515,7 +1594,7 @@ lemma hprod (x y : PSp State × Permission Var)
         ProductRA, OrderedUnitalResourceAlgebra.product,
         Prod.instCommMonoid, Prod.instMonoid, Prod.instSemigroup, Prod.instMul
       ] at h
-      have hind : p₃.isIndependentProduct p₁ p₂ := by
+      have hind : p₃ =ᵢ p₁ ⊕ᵢ p₂ := by
         refine mul_inversion ?_; aesop
       have : f₃ = f₁ * f₂ := by aesop
       simp_all only [Compatible, PSp.compatiblePerm]
