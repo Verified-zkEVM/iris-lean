@@ -1,5 +1,10 @@
+/-
+  This file was generated with some assistance from Aristotle (https://aristotle.harmonic.fun), particularly in lemmas MeasurableSpace.map_preserves_sum
+-/
+
 import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.ProbabilityMassFunction.Basic
+import Mathlib.Data.Set.Basic
 import Bluebell.Algebra.DiscreteCMRA
 
 /-! ## Independent product of probability measures -/
@@ -1314,19 +1319,28 @@ def PSpace.tensor (P : PSpace Ω) (Q : PSpace Ω') : PSpace (Ω × Ω') := {
     aesop
 }
 
+lemma MeasurableSpace.map_measurable
+  {Ω Ω' : Type u}
+  {m : MeasurableSpace Ω} {f : Ω ≃ Ω'} {u : Set Ω}
+  : MeasurableSet[m] u ↔ MeasurableSet[m.map f] (f '' u) := by
+  constructor <;>
+  · intro hu
+    let u' := f '' u
+    have := @MeasurableSpace.map_def Ω Ω' m f u'
+    aesop
+
+lemma MeasurableSpace.map_measurable_inv
+  {Ω Ω' : Type u}
+  {m : MeasurableSpace Ω} {f : Ω ≃ Ω'} {u : Set Ω'}
+  : MeasurableSet[m] (f ⁻¹' u) ↔ MeasurableSet[m.map f] u := by
+  aesop
+
 lemma MeasureOnSpace.map_measurable
   {Ω Ω' : Type u}
   {m : MeasureOnSpace Ω} {f : Ω ≃ Ω'} {u : Set Ω}
   : MeasurableSet[m.ms] u ↔ MeasurableSet[m.ms.map f] (f '' u) := by
-  constructor
-  · intro hu
-    let u' := f '' u
-    have := @MeasurableSpace.map_def Ω Ω' m.ms f u'
-    aesop
-  · intro hu
-    let u' := f '' u
-    have := @MeasurableSpace.map_def Ω Ω' m.ms f u'
-    aesop
+  have := @MeasurableSpace.map_measurable Ω Ω' m.ms f u
+  aesop
 
 lemma MeasureOnSpace.map_measurable_inv
   {Ω Ω' : Type u}
@@ -1335,38 +1349,56 @@ lemma MeasureOnSpace.map_measurable_inv
   aesop
 
 lemma MeasurableSpace.generateFrom_respects_map
-  {C : Set (Set Ω)} {f : Ω → Ω'}
+  {C : Set (Set Ω)} {f : Ω ≃ Ω'}
   : (MeasurableSpace.generateFrom C).map f =
     MeasurableSpace.generateFrom {f '' u | u ∈ C} := by
-  let m₁ := MeasurableSpace.generateFrom C
   ext u
   constructor
   · intro hu
-    have : ∃ v : Set Ω, u = f '' v ∧ MeasurableSet[m₁] v := by
-      sorry
-    obtain ⟨v, ⟨heq, hv⟩⟩ := this
+    suffices h : ∀ t : Set Ω, MeasurableSet[MeasurableSpace.generateFrom C] t →
+        MeasurableSet[MeasurableSpace.generateFrom {f '' v | v ∈ C}] (f '' t) by
+      have := h (f ⁻¹' u) hu
+      rwa [f.surjective.image_preimage] at this
+    intro t ht
+    induction ht with
+    | basic s hs => exact MeasurableSpace.measurableSet_generateFrom ⟨s, hs, rfl⟩
+    | empty => simp
+    | compl s _ ih =>
+      rw [Set.image_compl_eq f.bijective]; exact ih.compl
+    | iUnion g _ ih => rw [Set.image_iUnion]; exact MeasurableSet.iUnion ih
+  · intro hu
+    suffices h : ∀ v : Set Ω', MeasurableSet[MeasurableSpace.generateFrom {f '' w | w ∈ C}] v →
+        MeasurableSet[MeasurableSpace.generateFrom C] (f ⁻¹' v) from h u hu
+    intro v hv
+    induction hv with
+    | basic s hs =>
+      obtain ⟨w, hw, rfl⟩ := hs
+      rw [f.injective.preimage_image]
+      exact MeasurableSpace.measurableSet_generateFrom hw
+    | empty => simp
+    | compl s _ ih => rw [Set.preimage_compl]; exact ih.compl
+    | iUnion g _ ih => rw [Set.preimage_iUnion]; exact MeasurableSet.iUnion ih
 
-    sorry
-  · sorry
+lemma MeasurableSpace.sum_eq_sup (m₁ m₂ : MeasurableSpace Ω) :
+  m₁.sum m₂ = m₁ ⊔ m₂ := by
+    refine' le_antisymm _ _ <;> intro s <;> aesop;
+
+lemma MeasurableSpace.map_equiv_eq_comap_symm
+  {m : MeasurableSpace Ω} (f : Ω ≃ Ω')
+  : m.map f = m.comap f.symm := by
+    refine' le_antisymm _ _ <;> intro s hs <;> simp_all +decide [ MeasurableSpace.comap, MeasurableSpace.map ];
+    · convert hs using 1
+      congr! 2
+      constructor <;> intro h <;> aesop
+    · convert hs using 1
+      aesop
 
 lemma MeasurableSpace.map_preserves_sum
   {m₁ m₂ : MeasurableSpace Ω} {f : Ω ≃ Ω'}
   : (m₁.sum m₂).map f = (m₁.map f).sum (m₂.map f) := by
-  unfold MeasurableSpace.sum
-  have := @MeasurableSpace.generateFrom_respects_map Ω Ω'
-    (m₁.MeasurableSet' ∪ m₂.MeasurableSet') f
-  conv_lhs =>
-    unfold MeasurableSet
-    rw [this]
-  simp
-  let A : Set (Set Ω') :=
-    {x | ∃ u : Set Ω,
-      (m₁.MeasurableSet' u ∨ m₂.MeasurableSet' u)
-      ∧ f '' u = x}
-  let B : Set (Set Ω') := (m₁.map f).MeasurableSet' ∪ (m₂.map f).MeasurableSet'
-  have : A ⊆ B := sorry
-  have := @MeasurableSpace.generateFrom_mono Ω' A B (by aesop)
-  sorry
+    rw [ MeasurableSpace.map_equiv_eq_comap_symm ]
+    rw [ MeasurableSpace.sum_eq_sup, MeasurableSpace.comap_sup ]
+    rw [ MeasurableSpace.sum_eq_sup, MeasurableSpace.map_equiv_eq_comap_symm, MeasurableSpace.map_equiv_eq_comap_symm ]
 
 lemma PSpace.map_preserves_measure
   {m : PSpace Ω} {f : Ω → Ω'} {u : Set Ω'}
@@ -1420,9 +1452,19 @@ theorem PSpace.map_preserves_independentProduct
 
 variable {Ω : Type}
 
-def PSpace.compatiblePerm (P : PSpace (Var → Val)) (p : Permission Var) : Prop :=
-  ∃ (P' : PSpace ({a : Var // p a > 0} → Val)),
-    P'.tensor 1 = P.map (equivProd p)
+@[simp]
+def Irr (p : Permission Var) :=
+  {x : Var | p x = 0}
+
+def PSpace.compatiblePerm (P : PSpace State) (p : Permission Var) : Prop :=
+  ∀ (u : Set State)
+    (_hu : MeasurableSet[P.1.ms] u)
+    (s : State)
+    (_hs : s ∈ u)
+    (x : Var)
+    (_hx : x ∈ Irr p)
+    (v : Val),
+    Function.update s x v ∈ u
 
 @[simp]
 def PSp.compatiblePerm
@@ -1543,38 +1585,83 @@ lemma honeLHS_eq_honeRHS : honeLHS = honeRHS := by
       aesop
 
 lemma hone : Compatible ⟨1, 1⟩ := by
-  let Ω₁ := PermissionOk (1 : Permission Var)
-  let Ω₂ := PermissionFail (1 : Permission Var)
-  simp
+  simp only [Compatible, PSp.compatiblePerm]
   split
-  · rename_i p hunit
-    unfold PSpace.compatiblePerm
-    use unit;
-    have : p = unit := by
-      simp [OfNat.ofNat, One.one] at hunit
-      grind
-    have := honeLHS_eq_honeRHS
-    aesop
-  · simp
+  · intro u hu s hs x hx v
+    rename_i p p' hp
+    simp [OfNat.ofNat, One.one] at hp
+    have : p' = unit := by grind
+    have : p'.1.ms = ⊥ := by aesop
+    rw [this] at hu
+    have : u = ∅ ∨ u = Set.univ := MeasurableSpace.measurableSet_bot_iff.mp hu
+    rcases this with h₁ | h₂
+    · simp [h₁] at hs
+    · simp [h₂]
+  · trivial
 
 lemma PSpace.compatiblePerm_implies_independentProduct_compatiblePerm
   {P₁ P₂ P : PSpace (Var → Val)} {p₁ p₂ : Permission Var}
   (h₁ : P₁.compatiblePerm p₁) (h₂ : P₂.compatiblePerm p₂)
   (hind : P =ᵢ P₁ ⊕ᵢ P₂)
   : P.compatiblePerm (p₁ * p₂) := by
-  let S₁ := {x : Var // p₁ x = 0}
-  let S₁c := {x : Var // p₁ x > 0}
-  let S₂ := {x : Var // p₂ x = 0}
-  let S₂c := {x : Var // p₂ x > 0}
-  have h₁ : ∃ P₁' : PSpace (S₁c → Val), P₁'.tensor 1 = P₁.map (equivProd p₁) := by aesop
-  have h₂ : ∃ P₂' : PSpace (S₂c → Val), P₂'.tensor 1 = P₂.map (equivProd p₂) := by aesop
-  obtain ⟨P₁', h₁⟩ := h₁
-  obtain ⟨P₂', h₂⟩ := h₂
-  have : (P.map (equivProd (p₁ * p₂)))
-    =ᵢ (P₁.map (equivProd (p₁ * p₂))) ⊕ᵢ (P₂.map (equivProd (p₁ * p₂)))
-  := map_preserves_independentProduct hind
-
-  sorry
+  unfold compatiblePerm
+  intro u hu s hs x hx v
+  have hsum {x : Var} : (p₁ * p₂) x = p₁ x + p₂ x := by aesop
+  have hinter : x ∈ Irr p₁ ∧ x ∈ Irr p₂ := by
+    simp only [Irr, Set.mem_setOf_eq]
+    have : p₁ x = 0 := by aesop
+    have : p₂ x = 0 := by aesop
+    aesop
+  let ms' : Set (Set State) :=
+    {u : Set State |
+      MeasurableSet[P.1.ms] u ∧
+      ∀ s ∈ u, ∀ x ∈ Irr p₁ ∩ Irr p₂,
+        ∀ v : Val,
+          Function.update s x v ∈ u}
+  have : ms' = P.1.ms.MeasurableSet' := by
+    ext w
+    constructor
+    · aesop
+    · apply MeasurableSpace.induction_on_inter
+      · exact MeasureOnSpace.isPiSystem_generator (p := P₁.1) (q := P₂.1)
+      · rw [Set.mem_setOf_eq]
+        aesop
+      · intro t ht
+        rw [Set.mem_setOf_eq]
+        constructor
+        · rw [hind.1]
+          exact mem_generator_imp_mem_sum ht
+        · intro s hs x hx v
+          obtain ⟨e, f, rfl, he, hf⟩ := exists_inter_measurableSet_of_mem_generator ht
+          have : Function.update s x v ∈ e := by aesop
+          have : Function.update s x v ∈ f := by aesop
+          aesop
+      · intro t ht ht'
+        unfold ms' at *
+        rw [Set.mem_setOf_eq]
+        constructor
+        · aesop
+        · intro s hs x hx v
+          by_contra h
+          have : Function.update s x v ∈ t := by aesop
+          have := ht'.2 (Function.update s x v) this x hx (s x)
+          have : Function.update (Function.update s x v) x (s x) = s := by
+            aesop
+          aesop
+      · intro us hdis hus ih
+        unfold ms' at *
+        rw [Set.mem_setOf_eq]
+        constructor
+        · apply MeasurableSet.iUnion; aesop
+        · aesop
+      · rw [hind.1]
+        exact Eq.symm MeasureOnSpace.generateFrom_generator_eq_sum
+  have hms' : ∀ u : Set State, MeasurableSet[P.1.ms] u → u ∈ ms' := by aesop
+  have hu' := hms' u hu
+  unfold ms' at this
+  have : MeasurableSet[P.1.ms] u ∧ ∀ s ∈ u, ∀ x ∈ Irr p₁ ∩ Irr p₂, ∀ v : Val, Function.update s x v ∈ u :=
+    (Set.mem_setOf (a := u)).1 hu'
+  aesop
 
 lemma hprod (x y : PSp State × Permission Var)
   (h₁ : Compatible x) (h₂ : Compatible y)
