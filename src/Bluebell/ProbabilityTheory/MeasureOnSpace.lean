@@ -1264,27 +1264,8 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
 
 section PSpPm
 
-/-- 𝕏 in the paper -/
-abbrev Var : Type := Nat
-
-/-- 𝕍 in the paper -/
-abbrev Val : Type := Int
-
-/-- 𝕊 in the paper -/
-abbrev State : Type := Var → Val
-
-def equivProd {α V : Type*} (p : Permission α) :
-  (α → V) ≃ ({ a // p a > 0 } → V) × ({ a // p a = 0 } → V) :=
-  {
-    toFun f := ⟨(f ·), (f ·)⟩,
-    invFun f x := if h : p x > 0 then f.1 ⟨x, h⟩ else f.2 ⟨x, by simpa using h⟩,
-    left_inv := by simp [Function.LeftInverse]
-    right_inv := by
-      simp only [Function.RightInverse, Function.LeftInverse, gt_iff_lt, Subtype.coe_eta,
-        Prod.forall, Prod.mk.injEq]
-      intros f₁ f₂
-      constructor <;> ext x <;> simp [x.2]
-  }
+variable
+  {Var Val : Type u}
 
 @[simp]
 def MeasureOnSpace.map (h : Ω → Ω') (ms : MeasureOnSpace Ω) : MeasureOnSpace Ω' :=
@@ -1456,10 +1437,12 @@ variable {Ω : Type}
 def Irr (p : Permission Var) :=
   {x : Var | p x = 0}
 
-def PSpace.compatiblePerm (P : PSpace State) (p : Permission Var) : Prop :=
-  ∀ (u : Set State)
+def PSpace.compatiblePerm
+  [DecidableEq Var]
+  (P : PSpace (Var → Val)) (p : Permission Var) : Prop :=
+  ∀ (u : Set (Var → Val))
     (_hu : MeasurableSet[P.1.ms] u)
-    (s : State)
+    (s : Var → Val)
     (_hs : s ∈ u)
     (x : Var)
     (_hx : x ∈ Irr p)
@@ -1468,65 +1451,31 @@ def PSpace.compatiblePerm (P : PSpace State) (p : Permission Var) : Prop :=
 
 @[simp]
 def PSp.compatiblePerm
-  (P : PSp State) (p : Permission Var) : Prop :=
+  [DecidableEq Var]
+  (P : PSp (Var → Val)) (p : Permission Var) : Prop :=
   match P with
   | some P' => PSpace.compatiblePerm P' p
   | none => True
 
-instance : Inhabited State where
-  default := fun _ ↦ 0
+instance [Inhabited Val] : Inhabited (Var → Val) where
+  default := fun _ ↦ default
 
-def PSpRA : OrderedUnitalResourceAlgebra (PSp State) :=
+def PSpRA [Inhabited Val] : OrderedUnitalResourceAlgebra (PSp (Var → Val)) :=
   inferInstance
 
 def PermissionRA : OrderedUnitalResourceAlgebra (Permission Var) :=
   inferInstance
 
-def ProductRA : OrderedUnitalResourceAlgebra (PSp State × Permission Var) :=
+def ProductRA [Inhabited Val] : OrderedUnitalResourceAlgebra (PSp (Var → Val) × Permission Var) :=
   PSpRA.product PermissionRA
 
 @[simp]
-def Compatible (x : PSp State × Permission Var) : Prop :=
+def Compatible [DecidableEq Var] (x : PSp (Var → Val) × Permission Var) : Prop :=
   x.1.compatiblePerm x.2
-
-@[simp]
-def PermissionOk (p : Permission α) :=
-  {a : α // p a > 0} -> Val
-
-@[simp]
-def PermissionFail (p : Permission α) :=
-  {a : α // p a = 0} -> Val
-
-instance {p : Permission α} : Inhabited (PermissionOk p) where
-  default := fun _ ↦ 0
-
-instance {p : Permission α} : Inhabited (PermissionFail p) where
-  default := fun _ ↦ 0
-
-@[simp]
-def honeLHS : PSpace (@PermissionOk Var 1 × @PermissionFail Var 1) :=
-  PSpace.tensor
-    (unit : PSpace (PermissionOk 1))
-    (1 : PSpace (PermissionFail 1))
-
-@[simp]
-def honeRHS : PSpace (@PermissionOk Var 1 × @PermissionFail Var 1) :=
-  PSpace.map (equivProd 1) unit
 
 example : (⊥ : MeasurableSpace α).prod (⊥ : MeasurableSpace β) = ⊥ := by
   simp [MeasurableSpace.prod]
 
-lemma honeLHSms_eq_bot : honeLHS.1.ms = ⊥ := by
-  let unitL : PSpace (@PermissionOk Var 1) := unit
-  let unitR : PSpace (@PermissionFail Var 1) := unit
-  let unitLR : PSpace (@PermissionOk Var 1 × @PermissionFail Var 1) := unit
-  have : unitL.1.ms.prod unitR.1.ms = unitLR.1.ms := by
-    have : unitL.1.ms = ⊥ := by aesop
-    have : unitR.1.ms = ⊥ := by aesop
-    have : unitLR.1.ms = ⊥ := by aesop
-    simp [MeasurableSpace.prod]
-    aesop
-  aesop
 
 lemma preimage_empty_or_univ_of_bijective
   {Ω Ω' : Type u}
@@ -1553,38 +1502,7 @@ lemma MeasurableSpace.map_bot_eq_bot {Ω Ω' : Type u} (f : Ω ≃ Ω')
     have := MeasurableSpace.measurableSet_bot_iff.mp hu
     aesop
 
-lemma honeRHSms_eq_bot : honeRHS.1.ms = ⊥ := by
-  ext u; constructor
-  · intro hu
-    refine MeasurableSpace.measurableSet_bot_iff.mpr ?_
-    simp [PSpace.unit] at hu
-    have h := @MeasurableSpace.map_bot_eq_bot
-      (Var → Val) (@PermissionOk Var 1 × @PermissionFail Var 1)
-      (@equivProd Var Val 1)
-    simp [PermissionOk, PermissionFail] at h
-    rw [h] at hu
-    exact MeasurableSpace.measurableSet_bot_iff.mp hu
-  · intro hu
-    have : u = ∅ ∨ u = Set.univ := MeasurableSpace.measurableSet_bot_iff.mp hu
-    aesop
-
-lemma honeLHS_eq_honeRHS : honeLHS = honeRHS := by
-  have honeLHSms_eq_honeRHSms : honeLHS.1.ms = honeRHS.1.ms := by
-    have := honeLHSms_eq_bot
-    have := honeRHSms_eq_bot
-    aesop
-  ext u
-  · aesop
-  · rename_i hu
-    rw [honeLHSms_eq_bot] at hu
-    have h : u = ∅ ∨ u = Set.univ := MeasurableSpace.measurableSet_bot_iff.mp hu
-    rcases h with h₁ | h₂
-    · aesop
-    · have := honeLHS.2.measure_univ
-      have := honeRHS.2.measure_univ
-      aesop
-
-lemma hone : Compatible ⟨1, 1⟩ := by
+lemma hone [DecidableEq Var] [Inhabited Val] : Compatible ⟨(1 : PSp (Var → Val)), 1⟩ := by
   simp only [Compatible, PSp.compatiblePerm]
   split
   · intro u hu s hs x hx v
@@ -1600,6 +1518,7 @@ lemma hone : Compatible ⟨1, 1⟩ := by
   · trivial
 
 lemma PSpace.compatiblePerm_implies_independentProduct_compatiblePerm
+  [DecidableEq Var] [Inhabited Val]
   {P₁ P₂ P : PSpace (Var → Val)} {p₁ p₂ : Permission Var}
   (h₁ : P₁.compatiblePerm p₁) (h₂ : P₂.compatiblePerm p₂)
   (hind : P =ᵢ P₁ ⊕ᵢ P₂)
@@ -1612,8 +1531,8 @@ lemma PSpace.compatiblePerm_implies_independentProduct_compatiblePerm
     have : p₁ x = 0 := by aesop
     have : p₂ x = 0 := by aesop
     aesop
-  let ms' : Set (Set State) :=
-    {u : Set State |
+  let ms' : Set (Set (Var → Val)) :=
+    {u : Set (Var → Val) |
       MeasurableSet[P.1.ms] u ∧
       ∀ s ∈ u, ∀ x ∈ Irr p₁ ∩ Irr p₂,
         ∀ v : Val,
@@ -1656,14 +1575,16 @@ lemma PSpace.compatiblePerm_implies_independentProduct_compatiblePerm
         · aesop
       · rw [hind.1]
         exact Eq.symm MeasureOnSpace.generateFrom_generator_eq_sum
-  have hms' : ∀ u : Set State, MeasurableSet[P.1.ms] u → u ∈ ms' := by aesop
+  have hms' : ∀ u : Set (Var → Val), MeasurableSet[P.1.ms] u → u ∈ ms' := by aesop
   have hu' := hms' u hu
   unfold ms' at this
   have : MeasurableSet[P.1.ms] u ∧ ∀ s ∈ u, ∀ x ∈ Irr p₁ ∩ Irr p₂, ∀ v : Val, Function.update s x v ∈ u :=
     (Set.mem_setOf (a := u)).1 hu'
   aesop
 
-lemma hprod (x y : PSp State × Permission Var)
+lemma hprod
+  [DecidableEq Var] [Inhabited Val]
+  (x y : PSp (Var → Val) × Permission Var)
   (h₁ : Compatible x) (h₂ : Compatible y)
   : Compatible (ProductRA.mul x y) := by
   obtain ⟨P₁, f₁⟩ := x
@@ -1687,12 +1608,17 @@ lemma hprod (x y : PSp State × Permission Var)
       simp_all only [Compatible, PSp.compatiblePerm]
       have : p₁.compatiblePerm f₁ := by assumption
       have : p₂.compatiblePerm f₂ := by assumption
-      have := @PSpace.compatiblePerm_implies_independentProduct_compatiblePerm
+      have := @PSpace.compatiblePerm_implies_independentProduct_compatiblePerm Var Val _ _
       aesop
 
-def PSpPm :=
+@[simp]
+def PSpPm [Inhabited Val] [DecidableEq Var] :=
   ProductRA.subalgebra
-    (p := fun (P, p) ↦ PSp.compatiblePerm P p)
+    (p := fun ((P : PSp (Var → Val)), p) ↦ PSp.compatiblePerm P p)
     hone hprod
+
+@[simp]
+def IndexedPSpPm {I : Type} [Inhabited Val] [DecidableEq Var] :=
+  OrderedUnitalResourceAlgebra.indexedProduct (fun (_i : I) ↦ @PSpPm Var Val _ _)
 
 end PSpPm
