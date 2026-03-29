@@ -17,7 +17,11 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Updates
   - [x] Functors
 - [ ] `big_op.v`
-  - TBD (Zongyuan?)
+  - [x] Lists
+  - [x] Maps
+  - [ ] Sets
+  - [ ] Multisets
+  - [ ] Homomorphisms
 - [ ] `cmra.v`
   - [x] Lemmas
   - [ ] Total CMRA construction
@@ -33,13 +37,13 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] Isomorphisms
 - [ ] `cmra_big_op.v` 
 - [ ] `coPset.v`
-  - [ ] coPset definition
+  - [x] coPset definition
   - [ ] CMRA
 - [x] `cofe_solver.v` 
-- [ ] `csum.v`
-  - [ ] CMRA
-  - [ ] Updates
-  - [ ] Functors
+- [x] `csum.v`
+  - [x] CMRA
+  - [x] Updates
+  - [x] Functors
 - [ ] `dfrac.v`
   - [x] CMRA
   - [x] Updates
@@ -72,7 +76,7 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
 - [ ] `max_prefix_list.v` 
   - [ ] Lemmas
   - [ ] Functors
-- [ ] `monoid.v`
+- [x] `monoid.v`
 - [ ] `mra.v`
 - [x] `numbers.v`
 - [ ]  `ofe.v`
@@ -115,17 +119,17 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] CMRA
   - [x] Updates
   - [x] Functors
-- [ ] `lib/dfrac_agree.v` 
-  - [ ] Lemmas
-  - [ ] Updates
-- [ ] `lib/excl_auth.v` 
-  - [ ] Lemmas
-  - [ ] Updates
-  - [ ] Functors
-- [ ] `lib/frac_auth.v` 
-  - [ ] Lemmas
-  - [ ] Updates
-  - [ ] Functors
+- [x] `lib/dfrac_agree.v` 
+  - [x] Lemmas
+  - [x] Updates
+- [x] `lib/excl_auth.v` 
+  - [x] Lemmas
+  - [x] Updates
+  - [x] Functors
+- [x] `lib/frac_auth.v` 
+  - [x] Lemmas
+  - [x] Updates
+  - [x] Functors
 - [] `lib/gmap_view.v` (nb. generalized in `HeapView.lean`)
   - [x] CMRA
   - [x] Updates
@@ -267,6 +271,18 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] AddModal
   - [x] IntoLater
 - [ ] `class_instances_make.v`
+  - [ ] QuickAffine
+  - [ ] QuickAbsorbing
+  - [ ] MakeEmbed
+  - [ ] MakeSep
+  - [ ] MakeAnd
+  - [ ] MakeOr
+  - [x] MakeAffinely
+  - [x] MakeIntuitionistically
+  - [x] MakeAbsorbingly
+  - [x] MakePersistenly
+  - [x] MakeLaterN
+  - [ ] MakeExcept0
 - [ ] `class_instances_plainly.v` (InstancesPlainly.lean)
   - [x] basic instances
   - [x] FromModal
@@ -322,6 +338,18 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] IntoAcc
   - [ ] ElimInv
 - [ ] `classes_make.v`
+  - [ ] QuickAffine
+  - [ ] QuickAbsorbing
+  - [ ] MakeEmbed
+  - [ ] MakeSep
+  - [ ] MakeAnd
+  - [ ] MakeOr
+  - [x] MakeAffinely
+  - [x] MakeIntuitionistically
+  - [x] MakeAbsorbingly
+  - [x] MakePersistenly
+  - [x] MakeLaterN
+  - [ ] MakeExcept0
 - [ ] `coq_tactics.v` / `ltac_tactics.v` (split into the files in Tactics/)
   - [x] iSolveSideCondition
   - [ ] iStartProof
@@ -347,6 +375,9 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [x] iPureIntro
   - [ ] iFrame
   - [ ] iRevert
+    - [x] basic
+    - [ ] `intoIH` revert
+    - [ ] selection patterns
   - [x] iPoseProof (Lean: ihave _ := _)
   - [ ] iSpecialize
     - [x] basic functionality
@@ -430,5 +461,3 @@ Some porting tasks will require other tasks as dependencies, the GitHub issues p
   - [ ] `language.v`
   - [ ] `ectx_language.v`
   - [ ] `ectxi_language.v`
-
-
