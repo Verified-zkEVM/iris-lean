@@ -121,6 +121,9 @@ instance instCMRM : DiscreteCMRA M := {
     aesop
 }
 
+@[simp]
+abbrev carrier [OrderedUnitalResourceAlgebra M] := M
+
 end OrderedUnitalResourceAlgebra
 
 /-! ## Permissions -/
@@ -157,7 +160,9 @@ instance : OrderedUnitalResourceAlgebra (Permission α) := {
   mul_one := by aesop
 }
 
-def OrderedUnitalResourceAlgebra.subalgebra
+namespace OrderedUnitalResourceAlgebra
+
+def subalgebra
   {α : Type*} {p : α → Prop} (i : OrderedUnitalResourceAlgebra α)
   (hu : p i.one) (hc : ∀ x y : α, p x → p y → p (i.mul x y))
   : OrderedUnitalResourceAlgebra {x : α // p x} := {
@@ -193,8 +198,8 @@ def OrderedUnitalResourceAlgebra.subalgebra
     aesop
 }
 
-def OrderedUnitalResourceAlgebra.indexedProduct
-  {I : Type} {α : I → Type*}
+def indexedProduct
+  {I : Type*} {α : I → Type _}
   (f : (i : I) → OrderedUnitalResourceAlgebra (α i))
   : OrderedUnitalResourceAlgebra ((i : I) → α i) := {
   mul x y i := (f i).mul (x i) (y i)
@@ -215,8 +220,8 @@ def OrderedUnitalResourceAlgebra.indexedProduct
 
 /-- Technically binary product is just an instnace of indexed product, but
     it is convenient to redefine it -/
-def OrderedUnitalResourceAlgebra.product
-  {α β : Type u}
+def product
+  {α β : Type*}
   (r₁ : OrderedUnitalResourceAlgebra α) (r₂ : OrderedUnitalResourceAlgebra β)
   : OrderedUnitalResourceAlgebra (α × β) := {
   elim := by
@@ -249,3 +254,150 @@ def OrderedUnitalResourceAlgebra.product
     have : ✓ a₂ := @r₂.valid_mul a₂ b₂ h.2
     constructor; aesop; aesop
 }
+
+@[simp]
+def quotientMul
+  {α : Type*} {R : Setoid α} {ra : OrderedUnitalResourceAlgebra α}
+  (hclo : (p₁ q₁ p₂ q₂ : α) → (h₁ : R p₁ p₂) → (h₂ : R q₁ q₂) →
+    R (ra.mul p₁ q₁) (ra.mul p₂ q₂)) (p q : Quotient R)
+  : Quotient R :=
+  Quotient.lift₂ (f := fun x y ↦ ⟦ra.mul x y⟧) (by
+    intro p₁ q₁ p₂ q₂ hp hq
+    have := hclo p₁ q₁ p₂ q₂ hp hq
+    exact Quot.sound this) p q
+
+@[simp]
+def quotientOne
+  {α : Type*} {R : Setoid α} (ra : OrderedUnitalResourceAlgebra α)
+  : Quotient R := ⟦ra.one⟧
+
+lemma quotientMul_injective
+  {α : Type*} {R : Setoid α} {ra : OrderedUnitalResourceAlgebra α}
+  (hclo : (p₁ q₁ p₂ q₂ : α) → (h₁ : R p₁ p₂) → (h₂ : R q₁ q₂) → R (p₁ * q₁) (p₂ * q₂))
+  {p q r : Quotient R} (h : p.out * q.out = r.out)
+  : quotientMul hclo p q = r := by
+  have h₁ : quotientMul hclo ⟦p.out⟧ ⟦q.out⟧ = ⟦p.out * q.out⟧ := rfl
+  rw [Quotient.out_eq p, Quotient.out_eq q] at h₁
+  rw [h₁, h, Quotient.out_eq]
+
+lemma quotientMul_commutes_out
+  {α : Type*} {R : Setoid α} {ra : OrderedUnitalResourceAlgebra α}
+  (hclo : (p₁ q₁ p₂ q₂ : α) → (h₁ : R p₁ p₂) → (h₂ : R q₁ q₂) → R (p₁ * q₁) (p₂ * q₂))
+  (p q : Quotient R)
+  : R (p.out * q.out) ((quotientMul hclo p q).out) := by
+  have := (Quotient.eq_mk_iff_out (x := quotientMul hclo p q) (y := p.out * q.out)).1
+  sorry
+
+def quotient
+  {α : Type*} {R : Setoid α} {ra : OrderedUnitalResourceAlgebra α}
+  (hclo : (p₁ q₁ p₂ q₂ : α) → (h₁ : R p₁ p₂) → (h₂ : R q₁ q₂) → R (p₁ * q₁) (p₂ * q₂))
+  (hvalid : (x x' : α) → R x x' → ra.valid x → ra.valid x')
+  (hle : (x x' y y' : α) → x ≤ y → R x x' → R y y' → x' ≤ y')
+  : OrderedUnitalResourceAlgebra (Quotient R) := {
+  mul := quotientMul hclo
+  mul_assoc := by
+    intro p q r
+    apply Quot.induction_on₃ (δ := fun p q r ↦
+      quotientMul hclo (quotientMul hclo p q) r =
+        quotientMul hclo p (quotientMul hclo q r)) p
+    intro a b c
+    have h : Mul.mul (Mul.mul a b) c = Mul.mul a (Mul.mul b c) := by
+      apply ra.mul_assoc a b c
+    conv_rhs => simp; rw [← h]
+    rfl
+  one := quotientOne (R := R) ra
+  one_mul := by
+    intro p
+    simp [OfNat.ofNat]
+    apply Quot.induction_on (r := R) (β := fun p ↦ quotientMul hclo ⟦One.one⟧ p = p) p
+    intro a
+    apply Quot.sound
+    have : ra.mul One.one a = a := by
+      have := ra.one_mul a
+      assumption
+    aesop
+  mul_one := by
+    intro p
+    simp [OfNat.ofNat]
+    apply Quot.induction_on (r := R) (β := fun p ↦ quotientMul hclo p ⟦One.one⟧ = p) p
+    intro a
+    apply Quot.sound
+    have : ra.mul a One.one = a := by
+      have := ra.mul_one a
+      assumption
+    aesop
+  mul_comm := by
+    intro p q
+    apply Quot.induction_on₂ (δ := fun p q ↦ quotientMul hclo p q = quotientMul hclo q p) p q
+    intro a b
+    apply Quot.sound
+    have : a * b = b * a := ra.mul_comm a b
+    simp [HMul.hMul] at this
+    rw [this]
+  valid x := ∀ x' : α, ⟦x'⟧ = x → ra.valid x'
+  le p q := ∀ p' q' : α, ⟦p'⟧ = p → ⟦q'⟧ = q → p' ≤ q'
+  le_refl := by
+    intro x p q h₁ h₂
+    have hx : ⟦x.out⟧ = x := sorry
+    rw [← hx] at h₁ h₂
+    apply hle x.out p x.out q (by aesop)
+    · have := Quotient.exact h₁
+      exact id (Setoid.symm this)
+    · have := Quotient.exact h₂
+      exact id (Setoid.symm this)
+  le_trans := by
+    intro a b c hab hbc p' q' h₁ h₂
+    have hab' : a.out ≤ b.out := hab a.out b.out (Quotient.out_eq a) (Quotient.out_eq b)
+    have hbc' : b.out ≤ c.out := hbc b.out c.out (Quotient.out_eq b) (Quotient.out_eq c)
+    have : a.out ≤ c.out := ra.le_trans a.out b.out c.out hab' hbc'
+    apply hle a.out p' c.out q' this
+    · have : ⟦a.out⟧ = a := Quotient.out_eq a
+      rw [← this] at h₁
+      apply Quotient.exact (by aesop)
+    · have : ⟦c.out⟧ = c := Quotient.out_eq c
+      rw [← this] at h₂
+      apply Quotient.exact (by aesop)
+  elim := by
+    simp [Covariant, Function.swap]
+    intro m n₁ n₂ h p' q' hp hq
+    -- have := ra.elim m.out n₁.out n₂.out
+    sorry
+  valid_one := by
+    intro o ho
+    simp [OfNat.ofNat, One.one] at ho
+    have : R o One.one := sorry
+    apply hvalid One.one o (R.symm this)
+    exact ra.valid_one
+  valid_mono := by
+    intro a b h₁ h₂ x hx
+    have ha : ⟦a.out⟧ = a := Quotient.out_eq a
+    have hb : ⟦b.out⟧ = b := Quotient.out_eq b
+    have := ra.valid_mono (a := a.out) (b := b.out)
+    have : ra.valid a.out := by
+      have : a.out ≤ b.out := h₁ a.out b.out ha hb
+      have : ra.valid b.out := h₂ b.out hb
+      aesop
+    have : R x a.out := by
+      rw [← ha] at hx
+      exact Quotient.exact (by assumption)
+    have := hvalid a.out x (R.symm (by assumption)) (by assumption)
+    assumption
+  valid_mul := by
+    intro a b h x hx
+    have ha : ⟦a.out⟧ = a := Quotient.out_eq a
+    have := ra.valid_mul (a := a.out) (b := b.out)
+    have : ra.valid a.out := by
+      have : R (a.out * b.out) (quotientMul hclo a b).out := quotientMul_commutes_out hclo a b
+      have : ⟦a.out * b.out⟧ = quotientMul hclo a b := by
+        have := Quotient.sound this
+        have : ⟦(quotientMul hclo a b).out⟧ = quotientMul hclo a b := Quotient.out_eq _
+        aesop
+      have := h (a.out * b.out) (by aesop)
+      sorry
+    rw [← ha] at hx
+    have : R x a.out := Quotient.exact (by assumption)
+    have := hvalid a.out x (R.symm (by assumption)) (by assumption)
+    assumption
+}
+
+end OrderedUnitalResourceAlgebra
