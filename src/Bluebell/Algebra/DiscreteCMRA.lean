@@ -315,7 +315,7 @@ lemma quotientMul_commutes_out
 def quotient
   {α : Type*} {R : Setoid α} {ra : OrderedUnitalResourceAlgebra α}
   (hclo : (p₁ q₁ p₂ q₂ : α) → (h₁ : R p₁ p₂) → (h₂ : R q₁ q₂) → R (p₁ * q₁) (p₂ * q₂))
-  -- (hvalid : (x x' : α) → R x x' → ra.valid x → ra.valid x')
+  (hvalid : (x x' : α) → R x x' → ra.valid x → ra.valid x')
   (hle : (x x' y y' : α) → x ≤ y → R x x' → R y y' → x' ≤ y')
   : OrderedUnitalResourceAlgebra (Quotient R) := {
   mul := quotientMul hclo
