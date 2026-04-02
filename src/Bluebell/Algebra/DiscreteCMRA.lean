@@ -280,18 +280,42 @@ lemma quotientMul_injective
   rw [Quotient.out_eq p, Quotient.out_eq q] at h₁
   rw [h₁, h, Quotient.out_eq]
 
+lemma quotientMul_commutes_out_singleton
+  {α : Type*} {R : Setoid α} {ra : OrderedUnitalResourceAlgebra α}
+  (hclo : (p₁ q₁ p₂ q₂ : α) → (h₁ : R p₁ p₂) → (h₂ : R q₁ q₂) → R (p₁ * q₁) (p₂ * q₂))
+  (x y : α)
+  : R ((Quot.mk R x).out * (Quot.mk R y).out) ((quotientMul hclo ⟦x⟧ ⟦y⟧).out) := by
+  have : R x (Quot.mk (⇑R) x).out := by
+    apply Quotient.exact; symm; exact Quotient.out_eq _
+  have : R y (Quot.mk (⇑R) y).out := by
+    apply Quotient.exact; symm; exact Quotient.out_eq _
+  have h₁ := hclo x y (Quot.mk R x).out (Quot.mk R y).out (by assumption) (by assumption)
+  have h₂ : R (x * y) (Quot.mk R (x * y)).out := by
+    apply Quotient.exact
+    symm
+    apply Quot.out_eq _
+  apply R.symm
+  apply R.symm at h₂
+  have := R.trans h₂ h₁
+  aesop
+
 lemma quotientMul_commutes_out
   {α : Type*} {R : Setoid α} {ra : OrderedUnitalResourceAlgebra α}
   (hclo : (p₁ q₁ p₂ q₂ : α) → (h₁ : R p₁ p₂) → (h₂ : R q₁ q₂) → R (p₁ * q₁) (p₂ * q₂))
   (p q : Quotient R)
   : R (p.out * q.out) ((quotientMul hclo p q).out) := by
-  have := (Quotient.eq_mk_iff_out (x := quotientMul hclo p q) (y := p.out * q.out)).1
-  sorry
+  have := @Quot.induction_on₂ α α (r := R) (s := R)
+    (δ := fun p q ↦ R (ra.mul p.out q.out) ((quotientMul hclo p q).out))
+    (q₁ := p) (q₂ := q) (by
+      have := quotientMul_commutes_out_singleton hclo
+      aesop)
+  have : R (p.out * q.out) (quotientMul hclo p q).out := by aesop
+  assumption
 
 def quotient
   {α : Type*} {R : Setoid α} {ra : OrderedUnitalResourceAlgebra α}
   (hclo : (p₁ q₁ p₂ q₂ : α) → (h₁ : R p₁ p₂) → (h₂ : R q₁ q₂) → R (p₁ * q₁) (p₂ * q₂))
-  (hvalid : (x x' : α) → R x x' → ra.valid x → ra.valid x')
+  -- (hvalid : (x x' : α) → R x x' → ra.valid x → ra.valid x')
   (hle : (x x' y y' : α) → x ≤ y → R x x' → R y y' → x' ≤ y')
   : OrderedUnitalResourceAlgebra (Quotient R) := {
   mul := quotientMul hclo
@@ -338,7 +362,7 @@ def quotient
   le p q := ∀ p' q' : α, ⟦p'⟧ = p → ⟦q'⟧ = q → p' ≤ q'
   le_refl := by
     intro x p q h₁ h₂
-    have hx : ⟦x.out⟧ = x := sorry
+    have hx : ⟦x.out⟧ = x := Quotient.out_eq x
     rw [← hx] at h₁ h₂
     apply hle x.out p x.out q (by aesop)
     · have := Quotient.exact h₁
@@ -360,12 +384,39 @@ def quotient
   elim := by
     simp [Covariant, Function.swap]
     intro m n₁ n₂ h p' q' hp hq
-    -- have := ra.elim m.out n₁.out n₂.out
-    sorry
+    have helim := @ra.elim m.out n₁.out n₂.out
+    simp [Function.swap] at helim
+    have : n₁.out ≤ n₂.out := by aesop
+    have : n₁.out * m.out ≤ n₂.out * m.out := by aesop
+    apply hle (n₁.out * m.out) p' (n₂.out * m.out) q' (by assumption)
+    · have h₁ := quotientMul_commutes_out hclo n₁ m
+      have h₂ : R (quotientMul hclo n₁ m).out p' := by
+        have h₃ : ⟦(quotientMul hclo n₁ m).out⟧ = quotientMul hclo n₁ m :=
+          Quotient.out_eq _
+        have : Quot.mk R p' = ⟦(quotientMul hclo n₁ m).out⟧ := by
+          rw [h₃]
+          aesop
+        have := Quotient.exact this
+        apply Quotient.exact
+        aesop
+      have h₃ : R (n₁.out * m.out) p' := R.trans h₁ h₂
+      assumption
+    · have h₁ := quotientMul_commutes_out hclo n₂ m
+      have h₂ : R (quotientMul hclo n₂ m).out q' := by
+        have h₃ : ⟦(quotientMul hclo n₂ m).out⟧ = quotientMul hclo n₂ m :=
+          Quotient.out_eq _
+        have : Quot.mk R q' = ⟦(quotientMul hclo n₂ m).out⟧ := by
+          rw [h₃]
+          aesop
+        have := Quotient.exact this
+        apply Quotient.exact
+        aesop
+      have h₃ : R (n₂.out * m.out) q' := R.trans h₁ h₂
+      assumption
   valid_one := by
     intro o ho
     simp [OfNat.ofNat, One.one] at ho
-    have : R o One.one := sorry
+    have : R o One.one := Quotient.exact ho
     apply hvalid One.one o (R.symm this)
     exact ra.valid_one
   valid_mono := by
@@ -393,7 +444,7 @@ def quotient
         have : ⟦(quotientMul hclo a b).out⟧ = quotientMul hclo a b := Quotient.out_eq _
         aesop
       have := h (a.out * b.out) (by aesop)
-      sorry
+      aesop
     rw [← ha] at hx
     have : R x a.out := Quotient.exact (by assumption)
     have := hvalid a.out x (R.symm (by assumption)) (by assumption)
