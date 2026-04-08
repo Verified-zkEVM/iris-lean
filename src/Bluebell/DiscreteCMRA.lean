@@ -451,4 +451,16 @@ def quotient
     assumption
 }
 
+instance OrderedUnitalResourceAlgebra.instUCMRA
+  [ra : OrderedUnitalResourceAlgebra M]
+  : Iris.UCMRA M := {
+  unit := ra.one
+  unit_valid := ra.valid_one
+  unit_left_id := by
+    intro x
+    have : One.one * x = x := by change 1 * x = x; aesop
+    aesop
+  pcore_unit := by rfl
+}
+
 end OrderedUnitalResourceAlgebra
