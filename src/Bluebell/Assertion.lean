@@ -3,8 +3,8 @@ import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Order.UpperLower.CompleteLattice
 import Mathlib.Tactic.Use
-import Bluebell.Algebra.DiscreteCMRA
-import Bluebell.ProbabilityTheory.MeasureOnSpace
+import Bluebell.DiscreteCMRA
+import Bluebell.MeasureOnSpace
 import Iris.BI.BIBase
 import Iris.Algebra.UPred
 
@@ -15,8 +15,6 @@ namespace Bluebell
 /-- Given an `OrderedUnitalResouceAlgebra M`, we define `Assertion M` to be the
     upwards closed set of assertions. -/
 abbrev Assertion (M : Type*) [OrderedUnitalResourceAlgebra M] := UpperSet M
-
-#check Iris.UCMRA
 
 /-- write `P a` instead of `a ∈ P` -/
 instance {M : Type*} [OrderedUnitalResourceAlgebra M] : FunLike (Assertion M) M Prop where
@@ -67,11 +65,6 @@ variable {I Var Val : Type*} [DecidableEq Var] [Inhabited Val]
 
 set_option quotPrecheck false in
 notation "MYPRED" => Iris.UPred (IndexedPSpPm I Var Val)
-
-@[simp]
-def uand (P Q : MYPRED) : MYPRED := {
-
-}
 
 @[simp]
 def and (P Q : Assertion M) : Assertion M := {
@@ -175,6 +168,7 @@ def ownPSp (P : I → PSp (Var → Val)) : Assertion (IndexedPSpPm I Var Val) :=
   bexists (fun p : IxCompatiblePermission P =>
     ownIndexedPSpPm P p)
 
+/-
 @[simp]
 def isDistributed {A : Type*} [MeasurableSpace A] (E : (Var → Val) → A) (μ : Measure A)
   : Assertion (IndexedPSpPm I Var Val) :=
@@ -184,6 +178,7 @@ def isDistributed {A : Type*} [MeasurableSpace A] (E : (Var → Val) → A) (μ 
       ∧ sorry
     )
   )
+-/
 
 end Specifics
 
@@ -191,6 +186,7 @@ section Laws
 
 variable {I Var Val : Type*} [hvar : DecidableEq Var] [hval : Inhabited Val]
 
+/-
 --@[simp]
 @[set_option quotPrecheck false]
 notation "bProp" => Assertion (@IndexedPSpPm I Var Val hvar hval)
@@ -215,6 +211,7 @@ theorem sep_comm {P Q : @bProp I Var Val hvar hval}
     use b₂, b₁
     have : b₁ * b₂ = b₂ * b₁ := CommMonoid.mul_comm b₁ b₂
     aesop
+-/
 
 end Laws
 

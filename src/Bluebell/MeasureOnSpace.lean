@@ -5,7 +5,7 @@
 import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Data.Set.Basic
-import Bluebell.Algebra.DiscreteCMRA
+import Bluebell.DiscreteCMRA
 
 /-! ## Independent product of probability measures -/
 
@@ -1265,7 +1265,7 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
 section PSpPm
 
 variable
-  {Var Val : Type u}
+  {Var Val : Type*}
 
 @[simp]
 def MeasureOnSpace.map (h : Ω → Ω') (ms : MeasureOnSpace Ω) : MeasureOnSpace Ω' :=
@@ -1431,7 +1431,7 @@ theorem PSpace.map_preserves_independentProduct
       @PSpace.map_preserves_measure Ω Ω' q f v hv
     aesop
 
-variable {Ω : Type}
+variable {Ω : Type*}
 
 @[simp]
 def Irr (p : Permission Var) :=
@@ -1611,14 +1611,26 @@ lemma hprod
       have := @PSpace.compatiblePerm_implies_independentProduct_compatiblePerm Var Val _ _
       aesop
 
-@[simp]
-def PSpPm [Inhabited Val] [DecidableEq Var] :=
+abbrev PSpPmProd (Var Val : Type*) [DecidableEq Var] [Inhabited Val] : Type _ :=
+  PSp (Var → Val) × Permission Var
+
+abbrev PSpPm (Var Val : Type*) [DecidableEq Var] [Inhabited Val] : Type _ :=
+  {P : PSpPmProd Var Val // P.1.compatiblePerm P.2}
+
+instance PSpPm.instOrderedUnitalResourceAlgebra
+  (Val Var : Type*) [DecidableEq Var] [Inhabited Val]
+  : OrderedUnitalResourceAlgebra (PSpPm Var Val) :=
   ProductRA.subalgebra
     (p := fun ((P : PSp (Var → Val)), p) ↦ PSp.compatiblePerm P p)
     hone hprod
 
-@[simp]
-def IndexedPSpPm {I : Type} [Inhabited Val] [DecidableEq Var] :=
-  OrderedUnitalResourceAlgebra.indexedProduct (fun (_i : I) ↦ @PSpPm Var Val _ _)
+abbrev IndexedPSpPm (I Var Val : Type*) [DecidableEq Var] [Inhabited Val] : Type _ :=
+  I → PSpPm Var Val
+
+instance IndexedPSpPm.instOrderedUnitalResourceAlgebra
+  (I Val Var : Type*) [DecidableEq Var] [Inhabited Val]
+  : OrderedUnitalResourceAlgebra (IndexedPSpPm I Var Val) :=
+  OrderedUnitalResourceAlgebra.indexedProduct (fun (_i : I) ↦
+    inferInstanceAs (OrderedUnitalResourceAlgebra (PSpPm Var Val)))
 
 end PSpPm
