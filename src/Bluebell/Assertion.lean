@@ -142,15 +142,16 @@ def entail (P Q : Assertion M) : Prop :=
 def bientail (P Q : Assertion M) : Prop :=
   entail P Q ∧ entail Q P
 
-notation:30 "⊢ " P => entail BTrue P
-notation:30 P " ⊢ " Q => entail P Q
-notation:30 P " ⊣⊢ " Q => bientail P Q
-notation:40 "∀'" K => bforall K
-notation:40 "∃'" K => bexists K
-notation:50 "⌈" φ "⌉" => lift φ
-notation:60 P " ∧' " Q => and P Q
-notation:60 P " ∨' " Q => or P Q
-notation:70 P:70 " *' " Q:71 => sep P Q
+-- Bluebell-specific notation (scoped to avoid conflicts with Iris BI notation)
+scoped notation:30 "⊢ " P => entail BTrue P
+scoped notation:30 P " ⊢ " Q => entail P Q
+scoped notation:30 P " ⊣⊢ " Q => bientail P Q
+scoped notation:40 "∀'" K => bforall K
+scoped notation:40 "∃'" K => bexists K
+scoped notation:50 "⌈" φ "⌉" => lift φ
+scoped notation:60 P " ∧' " Q => and P Q
+scoped notation:60 P " ∨' " Q => or P Q
+scoped notation:70 P:70 " *' " Q:71 => sep P Q
 
 structure CompatiblePermission (P : PSp (Var → Val)) where
   perm : Permission Var
