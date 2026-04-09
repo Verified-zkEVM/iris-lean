@@ -122,4 +122,58 @@ class FromPure [BI PROP] (a : outParam Bool) (P : PROP) (φ : outParam Prop) whe
   from_pure : <affine>?a ⌜φ⌝ ⊢ P
 export FromPure (from_pure)
 
+
+/-- `Frame p R P Q` states that we can frame resource `R` when proving `P`,
+leaving residual goal `Q`. That is, `□?p R ∗ Q ⊢ P`.
+This is the core class driving the `iFrame` tactic. -/
+class Frame (p : Bool) [BI PROP] (R P : PROP) (Q : outParam PROP) where
+  frame : □?p R ∗ Q ⊢ P
+export Frame (frame)
+
+/-- `MaybeFrame p R P Q progress` is like `Frame` but tracks whether actual framing
+progress was made. When `progress = false`, the default fallback was used (R was
+not actually consumed). This prevents exponential blowup in ∧/∨ decomposition. -/
+class MaybeFrame (p : Bool) [BI PROP] (R P : PROP)
+    (Q : outParam PROP) (progress : outParam Bool) where
+  maybe_frame : □?p R ∗ Q ⊢ P
+export MaybeFrame (maybe_frame)
+
+/-- `FromModal φ M sel P Q` states that goal `P` can be turned into modality `M`
+applied to `Q` under condition `φ`. Used by `iModIntro`. -/
+class FromModal {PROP1 PROP2 : Type _} [BI PROP1] [BI PROP2]
+    (φ : outParam Prop) (M : PROP1 → PROP2)
+    (sel : semiOutParam PROP1) (P : PROP2) (Q : outParam PROP1) where
+  from_modal : φ → M Q ⊢ P
+export FromModal (from_modal)
+
+/-- `ElimModal φ p p' P P' Q Q'` states how to eliminate a modality from
+hypothesis `□?p P` (producing `□?p' P'`) while transforming goal `Q` to `Q'`.
+Used by `iMod`. -/
+class ElimModal {PROP : Type _} [BI PROP]
+    (φ : outParam Prop) (p : Bool) (p' : outParam Bool)
+    (P : PROP) (P' : outParam PROP) (Q : PROP) (Q' : outParam PROP) where
+  elim_modal : φ → □?p P ∗ (□?p' P' -∗ Q') ⊢ Q
+export ElimModal (elim_modal)
+
+/-- `AddModal P P' Q` states that adding modality `P` transforms goal `Q`
+via intermediate `P'`. Used for modality-aware goal transformation. -/
+class AddModal [BI PROP] (P P' Q : PROP) where
+  add_modal : P ∗ (P' -∗ Q) ⊢ Q
+export AddModal (add_modal)
+
+/-- `MakeSep P Q PQ` normalizes `P ∗ Q` to `PQ`, simplifying emp away. -/
+class MakeSep [BI PROP] (P Q : PROP) (PQ : outParam PROP) where
+  make_sep : P ∗ Q ⊣⊢ PQ
+export MakeSep (make_sep)
+
+/-- `MakeAnd P Q PQ` normalizes `P ∧ Q` to `PQ`. -/
+class MakeAnd [BI PROP] (P Q : PROP) (PQ : outParam PROP) where
+  make_and : P ∧ Q ⊣⊢ PQ
+export MakeAnd (make_and)
+
+/-- `MakeOr P Q PQ` normalizes `P ∨ Q` to `PQ`. -/
+class MakeOr [BI PROP] (P Q : PROP) (PQ : outParam PROP) where
+  make_or : P ∨ Q ⊣⊢ PQ
+export MakeOr (make_or)
+
 end Iris.ProofMode
