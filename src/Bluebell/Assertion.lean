@@ -306,58 +306,98 @@ theorem bpersistently_mem (P : Assertion M) (m : M) :
   constructor <;> intro h <;> exact h
 
 instance assertionBI : Iris.BI (Assertion M) where
-  equiv_iff := by sorry
+  equiv_iff := by
+    intro P Q; constructor
+    · intro h; exact ⟨fun m hm => h ▸ hm, fun m hm => h ▸ hm⟩
+    · intro ⟨hPQ, hQP⟩
+      ext m; exact ⟨fun hm => hPQ m hm, fun hm => hQP m hm⟩
   entails_preorder := {
     refl := by intro P m h; exact h
     trans := by intro P Q R hab hbc m hm; exact hbc m (hab m hm)
   }
 
-  -- All NE proofs: discrete OFE means Dist n = Eq, so congruence suffices
+  -- All NE proofs: discrete OFE (Dist = Eq), so congruence suffices
   and_ne := ⟨fun _ _ _ h₁ _ _ h₂ => .of_eq (by subst h₁; subst h₂; rfl)⟩
   or_ne := ⟨fun _ _ _ h₁ _ _ h₂ => .of_eq (by subst h₁; subst h₂; rfl)⟩
   imp_ne := ⟨fun _ _ _ h₁ _ _ h₂ => .of_eq (by subst h₁; subst h₂; rfl)⟩
-  sForall_ne := by sorry
-  sExists_ne := by sorry
+  sForall_ne := by sorry -- liftRel (Dist n) → Dist n on sForall; trivial for discrete
+  sExists_ne := by sorry -- liftRel (Dist n) → Dist n on sExists; trivial for discrete
   sep_ne := ⟨fun _ _ _ h₁ _ _ h₂ => .of_eq (by subst h₁; subst h₂; rfl)⟩
   wand_ne := ⟨fun _ _ _ h₁ _ _ h₂ => .of_eq (by subst h₁; subst h₂; rfl)⟩
   persistently_ne := ⟨fun _ _ _ h => .of_eq (by subst h; rfl)⟩
   later_ne := ⟨fun _ _ _ h => h⟩
 
-  -- All axiom proofs use sorry for now — structure verified, proofs to follow
-  pure_intro := by sorry
-  pure_elim' := by sorry
-  and_elim_l := by sorry
-  and_elim_r := by sorry
-  and_intro := by sorry
-  or_intro_l := by sorry
-  or_intro_r := by sorry
-  or_elim := by sorry
-  imp_intro := by sorry
-  imp_elim := by sorry
-  sForall_intro := by sorry
-  sForall_elim := by sorry
-  sExists_intro := by sorry
-  sExists_elim := by sorry
-  sep_mono := by sorry
-  emp_sep := by sorry
-  sep_symm := by sorry
-  sep_assoc_l := by sorry
-  wand_intro := by sorry
-  wand_elim := by sorry
-  persistently_mono := by sorry
-  persistently_idem_2 := by sorry
-  persistently_emp_2 := by sorry
-  persistently_and_2 := by sorry
-  persistently_sExists_1 := by sorry
-  persistently_absorb_l := by sorry
-  persistently_and_l := by sorry
-  later_mono := by sorry
-  later_intro := by sorry
-  later_sForall_2 := by sorry
-  later_sExists_false := by sorry
-  later_sep := by sorry
-  later_persistently := by sorry
-  later_false_em := by sorry
+  -- Pure
+  pure_intro := by intro _ _ hφ _ _; exact hφ
+  pure_elim' := by intro _ P h m hm; exact h hm m trivial
+
+  -- And
+  and_elim_l := by intro _ _ _ ⟨hP, _⟩; exact hP
+  and_elim_r := by intro _ _ _ ⟨_, hQ⟩; exact hQ
+  and_intro := by intro _ _ _ hPQ hPR m hm; exact ⟨hPQ m hm, hPR m hm⟩
+
+  -- Or
+  or_intro_l := by intro _ _ _ hm; exact .inl hm
+  or_intro_r := by intro _ _ _ hm; exact .inr hm
+  or_elim := by intro _ _ _ hPR hQR _ hm; exact hm.elim (hPR _) (hQR _)
+
+  -- Imp (bimp: {a | ∀ b ≥ a, P b → Q b})
+  imp_intro := by
+    intro P _ _ hPQR m hPm b hmb hQb
+    exact hPQR b ⟨P.upper' hmb hPm, hQb⟩
+  imp_elim := by
+    intro _ _ _ hPQR m ⟨hPm, hQm⟩
+    exact hPQR m hPm m le_rfl hQm
+
+  -- sForall / sExists
+  sForall_intro := by intro _ _ h m hPm p hΨp; exact h p hΨp m hPm
+  sForall_elim := by intro _ _ hΨp _ hm; exact hm _ hΨp
+  sExists_intro := by intro _ _ hΨp _ hm; exact ⟨_, hΨp, hm⟩
+  sExists_elim := by intro _ _ h _ ⟨p, hΦp, hpm⟩; exact h p hΦp _ hpm
+
+  -- Sep
+  sep_mono := by
+    intro _ _ _ _ hPQ hP'Q' _ ⟨b₁, b₂, hle, hP, hP'⟩
+    exact ⟨b₁, b₂, hle, hPQ _ hP, hP'Q' _ hP'⟩
+  emp_sep := by
+    intro P; exact ⟨
+      fun _ ⟨b₁, b₂, hle, _, hP⟩ =>
+        P.upper' (le_trans (le_mul_of_one_le_left' (one_le b₁)) hle) hP,
+      fun m hPm => ⟨1, m, by simp, one_le 1, hPm⟩⟩
+  sep_symm := by
+    intro _ _ _ ⟨b₁, b₂, hle, hP, hQ⟩
+    exact ⟨b₂, b₁, mul_comm b₁ b₂ ▸ hle, hQ, hP⟩
+  sep_assoc_l := by
+    intro _ _ _ _ ⟨pq, r, hpqr, ⟨p, q, hpq, hP, hQ⟩, hR⟩
+    exact ⟨p, q * r, le_trans (mul_assoc p q r ▸ mul_left_mono hpq) hpqr, hP, q, r, le_rfl, hQ, hR⟩
+
+  -- Wand
+  wand_intro := by
+    intro _ _ _ hPQR m hPm b hQb
+    exact hPQR (m * b) ⟨m, b, le_rfl, hPm, hQb⟩
+  wand_elim := by
+    intro _ _ R hPQR _ ⟨b₁, b₂, hle, hP, hQ⟩
+    exact R.upper' hle (hPQR b₁ hP b₂ hQ)
+
+  -- Persistently (bpersistently P = {a | P 1})
+  persistently_mono := by intro _ _ h _ hm; exact h 1 hm
+  persistently_idem_2 := by intro _ _ hm; exact hm
+  persistently_emp_2 := by intro _ _; exact le_refl 1
+  persistently_and_2 := by intro _ _ _ hm; exact hm
+  persistently_sExists_1 := by sorry -- involves schematic ∃ encoding
+  persistently_absorb_l := by intro _ _ _ ⟨_, _, _, hP, _⟩; exact hP
+  persistently_and_l := by
+    intro P _ _ ⟨hP, hQ⟩
+    exact ⟨1, _, by simp, P.upper' (one_le 1) hP, hQ⟩
+
+  -- Later (= id)
+  later_mono := by intro _ _ h _ hm; exact h _ hm
+  later_intro := by intro _ _ hm; exact hm
+  later_sForall_2 := by sorry -- involves schematic ∀ encoding
+  later_sExists_false := by sorry -- involves schematic ∃ encoding
+  later_sep := ⟨fun _ hm => hm, fun _ hm => hm⟩
+  later_persistently := ⟨fun _ hm => hm, fun _ hm => hm⟩
+  later_false_em := by intro _ _ hm; exact .inr (fun _ _ hF => absurd hF id)
 
 end BIInstance
 
