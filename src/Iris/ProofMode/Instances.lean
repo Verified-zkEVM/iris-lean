@@ -567,3 +567,35 @@ instance fromPure_absorbingly (a : Bool) [BI PROP] (P : PROP) (φ : Prop)
     [h : FromPure a P φ] : FromPure false iprop(<absorb> P) φ where
   from_pure := absorbingly_affinely_intro_of_persistent.trans <|
     absorbingly_mono <| affinely_affinelyIf.trans h.1
+
+/-! ## Frame instances -/
+
+-- Base case: R exactly matches P, residual is emp
+instance (priority := default + 20) frame_here [BI PROP] (p : Bool) (R : PROP)
+    : Frame p R R iprop(emp) where
+  frame := sep_elim_l.trans intuitionisticallyIf_elim
+
+-- Frame under separating conjunction: search left
+-- Goal: □?p R ∗ (Q ∗ P₂) ⊢ P₁ ∗ P₂, given □?p R ∗ Q ⊢ P₁
+instance (priority := default + 5) frame_sep_l [BI PROP] (p : Bool)
+    (R P₁ P₂ Q : PROP) [Frame p R P₁ Q]
+    : Frame p R iprop(P₁ ∗ P₂) iprop(Q ∗ P₂) where
+  frame := sep_assoc.2.trans (sep_mono_l Frame.frame)
+
+-- Frame under separating conjunction: search right
+-- Goal: □?p R ∗ (P₁ ∗ Q) ⊢ P₁ ∗ P₂, given □?p R ∗ Q ⊢ P₂
+instance (priority := default + 4) frame_sep_r [BI PROP] (p : Bool)
+    (R P₁ P₂ Q : PROP) [Frame p R P₂ Q]
+    : Frame p R iprop(P₁ ∗ P₂) iprop(P₁ ∗ Q) where
+  frame :=
+    -- □?p R ∗ (P₁ ∗ Q) ⊢ □?p R ∗ (Q ∗ P₁) ⊢ (□?p R ∗ Q) ∗ P₁ ⊢ P₂ ∗ P₁ ⊢ P₁ ∗ P₂
+    (sep_mono_r sep_symm).trans <|
+    sep_assoc.2.trans <|
+    (sep_mono_l Frame.frame).trans <|
+    sep_symm
+
+-- Default fallback for MaybeFrame: no progress, R is unused
+instance (priority := default - 50) maybeFrame_default [BI PROP] (p : Bool) (R P : PROP)
+    [TCOr (Affine iprop(□?p R)) (Absorbing P)]
+    : MaybeFrame p R P P false where
+  maybe_frame := sep_elim_r
