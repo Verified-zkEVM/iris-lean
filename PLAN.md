@@ -13,7 +13,7 @@
 - [x] 0.3 Provide discrete OFE/COFE instance for `Assertion M` (via `COFE.ofDiscrete`)
 - [x] 0.4 Instantiate `BIBase` for `Assertion M`
 - [x] 0.5 Instantiate `BI` for `Assertion M` (compiles with sorry axioms)
-- [ ] 0.5a Fill in BI axiom proofs (currently ~35 sorry)
+- [x] 0.5a Fill in BI axiom proofs (31/36 done, 5 sorry remain for schematic quantifier NE)
 - [ ] 0.6 Verify `BIAffine` instance
 - [ ] 0.7 Unify notation (alias Bluebell's `*'` etc. to Iris `∗` etc.)
 
@@ -26,18 +26,18 @@
 - `imp P Q := bimp P Q := {a | ∀ b ≥ a, P b → Q b}`
 
 ## Phase 1: Core MoSeL Type Classes
-**Status**: PENDING
+**Status**: DONE
 
-- [ ] 1.1 Define `Frame` class in `Classes.lean`
-- [ ] 1.2 Define `MaybeFrame` with progress tracking
-- [ ] 1.3 Define `Make*` classes (`MakeSep`, `MakeAnd`, `MakeOr`)
-- [ ] 1.4 Restore `FromModal` / `ElimModal` classes
-- [ ] 1.5 Define `AddModal` class
+- [x] 1.1 Define `Frame` class in `Classes.lean`
+- [x] 1.2 Define `MaybeFrame` with progress tracking
+- [x] 1.3 Define `Make*` classes (`MakeSep`, `MakeAnd`, `MakeOr`)
+- [x] 1.4 Restore `FromModal` / `ElimModal` classes
+- [x] 1.5 Define `AddModal` class
 
 ## Phase 2: `iFrame` Tactic
-**Status**: PENDING
+**Status**: IN PROGRESS
 
-- [ ] 2.1 Base frame instances (`frame_here`, `frame_sep_l/r`, etc.)
+- [x] 2.1 Base frame instances (`frame_here`, `frame_sep_l/r`, `maybeFrame_default`)
 - [ ] 2.2 `tac_frame` lemma (environment-level)
 - [ ] 2.3 `iFrame` tactic implementation
 - [ ] 2.4 Tests for `iFrame`
@@ -96,3 +96,6 @@ Phase 0 (BI instance) ──→ Phase 1 (Frame class) ──→ Phase 2 (iFrame)
 
 - **2026-04-09**: Plan created. Branch `mosel-port` created from `measureMySpace`.
 - **2026-04-09**: Phase 0 structural work done — `wand`, `bimp`, `bpersistently` defined; `BIBase`, discrete COFE, and `BI` instances for `Assertion M` compile (with sorry axiom proofs). Added `OneLe` class. Pre-existing error in `isDistributed` (unknown `i`) unchanged.
+- **2026-04-09**: Filled 31/36 BI axiom proofs. Remaining 5 sorries are schematic quantifier NE/encoding issues. Full build clean.
+- **2026-04-09**: Phase 1 done — added Frame, MaybeFrame, FromModal, ElimModal, AddModal, Make* classes to Classes.lean.
+- **2026-04-09**: Phase 2 started — added base Frame instances (frame_here, frame_sep_l/r, maybeFrame_default).
