@@ -6,6 +6,7 @@ Authors: Markus de Medeiros
 import Iris.BI
 import Iris.BI.DerivedLaws
 import Iris.ProofMode.Modalities
+import Iris.ProofMode.Classes
 
 namespace Iris.ProofMode
 open Iris.BI
@@ -34,5 +35,27 @@ instance : IsModal (PROP1 := PROP) intuitionistically (.id rfl) .isEmpty where
   emp := intuitionistic
   mono := (intuitionistically_mono ·)
   sep := intuitionistically_sep_2
+
+/-! ## FromModal instances -/
+
+-- FromModal for persistently: goal <pers> P becomes P
+instance fromModal_persistently : FromModal (PROP1 := PROP) (PROP2 := PROP)
+    True persistently iprop(emp) iprop(<pers> P) P where
+  from_modal _ := .rfl
+
+-- FromModal for affinely: goal <affine> P becomes P
+instance fromModal_affinely : FromModal (PROP1 := PROP) (PROP2 := PROP)
+    True affinely iprop(emp) iprop(<affine> P) P where
+  from_modal _ := .rfl
+
+-- FromModal for intuitionistically: goal □ P becomes P
+instance fromModal_intuitionistically : FromModal (PROP1 := PROP) (PROP2 := PROP)
+    True intuitionistically iprop(emp) iprop(□ P) P where
+  from_modal _ := .rfl
+
+-- FromModal for identity: any goal P becomes P (lowest priority)
+instance (priority := default - 100) fromModal_id : FromModal (PROP1 := PROP) (PROP2 := PROP)
+    True id iprop(emp) P P where
+  from_modal _ := .rfl
 
 end Modalities
