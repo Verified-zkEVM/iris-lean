@@ -452,7 +452,7 @@ def quotient
 }
 
 instance OrderedUnitalResourceAlgebra.instUCMRA
-  [ra : OrderedUnitalResourceAlgebra M]
+  {M : Type*} [ra : OrderedUnitalResourceAlgebra M]
   : Iris.UCMRA M := {
   unit := ra.one
   unit_valid := ra.valid_one
