@@ -7,6 +7,7 @@ import Iris.ProofMode.Tactics.Clear
 import Iris.ProofMode.Tactics.Exact
 import Iris.ProofMode.Tactics.ExFalso
 import Iris.ProofMode.Tactics.Exists
+import Iris.ProofMode.Tactics.Frame
 import Iris.ProofMode.Tactics.Have
 import Iris.ProofMode.Tactics.Intro
 import Iris.ProofMode.Tactics.LeftRight

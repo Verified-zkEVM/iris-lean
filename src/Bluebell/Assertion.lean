@@ -399,6 +399,11 @@ instance assertionBI : Iris.BI (Assertion M) where
   later_persistently := ⟨fun _ hm => hm, fun _ hm => hm⟩
   later_false_em := by intro _ _ hm; exact .inr (fun _ _ hF => absurd hF id)
 
+/-- Bluebell's Assertion logic is affine: every proposition P satisfies P ⊢ emp.
+This is because emp = bident = {a | 1 ≤ a} and OneLe gives 1 ≤ a for all a. -/
+instance assertionBIAffine : Iris.BI.BIAffine (Assertion M) where
+  affine P := ⟨fun _ _ => one_le _⟩
+
 end BIInstance
 
 end Bluebell
