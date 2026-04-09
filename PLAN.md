@@ -45,11 +45,13 @@
 - [ ] 2.6 Add more Frame instances (∧, ∨, ∀, ∃, modalities)
 
 ## Phase 3: Restore Modality Introduction/Elimination Tactics
-**Status**: PENDING
+**Status**: PARTIAL
 
-- [ ] 3.1 `imodintro` tactic using `FromModal` + `IsModal`
+- [x] 3.1 `imodintro` tactic for `<pers>` goals (with `Persistent` instance)
+- [x] 3.3 `FromModal` instances for `persistently`, `affinely`, `intuitionistically`, `id`
+- [ ] 3.1a `imodintro` for `<affine>` and `□` goals
 - [ ] 3.2 `imod` tactic using `ElimModal`
-- [ ] 3.3 Standard modality instances (`persistently`, `affinely`, `intuitionistically`)
+- [ ] 3.4 Full context transformation in `imodintro` (IsModal actions)
 
 ## Phase 4: Bluebell-Specific Proof Mode Instances
 **Status**: PENDING
@@ -102,3 +104,5 @@ Phase 0 (BI instance) ──→ Phase 1 (Frame class) ──→ Phase 2 (iFrame)
 - **2026-04-09**: Phase 1 done — added Frame, MaybeFrame, FromModal, ElimModal, AddModal, Make* classes to Classes.lean.
 - **2026-04-09**: Phase 2 started — added base Frame instances (frame_here, frame_sep_l/r, maybeFrame_default).
 - **2026-04-09**: Phase 2 core done — `iframe` tactic works on Bluebell goals. Added BIAffine instance. Tests pass.
+- **2026-04-09**: iframe normalization: emp ∗ Q → Q and Q ∗ emp → Q in frame residuals.
+- **2026-04-09**: Phase 3 partial: imodintro for <pers> goals, FromModal instances for standard modalities.
