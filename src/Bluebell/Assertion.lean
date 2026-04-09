@@ -321,8 +321,8 @@ instance assertionBI : Iris.BI (Assertion M) where
   and_ne := ⟨fun _ _ _ h₁ _ _ h₂ => .of_eq (by subst h₁; subst h₂; rfl)⟩
   or_ne := ⟨fun _ _ _ h₁ _ _ h₂ => .of_eq (by subst h₁; subst h₂; rfl)⟩
   imp_ne := ⟨fun _ _ _ h₁ _ _ h₂ => .of_eq (by subst h₁; subst h₂; rfl)⟩
-  sForall_ne := by sorry -- liftRel (Dist n) → Dist n on sForall; trivial for discrete
-  sExists_ne := by sorry -- liftRel (Dist n) → Dist n on sExists; trivial for discrete
+  sForall_ne := fun h => Iris.liftRel_eq.mp h ▸ rfl
+  sExists_ne := fun h => Iris.liftRel_eq.mp h ▸ rfl
   sep_ne := ⟨fun _ _ _ h₁ _ _ h₂ => .of_eq (by subst h₁; subst h₂; rfl)⟩
   wand_ne := ⟨fun _ _ _ h₁ _ _ h₂ => .of_eq (by subst h₁; subst h₂; rfl)⟩
   persistently_ne := ⟨fun _ _ _ h => .of_eq (by subst h; rfl)⟩
@@ -385,7 +385,13 @@ instance assertionBI : Iris.BI (Assertion M) where
   persistently_idem_2 := by intro _ _ hm; exact hm
   persistently_emp_2 := by intro _ _; exact le_refl 1
   persistently_and_2 := by intro _ _ _ hm; exact hm
-  persistently_sExists_1 := by sorry -- involves schematic ∃ encoding
+  persistently_sExists_1 := by
+    -- <pers> (sExists Ψ) ⊢ sExists (fun q => ∃ a, ⌜Ψ a⌝ ∧ <pers> a = q)
+    -- Both sides reduce to ∃ a, Ψ a ∧ a 1, but with different BIBase wrappers
+    intro Ψ m ⟨p, hΨ, hp⟩
+    -- Goal: sExists at m of the RHS predicate
+    -- We need to provide a witness q and show the predicate holds
+    exact ⟨_, ⟨p, rfl⟩, hΨ, hp⟩
   persistently_absorb_l := by intro _ _ _ ⟨_, _, _, hP, _⟩; exact hP
   persistently_and_l := by
     intro P _ _ ⟨hP, hQ⟩
@@ -394,8 +400,22 @@ instance assertionBI : Iris.BI (Assertion M) where
   -- Later (= id)
   later_mono := by intro _ _ h _ hm; exact h _ hm
   later_intro := by intro _ _ hm; exact hm
-  later_sForall_2 := by sorry -- involves schematic ∀ encoding
-  later_sExists_false := by sorry -- involves schematic ∃ encoding
+  later_sForall_2 := by
+    -- (∀ p, ⌜Φ p⌝ → ▷ p) ⊢ ▷ sForall Φ, with later = id:
+    -- sForall (fun q => ∃ a, bimp (lift (Φ a)) a = q) at m ⊢ sForall Φ at m
+    intro Φ m hm p hΦ
+    -- hm : ∀ q, (∃ a, bimp (lift (Φ a)) a = q) → q m
+    -- Need: p m, given Φ p
+    -- Take q = bimp (lift (Φ p)) p, with witness a = p
+    have := hm _ ⟨p, rfl⟩
+    -- this : bimp (lift (Φ p)) p at m = ∀ b ≥ m, Φ p → p b
+    exact this m le_rfl hΦ
+  later_sExists_false := by
+    -- ▷ sExists Φ ⊢ ▷ False ∨ (∃ p, ⌜Φ p⌝ ∧ ▷ p), with later = id:
+    -- sExists Φ at m ⊢ or (lift False) (sExists ...) at m
+    intro Φ m ⟨p, hΦ, hp⟩
+    -- Need: False ∨ ∃ q, (∃ a, and (lift (Φ a)) a = q) ∧ q m
+    exact .inr ⟨_, ⟨p, rfl⟩, hΦ, hp⟩
   later_sep := ⟨fun _ hm => hm, fun _ hm => hm⟩
   later_persistently := ⟨fun _ hm => hm, fun _ hm => hm⟩
   later_false_em := by intro _ _ hm; exact .inr (fun _ _ hF => absurd hF id)
