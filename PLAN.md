@@ -38,9 +38,11 @@
 **Status**: IN PROGRESS
 
 - [x] 2.1 Base frame instances (`frame_here`, `frame_sep_l/r`, `maybeFrame_default`)
-- [ ] 2.2 `tac_frame` lemma (environment-level)
-- [ ] 2.3 `iFrame` tactic implementation
-- [ ] 2.4 Tests for `iFrame`
+- [x] 2.2 `tac_frame'` lemma (takes frame proof explicitly)
+- [x] 2.3 `iframe` tactic implementation (uses mkAppOptM + synthInstance)
+- [x] 2.4 Basic tests pass (frame_here, frame_sep_l work on Bluebell Assertions)
+- [ ] 2.5 Add MakeSep instances to normalize `emp ∗ Q → Q` in frame residuals
+- [ ] 2.6 Add more Frame instances (∧, ∨, ∀, ∃, modalities)
 
 ## Phase 3: Restore Modality Introduction/Elimination Tactics
 **Status**: PENDING
@@ -99,3 +101,4 @@ Phase 0 (BI instance) ──→ Phase 1 (Frame class) ──→ Phase 2 (iFrame)
 - **2026-04-09**: Filled 31/36 BI axiom proofs. Remaining 5 sorries are schematic quantifier NE/encoding issues. Full build clean.
 - **2026-04-09**: Phase 1 done — added Frame, MaybeFrame, FromModal, ElimModal, AddModal, Make* classes to Classes.lean.
 - **2026-04-09**: Phase 2 started — added base Frame instances (frame_here, frame_sep_l/r, maybeFrame_default).
+- **2026-04-09**: Phase 2 core done — `iframe` tactic works on Bluebell goals. Added BIAffine instance. Tests pass.
