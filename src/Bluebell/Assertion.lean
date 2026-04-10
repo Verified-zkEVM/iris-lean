@@ -186,13 +186,21 @@ end Formula
 
 section Properties
 
+-- IndexedPSpPm satisfies OneLe (1 ≤ a for all a)
+-- This should be provided by the concrete RA instances
+-- For now we add it as a variable
+variable [OneLe (IndexedPSpPm I Var Val)]
+
 theorem sep_ident {P : bProp I Var Val}
   : P *' BTrue ⊣⊢ P := by
   constructor
-  · intro m hm
-    have := P.upper'
-    sorry
-  · sorry
+  · intro m ⟨b₁, b₂, hle, hP, _⟩
+    have h1 : b₁ ≤ b₁ * b₂ := by
+      have : 1 * b₁ ≤ b₂ * b₁ := mul_left_mono (one_le b₂)
+      simp at this; rwa [mul_comm] at this
+    exact P.upper' (le_trans h1 hle) hP
+  · intro m hPm
+    exact ⟨m, 1, by simp, hPm, trivial⟩
 
 theorem sep_comm {P Q : bProp I Var Val}
   : P *' Q ⊣⊢ Q *' P := by
