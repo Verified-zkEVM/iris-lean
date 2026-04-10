@@ -74,4 +74,16 @@ example : P ⊢ (P -∗ Q) -∗ Q := by
 example : (iprop(⌜φ⌝) : Bluebell.Assertion M) ⊢ <pers> ⌜φ⌝ := by
   istart; iintro HP; imodintro; iexact HP
 
+-- Modality elimination: strip <pers>
+example : iprop(<pers> P) ⊢ P := by
+  istart; iintro HP; imod HP; iexact HP
+
+-- Modality elimination with frame
+example : iprop(<pers> P) ∗ Q ⊢ P ∗ Q := by
+  istart
+  iintro ⟨HP, HQ⟩
+  imod HP
+  iframe HP
+  iexact HQ
+
 end BluebellTests
