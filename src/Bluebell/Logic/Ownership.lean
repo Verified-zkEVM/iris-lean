@@ -56,13 +56,13 @@ theorem and_to_star (P Q : BProp I Var Val)
 /-- The own assertion is monotone: if b₁ ≤ b₂, then own b₂ ⊢ own b₁. -/
 theorem own_mono {b₁ b₂ : IndexedPSpPm I Var Val}
     (h : b₁ ≤ b₂) : BIBase.Entails (Bluebell.own b₂) (Bluebell.own b₁) := by
-  sorry
+  sorry -- le_trans h hm (blocked by BIBase instance diamond)
 
 /-- Separating conjunction of owns: own b₁ ∗ own b₂ ⊢ own (b₁ * b₂) -/
 theorem own_sep_combine {b₁ b₂ : IndexedPSpPm I Var Val}
     : BIBase.Entails (BIBase.sep (Bluebell.own b₁) (Bluebell.own b₂))
         (Bluebell.own (b₁ * b₂)) := by
-  sorry
+  sorry -- mul_le_mul' + le_trans (blocked by BIBase instance diamond)
 
 end Definitions
 
