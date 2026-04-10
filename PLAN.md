@@ -9,11 +9,11 @@
 **Status**: IN PROGRESS
 
 - [x] 0.1 Define missing connectives in `Assertion.lean` (`wand`, `bimp`)
-- [ ] 0.2 Prove `sep_ident` (`P *' BTrue ⊣⊢ P`) — currently sorry
+- [x] 0.2 Prove `sep_ident` (`P *' BTrue ⊣⊢ P`)
 - [x] 0.3 Provide discrete OFE/COFE instance for `Assertion M` (via `COFE.ofDiscrete`)
 - [x] 0.4 Instantiate `BIBase` for `Assertion M`
 - [x] 0.5 Instantiate `BI` for `Assertion M` (compiles with sorry axioms)
-- [x] 0.5a Fill in BI axiom proofs (31/36 done, 5 sorry remain for schematic quantifier NE)
+- [x] 0.5a Fill in ALL BI axiom proofs (36/36 done, 0 sorry in BI instance)
 - [ ] 0.6 Verify `BIAffine` instance
 - [ ] 0.7 Unify notation (alias Bluebell's `*'` etc. to Iris `∗` etc.)
 
@@ -111,3 +111,5 @@ Phase 0 (BI instance) ──→ Phase 1 (Frame class) ──→ Phase 2 (iFrame)
 - **2026-04-09**: Phase 3 partial: imodintro for <pers> goals, FromModal instances for standard modalities.
 - **2026-04-10**: Phase 4 done: Bluebell instances (Persistent, IntoPure, etc.), scoped notation, 12 tests.
 - **2026-04-10**: Phase 5 structural: Rebuilt Ownership, WeakestPre, JointCondition with MoSeL support.
+- **2026-04-10**: All BI axiom proofs complete (0 sorry). sep_ident proved. Only 1 sorry in Assertion.lean (isDistributed).
+- **2026-04-10**: imod skeleton added. Sorry count in Assertion.lean: 8 → 1.
