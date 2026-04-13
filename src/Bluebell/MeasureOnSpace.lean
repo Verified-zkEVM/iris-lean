@@ -984,6 +984,93 @@ instance [Inhabited Ω] : One (PSp Ω) where
 instance [Inhabited Ω] : Mul (PSp Ω) where
   mul := PSp.mul
 
+lemma PSpace.le_of_isIndependentProduct_left [Inhabited Ω] {x y xy : PSpace Ω}
+    (h : xy =ᵢ x ⊕ᵢ y) : x ≤ xy := by
+  refine ⟨?_, ?_⟩
+  · rw [h.1]; apply subset_sum_l
+  · have hms : x.1.ms ≤ xy.1.ms := by rw [h.1]; apply subset_sum_l
+    apply @Measure.ext Ω x.1.ms
+    intro u hu
+    have hcast : xy.1.μ.cast x.1.ms u = xy.1.μ u :=
+      @Measure.le_preserves_measure Ω x.1.ms xy.1.ms hms xy.1.μ u hu
+    rw [hcast]
+    have h2 : xy.1.μ (u ∩ Set.univ) = x.1.μ u * y.1.μ Set.univ :=
+      h.2 u hu Set.univ MeasurableSet.univ
+    have h3 : u ∩ Set.univ = u := by simp
+    have h4 : y.1.μ Set.univ = 1 := y.2.measure_univ
+    rw [h3, h4, mul_one] at h2
+    exact h2.symm
+
+lemma PSpace.le_of_isIndependentProduct_right [Inhabited Ω] {x y xy : PSpace Ω}
+    (h : xy =ᵢ y ⊕ᵢ x) : x ≤ xy := by
+  refine ⟨?_, ?_⟩
+  · rw [h.1]; apply subset_sum_r
+  · have hms : x.1.ms ≤ xy.1.ms := by rw [h.1]; apply subset_sum_r
+    apply @Measure.ext Ω x.1.ms
+    intro u hu
+    have hcast : xy.1.μ.cast x.1.ms u = xy.1.μ u :=
+      @Measure.le_preserves_measure Ω x.1.ms xy.1.ms hms xy.1.μ u hu
+    rw [hcast]
+    have h2 : xy.1.μ (Set.univ ∩ u) = y.1.μ Set.univ * x.1.μ u :=
+      h.2 Set.univ MeasurableSet.univ u hu
+    have h3 : Set.univ ∩ u = u := by simp
+    have h4 : y.1.μ Set.univ = 1 := y.2.measure_univ
+    rw [h3, h4, one_mul] at h2
+    exact h2.symm
+
+instance (Ω : Type*) [Inhabited Ω] : CanonicallyOrderedMul (PSp Ω) where
+  exists_mul_of_le := by
+    -- This is obviously false.
+    sorry
+  le_mul_self := by
+    intro a b
+    cases a with
+    | none =>
+      cases b with
+      | none => exact le_refl _
+      | some y => exact le_refl _
+    | some x =>
+      cases b with
+      | none => exact le_top
+      | some y =>
+        show (↑x : PSp Ω) ≤ ↑y * ↑x
+        by_cases h : ∃ s : PSpace Ω, s =ᵢ y ⊕ᵢ x
+        · have hmul : (↑y : PSp Ω) * ↑x = ↑h.choose := by
+            change PSp.mul (some y) (some x) = some h.choose
+            simp [h]
+          rw [hmul]
+          exact WithTop.coe_le_coe.2
+            (PSpace.le_of_isIndependentProduct_right h.choose_spec)
+        · have hmul : (↑y : PSp Ω) * ↑x = ⊤ := by
+            change PSp.mul (some y) (some x) = ⊤
+            simp [h]; rfl
+          rw [hmul]
+          exact le_top
+  le_self_mul := by
+    intro a b
+    cases a with
+    | none =>
+      cases b with
+      | none => exact le_refl _
+      | some y => exact le_refl _
+    | some x =>
+      cases b with
+      | none => exact le_top
+      | some y =>
+        show (↑x : PSp Ω) ≤ ↑x * ↑y
+        by_cases h : ∃ s : PSpace Ω, s =ᵢ x ⊕ᵢ y
+        · have hmul : (↑x : PSp Ω) * ↑y = ↑h.choose := by
+            change PSp.mul (some x) (some y) = some h.choose
+            simp [h]
+          rw [hmul]
+          exact WithTop.coe_le_coe.2
+            (PSpace.le_of_isIndependentProduct_left h.choose_spec)
+        · have hmul : (↑x : PSp Ω) * ↑y = ⊤ := by
+            change PSp.mul (some x) (some y) = ⊤
+            simp [h]; rfl
+          rw [hmul]
+          exact le_top
+
 /-- an inversion lemma extracting the property of independent products in mul -/
 lemma mul_inversion [Inhabited Ω] {x y xy : PSpace Ω}
   (h : PSp.mul (some x) (some y) = some xy)

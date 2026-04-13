@@ -17,21 +17,6 @@ abbrev Assertion (M : Type*) [OrderedUnitalResourceAlgebra M] :=
 
 section Formula
 
-#check Iris.UPred
-
--- (F, μ) ≤bb (G, ν) <=> F ⊆ G ∧ ν|F = μ
--- (F, μ) ≤iris (G, ν) <=> ∃(H, ρ), (G, ν) = (F, μ) * (H, ρ)
-
--- iris => bb
---   G = σ{F ∪ H}
---   (1) : ∀ U in F, V in H, ν(U ∩ V) = μ(U) * ρ(V).
---   ν|F = μ <=> ∀ U in F, μ(U) = ν(U)
---   from (1), set U := U, V := Univ, ν(U) = μ(U)
-
--- bb =/=> iris
--- choose H := G
---
-
 /-- Allows us to write `P a` instead of `a ∈ P` -/
 instance {M : Type*} [OrderedUnitalResourceAlgebra M] : FunLike (Assertion M) M Prop where
   coe := fun P => P.carrier
@@ -117,14 +102,6 @@ def bforall {A : Type*} (K : A → Assertion M) : Assertion M := {
     aesop
 }
 
-@[simp]
-def bident : Assertion M := {
-  carrier := {a | 1 ≤ a}
-  upper' := by
-    intro a b hle ha
-    simp at *
-    apply le_trans <;> aesop
-}
 
 @[simp]
 def entail (P Q : Assertion M) : Prop :=
@@ -165,11 +142,13 @@ def ownPSp (P : I → PSp (Var → Val)) : Assertion (IndexedPSpPm I Var Val) :=
     ownIndexedPSpPm P p)
 
 @[simp]
-def isDistributed {A : Type*} [MeasurableSpace A] (E : (Var → Val) → A) (μ : Measure A)
+def isDistributed {A : Type*} [MeasurableSpace A]
+  (E : (Var → Val) → A) (i : I) (μ : Measure A)
   : Assertion (IndexedPSpPm I Var Val) :=
   bexists (fun P : I → PSp (Var → Val) =>
     ownPSp P *' lift (
-      μ = (P i).1.μ.toPMF.map (E i)
+      (∀ j, (P j).isSome)
+      ∧ μ = (P i).1.μ.map (E i)
       ∧ sorry
     )
   )
@@ -185,10 +164,14 @@ section Properties
 theorem sep_ident {P : bProp I Var Val}
   : P *' BTrue ⊣⊢ P := by
   constructor
-  · intro m hm
-    have := P.upper'
-    sorry
-  · sorry
+  · intro m ⟨b₁, b₂, hle, hP, _⟩
+    have :
+    have h1 : b₁ ≤ b₁ * b₂ := by
+      have : 1 * b₁ ≤ b₂ * b₁ := mul_left_mono (one_le b₂)
+      simp at this; rwa [mul_comm] at this
+    exact P.upper' (le_trans h1 hle) hP
+  · intro m hPm
+    exact ⟨m, 1, by simp, hPm, trivial⟩
 
 theorem sep_comm {P Q : bProp I Var Val}
   : P *' Q ⊣⊢ Q *' P := by
