@@ -5,12 +5,21 @@ defaultTargets = ["Iris", "Bluebell", "IrisTest"]
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
+<<<<<<< HEAD
 rev = "v4.28.0"
 
 [[require]]
 name = "importGraph"
 scope = "leanprover-community"
 rev = "v4.28.0"
+=======
+rev = "v4.29.0"
+
+[[require]]
+name = "batteries"
+scope = "leanprover-community"
+rev = "v4.29.0"
+>>>>>>> upstream/master
 
 [[lean_lib]]
 name = "Iris"

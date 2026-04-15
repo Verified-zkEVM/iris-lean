@@ -3,11 +3,21 @@ Copyright (c) 2022 Lars König. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Lars König
 -/
+module
+
+@[expose] public section
+
 namespace Iris.Std
 
 /-- Represents a binary relation with two arguments of the same type `α`. -/
 abbrev Relation (α : Type _) := α → α → Prop
 
+/-- Require that a type `α` has a distinguished top element. -/
+class Top (α : Type u) where
+  top : α
+export Top (top)
+
+notation "⊤" => top
 
 /-- Require that a relation `R` on `a` is reflexive. -/
 class Reflexive (R : Relation α) where
@@ -55,5 +65,14 @@ export Associative (assoc)
 class Antisymmetric (R : Relation α) (S : outParam <| Relation α) where
   antisymm {x y : α} : (left : S x y) → (right : S y x) → R x y
 export Antisymmetric (antisymm)
+
+class Disjoint (α : Type u) where
+  disjoint : α -> α -> Prop
+export Disjoint (disjoint)
+infix:50 " ## " => Disjoint.disjoint
+
+class Injective (f : A -> B) where
+  inj : ∀ (a a' : A), f a = f a' -> a = a'
+export Injective (inj)
 
 end Iris.Std

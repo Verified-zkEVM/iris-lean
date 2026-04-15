@@ -1,6 +1,7 @@
 {"version": "1.1.0",
  "packagesDir": ".lake/packages",
  "packages":
+<<<<<<< HEAD
  [{"url": "https://github.com/leanprover-community/import-graph",
    "type": "git",
    "subDir": null,
@@ -71,10 +72,23 @@
    "inputRev": "master",
    "inherited": true,
    "configFile": "lakefile.toml"},
+=======
+ [{"url": "https://github.com/leanprover-community/batteries",
+   "type": "git",
+   "subDir": null,
+   "scope": "leanprover-community",
+   "rev": "756e3321fd3b02a85ffda19fef789916223e578c",
+   "name": "batteries",
+   "manifestFile": "lake-manifest.json",
+   "inputRev": "v4.29.0",
+   "inherited": false,
+   "configFile": "lakefile.toml"},
+>>>>>>> upstream/master
   {"url": "https://github.com/leanprover-community/quote4",
    "type": "git",
    "subDir": null,
    "scope": "leanprover-community",
+<<<<<<< HEAD
    "rev": "b8f98e9087e02c8553945a2c5abf07cec8e798c3",
    "name": "Qq",
    "manifestFile": "lake-manifest.json",
@@ -90,6 +104,13 @@
    "manifestFile": "lake-manifest.json",
    "inputRev": "main",
    "inherited": true,
+=======
+   "rev": "707efb56d0696634e9e965523a1bbe9ac6ce141d",
+   "name": "Qq",
+   "manifestFile": "lake-manifest.json",
+   "inputRev": "v4.29.0",
+   "inherited": false,
+>>>>>>> upstream/master
    "configFile": "lakefile.toml"}],
  "name": "iris",
  "lakeDir": ".lake"}
