@@ -1121,6 +1121,12 @@ lemma PSp.le_of_mul_right
   rw [this]
   apply PSp.le_of_mul_left
 
+lemma PSp.some_mono
+  [Inhabited Ω] {a b : PSpace Ω}
+  (h : (some a : PSp Ω) = (some b : PSp Ω))
+  : a = b := by
+  simp_all only [Option.some.injEq]
+
 lemma exists_of_ne_none {α} {a : Option α} (h : a ≠ none) :
   ∃ b, a = some b := by
   cases a with
