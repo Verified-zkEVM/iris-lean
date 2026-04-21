@@ -1699,8 +1699,45 @@ instance PSpPm.instOrderedUnitalResourceAlgebra
     (p := fun ((P : PSp (Var → Val)), p) ↦ PSp.compatiblePerm P p)
     hone hprod
 
+
+/-
+lemma PSp.le_of_mul_right
+  [Inhabited Ω] {a b : PSp Ω}
+  : a ≤ b * a := by
+-/
+
+@[simp]
+lemma PSpPm.le_of_mul_right
+  (Val Var : Type*) [DecidableEq Var] [Inhabited Val]
+  {a b : PSpPm Var Val}
+  : a ≤ b * a := by
+  have h₁ : (b * a).1.1 = b.1.1 * a.1.1 := by rfl
+  have h₂ : (b * a).1.2 = b.1.2 * a.1.2 := by rfl
+  constructor
+  · rw [h₁]
+    exact PSp.le_of_mul_right
+  · rw [h₂]
+    simp
+
 abbrev IndexedPSpPm (I Var Val : Type*) [DecidableEq Var] [Inhabited Val] : Type _ :=
   I → PSpPm Var Val
+
+@[simp]
+lemma IndexedPSpPm.le_of_mul_right
+  (I Val Var : Type*) [DecidableEq Var] [Inhabited Val]
+  {a b : IndexedPSpPm I Var Val}
+  : a ≤ b * a := by
+  intro i
+  simp_all only [PSp.compatiblePerm, Pi.mul_apply, PSpPm.le_of_mul_right]
+
+@[simp]
+lemma IndexedPSpPm.one_le
+  (I Val Var : Type*) [DecidableEq Var] [Inhabited Val]
+  {a : IndexedPSpPm I Var Val}
+  : 1 ≤ a := by
+  have : 1 ≤ a * 1 := le_of_mul_right I Val Var
+  have : a * 1 = a := MulOneClass.mul_one a
+  aesop
 
 instance IndexedPSpPm.instOrderedUnitalResourceAlgebra
   (I Val Var : Type*) [DecidableEq Var] [Inhabited Val]

@@ -1025,22 +1025,92 @@ variable [Finite Var] [Countable Val]
 example {P : bProp I Var Val} : ⊢ P -∗ BTrue := by
   exact Iris.BI.entails_wand fun m a a_1 => trivial
 
+omit [Finite Var] [Countable Val]
 lemma emp_implies_own_unit : emp ⊢ own (1 : IndexedPSpPm I Var Val) := by
-  sorry
+  intro m hv hemp
+  have : m ∈ {a | 1 ≤ a} := by
+    have : 1 ≤ m := IndexedPSpPm.one_le I Val Var
+    aesop
+  assumption
 
--- #check Iris.ProofMode.into_sep
+lemma true_subst_star
+  {P Q : bProp I Var Val} (h : Q ⊣⊢ BTrue)
+  : P ⊢ P ∗ Q := by
+  intro m hv hp
+  simp [Iris.BI.sep]
+  have : m ∈ sep P Q := by
+    simp [Membership.mem, Set.Mem, sep]
+    use m, 1
+    have : Q 1 := by
+      have : 1 ∈ (BTrue : bProp I Var Val) := by
+        simp [Membership.mem, Set.Mem, BTrue]
+        trivial
+      have := h.2 1 (by aesop) this
+      assumption
+    constructor
+    · have : m * 1 = m := MulOneClass.mul_one m
+      rw [this]
+    · exact ⟨hp, by assumption⟩
+  assumption
 
-example {A B C : bProp I Var Val} (h : ⊢ A ∗ B) (h' : B ⊢ C) : ⊢ A ∗ C := by
-  -- have bla := @Iris.ProofMode.from_wand
+noncomputable instance : OfNat (ValidIndexedPSpPm I Var Val) 1 where
+  ofNat := ⟨1, by aesop⟩
 
-  apply?
-  sorry
+noncomputable def validOne : ValidIndexedPSpPm I Var Val := 1
 
-example {P Q : bProp I Var Val} (h : Q ⊣⊢ BTrue) : P ⊢ P ∗ BTrue := by
-  have : (BTrue : bProp I Var Val) = iprop(emp) := by rfl
+noncomputable def k {A : Type*} : CompatibleKernel A (@validOne I Var Val _ _) := {
+  kernel := fun i _ => PSpace.unit.1.μ
+  isProb := fun i a => by
+    have := (@validOne.PSpace I Var Val _ _ i).2
+    assumption
+  isComp := by
+    intro i a
+    cases h : (@validOne I Var Val _ _).1 i
+    obtain ⟨p, h⟩ := h
+    aesop
+}
+
+lemma step_one : (BTrue : bProp I Var Val) ⊢ own (validOne.val : IndexedPSpPm I Var Val) := by
+  intro m hv ht
+  simp [own]
+  have : validOne.val = (1 : IndexedPSpPm I Var Val) := by rfl
   rw [this]
-  -- A * B ∧ B -∗ C ⊢ A * C
-  exact Iris.ProofMode.from_and_intro (fun m a a_1 => a_1) fun m a a_1 => trivial
+  have : m ∈ own 1 := by
+    simp [Membership.mem, Set.Mem, own]
+    assumption
+  assumption
+
+noncomputable abbrev ASSERTION_TWO {A : Type*} [MeasurableSpace A] (μ : Measure A)
+  : bProp I Var Val :=
+  iprop(⌜∀ i : I,
+    (validOne.μ i : @Measure (Var → Val) (validOne.ms i))
+      = μ.bind (k.kernel i)⌝)
+
+lemma second_trivial
+  {A : Type*} [Inhabited A] [MeasurableSpace A] (μ : Measure A)
+  : ⊢ @ASSERTION_TWO I Var Val _ _ _ _ μ := by
+  intro m _ _ i
+  let o := validOne (I := I) (Var := Var) (Val := Val)
+  have : o.μ i = μ.bind (@k.kernel (Var := Var) (Val := Val) i) := by
+    have : o.μ i = PSpace.unit.1.μ := by rfl
+    rw [this]
+    have := (@k.kernel (Var := Var) (Val := Val) i) ∘ₘ μ
+    sorry
+  rw [this]
+
+lemma step_two {A : Type*} [MeasurableSpace A] [Inhabited A] (μ : Measure A) :
+  own (1 : IndexedPSpPm I Var Val) ⊢ own (1 : IndexedPSpPm I Var Val) ∗ ASSERTION_TWO μ := by
+  apply true_subst_star
+  constructor
+  · intro m hv ha
+    have : m ∈ BTrue := sorry
+    assumption
+  · have := @second_trivial I Var Val _ _ _ _ _ μ
+    assumption
+
+noncomputable abbrev ASSERTION_THREE
+  {A : Type*} [Inhabited A] (μ : PMF A) : bProp I Var Val :=
+  iprop(∀ (v : μ.support), own (fun i => sorry) -∗ BTrue)
 
 omit [Finite Var] [Countable Val] in
 lemma lem1 {P : bProp I Var Val} : P ⊢ P ∗ BTrue := by
@@ -1048,9 +1118,6 @@ lemma lem1 {P : bProp I Var Val} : P ⊢ P ∗ BTrue := by
   rw [this]
   -- A * B ∧ B -∗ C ⊢ A * C
   exact Iris.ProofMode.from_and_intro (fun m a a_1 => a_1) fun m a a_1 => trivial
-
-noncomputable instance : OfNat (ValidIndexedPSpPm I Var Val) 1 where
-  ofNat := ⟨1, by aesop⟩
 
 -- instance : OfNat (CompatibleKernel A 1) 1 := _
 
@@ -1065,7 +1132,9 @@ lemma C_True {A : Type} {μ : PMF A} :
   exact emp_implies_own_unit
   apply Iris.BI.BIBase.Entails.trans
   let one : ValidIndexedPSpPm I Var Val := 1
-  let κ : CompatibleKernel A one := ⟨fun i _ ↦ one.μ i, sorry, sorry⟩
+  let κ : CompatibleKernel A one := ⟨fun i _ ↦ one.μ i, by
+
+  , sorry⟩
   have :
     iprop(own one.val : bProp I Var Val) ⊢
         own one.val ∗
