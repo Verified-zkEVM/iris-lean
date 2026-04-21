@@ -17,7 +17,7 @@ abbrev Assertion (M : Type*) [OrderedUnitalResourceAlgebra M] :=
   UpperSet M
 
 @[simp]
-def bProp (I Var Val : Type*) [DecidableEq Var] [Inhabited Val] :=
+abbrev bProp (I Var Val : Type*) [DecidableEq Var] [Inhabited Val] :=
   Assertion (IndexedPSpPm I Var Val)
 
 section ValidIndexedPSpPm
@@ -606,20 +606,6 @@ noncomputable instance assertionBI : Iris.BI (bProp I Var Val) where
 
 end BIInstance
 
-/-
-notation:30 "⊢ " P => entail BTrue P
-notation:30 P " ⊢ " Q => entail P Q
-notation:30 P " ⊣⊢ " Q => bientail P Q
-notation:40 "∀'" K => bforall K
-notation:40 "∃'" K => bexists K
-notation:40 "∀'" x ", " K => bforall (fun x => K)
-notation:40 "∃'" x ", " K => bexists (fun x => K)
-notation:60 P:60 " ∧' " Q:61 => and P Q
-notation:60 P:60 " ∨' " Q:61 => or P Q
-notation:70 P:70 " *' " Q:71 => sep P Q
-notation:80 "↑" φ:80 => lift φ
--/
-
 structure IxCompatiblePermission (P : I → PSp (Var → Val)) where
   perm : I → Permission Var
   comp : ∀ i, (P i).compatiblePerm (perm i)
@@ -661,7 +647,7 @@ structure CompatibleKernel (A : Type*) (m : ValidIndexedPSpPm I Var Val) where
   isProb : ∀ (i : I) (a : A), IsProbabilityMeasure (kernel i a)
   isComp : ∀ (i : I) (a : A), PSpace.compatiblePerm ⟨⟨m.ms i, kernel i a⟩, isProb i a⟩ (m.perm i)
 
-def cond {A Var Val : Type*}
+def jointConditioning {A Var Val : Type*}
   [DecidableEq Var] [Inhabited Val] [Finite Var] [Countable Val]
   (μ : PMF A) (K : A → bProp I Var Val)
   : bProp I Var Val :=
@@ -669,9 +655,17 @@ def cond {A Var Val : Type*}
     ∃ m : ValidIndexedPSpPm I Var Val,
     ∃ κ : CompatibleKernel A m,
       own m.val
-        ∧ (∀ (i : I), ⌜m.μ i = Measure.bind (mα := ⊤) (mβ := m.ms i) μ (κ.kernel i)⌝)
-        ∧ (∀ (v : μ.support), ⌜(fun i => ⟨⟨some ⟨⟨m.ms i, κ.kernel i v⟩, κ.isProb i v⟩, m.perm i⟩, κ.isComp i v⟩) ∈ (K v).carrier⌝
-  ))
+        ∗ (∀ (i : I), ⌜m.μ i = Measure.bind (mα := ⊤) (mβ := m.ms i) μ (κ.kernel i)⌝)
+        ∗
+          (
+            ∀ (v : μ.support),
+              (
+                own (fun i => ⟨⟨some ⟨⟨m.ms i, κ.kernel i v⟩, κ.isProb i v⟩, m.perm i⟩, κ.isComp i v⟩) -∗
+                  (K v))
+          )
+  )
+
+notation "𝒞" "⟨" μ "⟩" v ";" K => jointConditioning μ (fun v => iprop(K))
 
 def wp {Var Val : Type*}
   [DecidableEq Var] [Inhabited Val] [Finite Var] [Countable Val]
@@ -1025,6 +1019,77 @@ theorem sep_assoc {P Q R : bProp I Var Val}
           rw [mul_comm b₁ (c₁ * c₂), mul_comm b₁ b₂]
           exact mul_left_mono hle'
       _ ≤ m := hle
+
+variable [Finite Var] [Countable Val]
+
+example {P : bProp I Var Val} : ⊢ P -∗ BTrue := by
+  exact Iris.BI.entails_wand fun m a a_1 => trivial
+
+lemma emp_implies_own_unit : emp ⊢ own (1 : IndexedPSpPm I Var Val) := by
+  sorry
+
+-- #check Iris.ProofMode.into_sep
+
+example {A B C : bProp I Var Val} (h : ⊢ A ∗ B) (h' : B ⊢ C) : ⊢ A ∗ C := by
+  -- have bla := @Iris.ProofMode.from_wand
+
+  apply?
+  sorry
+
+example {P Q : bProp I Var Val} (h : Q ⊣⊢ BTrue) : P ⊢ P ∗ BTrue := by
+  have : (BTrue : bProp I Var Val) = iprop(emp) := by rfl
+  rw [this]
+  -- A * B ∧ B -∗ C ⊢ A * C
+  exact Iris.ProofMode.from_and_intro (fun m a a_1 => a_1) fun m a a_1 => trivial
+
+omit [Finite Var] [Countable Val] in
+lemma lem1 {P : bProp I Var Val} : P ⊢ P ∗ BTrue := by
+  have : (BTrue : bProp I Var Val) = iprop(emp) := by rfl
+  rw [this]
+  -- A * B ∧ B -∗ C ⊢ A * C
+  exact Iris.ProofMode.from_and_intro (fun m a a_1 => a_1) fun m a a_1 => trivial
+
+noncomputable instance : OfNat (ValidIndexedPSpPm I Var Val) 1 where
+  ofNat := ⟨1, by aesop⟩
+
+-- instance : OfNat (CompatibleKernel A 1) 1 := _
+
+lemma C_True {A : Type} {μ : PMF A} :
+    ⊢ (𝒞⟨μ⟩ v; BTrue : bProp I Var Val) := by
+  let m := (1 : IndexedPSpPm I Var Val)
+  unfold jointConditioning
+  -- simp
+  -- intros m m_valid _
+  unfold Iris.BI.BIBase.EmpValid
+  apply Iris.BI.BIBase.Entails.trans
+  exact emp_implies_own_unit
+  apply Iris.BI.BIBase.Entails.trans
+  let one : ValidIndexedPSpPm I Var Val := 1
+  let κ : CompatibleKernel A one := ⟨fun i _ ↦ one.μ i, sorry, sorry⟩
+  have :
+    iprop(own one.val : bProp I Var Val) ⊢
+        own one.val ∗
+          (∀ i, ⌜one.μ i = κ.kernel i ∘ₘ @PMF.toMeasure _ ⊤ μ⌝) := by sorry
+  exact this
+  apply Iris.BI.BIBase.Entails.trans
+  exact lem1
+
+  apply Iris.BI.BIBase.Entails.trans
+  have : iprop(BTrue) ⊢
+    iprop(∀ v : μ.support, (own (fun (i : I) => (⟨(some ⟨{ ms := one.ms i, μ := κ.kernel i ↑v }, sorry⟩, m.perm i), sorry⟩ : PSpPm Var Val))) := sorry
+
+
+  -- apply Iris.BI.BIBase.Entails.trans
+
+
+
+
+
+  -- A ⊢ B and B ⊢ C
+
+
+
+  sorry
 
 end Properties
 
