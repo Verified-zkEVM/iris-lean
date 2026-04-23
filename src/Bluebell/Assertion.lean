@@ -1080,37 +1080,109 @@ lemma step_one : (BTrue : bProp I Var Val) ⊢ own (validOne.val : IndexedPSpPm 
     assumption
   assumption
 
-noncomputable abbrev ASSERTION_TWO {A : Type*} [MeasurableSpace A] (μ : Measure A)
-  : bProp I Var Val :=
-  iprop(⌜∀ i : I,
-    (validOne.μ i : @Measure (Var → Val) (validOne.ms i))
-      = μ.bind (k.kernel i)⌝)
+noncomputable abbrev ASSERTION_TWO {A : Type*} (μ : PMF A) : bProp I Var Val :=
+  iprop(⌜∀ i : I, (validOne.μ i : @Measure (Var → Val) (validOne.ms i))
+    = Measure.bind (α := A) (mα := ⊤) (mβ := validOne.ms i) μ (k.kernel i)⌝)
 
-lemma second_trivial
-  {A : Type*} [Inhabited A] [MeasurableSpace A] (μ : Measure A)
-  : ⊢ @ASSERTION_TWO I Var Val _ _ _ _ μ := by
+lemma second_trivial {A : Type*} (μ : PMF A)
+  : ⊢ (ASSERTION_TWO μ : bProp I Var Val) := by
   intro m _ _ i
   let o := validOne (I := I) (Var := Var) (Val := Val)
-  have : o.μ i = μ.bind (@k.kernel (Var := Var) (Val := Val) i) := by
+  have : o.μ i = Measure.bind (α := A) (mα := ⊤) μ (@k.kernel (Var := Var) (Val := Val) i) := by
     have : o.μ i = PSpace.unit.1.μ := by rfl
     rw [this]
-    have := (@k.kernel (Var := Var) (Val := Val) i) ∘ₘ μ
-    sorry
+    have : (k.kernel (A := A) (Var := Var) (Val := Val) i) =
+      fun _ => (PSpace.unit.1.μ : @Measure (Var → Val) (validOne.ms i)) := by rfl
+    rw [this, MeasureTheory.Measure.bind_const]
+    aesop
   rw [this]
 
-lemma step_two {A : Type*} [MeasurableSpace A] [Inhabited A] (μ : Measure A) :
-  own (1 : IndexedPSpPm I Var Val) ⊢ own (1 : IndexedPSpPm I Var Val) ∗ ASSERTION_TWO μ := by
+lemma step_two {A : Type*} (μ : PMF A) :
+  own (1 : IndexedPSpPm I Var Val)
+    ⊢ own (1 : IndexedPSpPm I Var Val) ∗ ASSERTION_TWO μ := by
   apply true_subst_star
   constructor
   · intro m hv ha
-    have : m ∈ BTrue := sorry
+    have : m ∈ BTrue := by trivial
     assumption
-  · have := @second_trivial I Var Val _ _ _ _ _ μ
+  · have := @second_trivial I Var Val _ _ A μ
     assumption
 
 noncomputable abbrev ASSERTION_THREE
-  {A : Type*} [Inhabited A] (μ : PMF A) : bProp I Var Val :=
-  iprop(∀ (v : μ.support), own (fun i => sorry) -∗ BTrue)
+  {A : Type*} (μ : PMF A) : bProp I Var Val :=
+  iprop(∀ (_v : μ.support), own validOne.val -∗ BTrue)
+
+lemma step_three {A : Type*} (μ : PMF A)
+  :   own (1 : IndexedPSpPm I Var Val) ∗ ASSERTION_TWO μ
+    ⊢ own (1 : IndexedPSpPm I Var Val) ∗ ASSERTION_TWO μ ∗ BTrue
+  := by
+  intro m hv hp
+  apply true_subst_star
+  constructor
+  · intro m hv hp; trivial
+  · intro m hm hp
+    have := @second_trivial I Var Val _ _ A μ
+    have : m ∈ iprop(ASSERTION_TWO μ ∗ BTrue) := by
+      show m ∈ (sep (ASSERTION_TWO μ) BTrue)
+      simp [sep]
+      use m, 1
+      constructor <;> aesop
+    assumption
+  assumption
+  have h := @step_one I Var Val _ _
+  have := h m hv (by trivial)
+  aesop
+
+noncomputable abbrev ASSERTION_FOUR
+  {A : Type*} (μ : PMF A) : bProp I Var Val :=
+  iprop(
+    ∃ m : ValidIndexedPSpPm I Var Val,
+    ∃ κ : CompatibleKernel A m,
+      own m.val
+        ∗ ASSERTION_TWO μ
+        ∗ ASSERTION_THREE μ
+  )
+
+lemma step_four
+  {A : Type*} (μ : PMF A) :
+  (own (1 : IndexedPSpPm I Var Val) ∗ ASSERTION_TWO μ ∗ ASSERTION_THREE μ : bProp I Var Val)
+    ⊢ ASSERTION_FOUR μ
+  := by
+  intro a hv hp
+  simp [ASSERTION_THREE] at hp
+  unfold ASSERTION_FOUR
+  have : a ∈ iprop(∃ (m : ValidIndexedPSpPm I Var Val) (k : CompatibleKernel A m),
+    own m.val ∗ ASSERTION_TWO μ ∗ ASSERTION_THREE μ) := by
+    simp [Membership.mem, Set.Mem]
+    have : a ∈ iprop(own validOne.val ∗ ASSERTION_TWO μ ∗ ASSERTION_THREE μ) := by sorry
+    simp [Iris.BI.exists, Iris.BI.sExists, sExistsA]
+    apply Set.mem_setOf.2
+    use validOne.val
+    use (@validOne I Var Val _ _).property
+    constructor
+    · constructor
+      exact k
+    · assumption
+  assumption
+
+noncomputable abbrev ASSERTION_FIVE
+  {A : Type*} (μ : PMF A) : bProp I Var Val :=
+  𝒞⟨μ⟩ _v; BTrue
+
+lemma step_five
+  {I Var Val : Type*} [DecidableEq Var] [Inhabited Val] [Finite Var] [Countable Val]
+  {A : Type*} (μ : PMF A)
+  : (ASSERTION_FOUR μ : bProp I Var Val) ⊢ ASSERTION_FIVE μ := by
+  intro a hv hp
+  unfold ASSERTION_FOUR at hp
+  unfold ASSERTION_FIVE
+  have : a ∈ ASSERTION_FIVE μ := by
+    unfold ASSERTION_FIVE
+    simp [jointConditioning]
+    apply Set.mem_setOf.2
+
+    sorry
+  assumption
 
 omit [Finite Var] [Countable Val] in
 lemma lem1 {P : bProp I Var Val} : P ⊢ P ∗ BTrue := by
@@ -1121,44 +1193,43 @@ lemma lem1 {P : bProp I Var Val} : P ⊢ P ∗ BTrue := by
 
 -- instance : OfNat (CompatibleKernel A 1) 1 := _
 
-lemma C_True {A : Type} {μ : PMF A} :
-    ⊢ (𝒞⟨μ⟩ v; BTrue : bProp I Var Val) := by
-  let m := (1 : IndexedPSpPm I Var Val)
+#check jointConditioning
+
+lemma C_True
+  {I Var Val : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] {A : Type} {μ : PMF A}
+  : ⊢ (𝒞⟨μ⟩ v; BTrue : bProp I Var Val) := by
+  intro m hv hemp
   unfold jointConditioning
-  -- simp
-  -- intros m m_valid _
-  unfold Iris.BI.BIBase.EmpValid
-  apply Iris.BI.BIBase.Entails.trans
-  exact emp_implies_own_unit
-  apply Iris.BI.BIBase.Entails.trans
-  let one : ValidIndexedPSpPm I Var Val := 1
-  let κ : CompatibleKernel A one := ⟨fun i _ ↦ one.μ i, by
-
-  , sorry⟩
-  have :
-    iprop(own one.val : bProp I Var Val) ⊢
-        own one.val ∗
-          (∀ i, ⌜one.μ i = κ.kernel i ∘ₘ @PMF.toMeasure _ ⊤ μ⌝) := by sorry
-  exact this
-  apply Iris.BI.BIBase.Entails.trans
-  exact lem1
-
-  apply Iris.BI.BIBase.Entails.trans
-  have : iprop(BTrue) ⊢
-    iprop(∀ v : μ.support, (own (fun (i : I) => (⟨(some ⟨{ ms := one.ms i, μ := κ.kernel i ↑v }, sorry⟩, m.perm i), sorry⟩ : PSpPm Var Val))) := sorry
-
-
-  -- apply Iris.BI.BIBase.Entails.trans
-
-
-
-
-
-  -- A ⊢ B and B ⊢ C
-
-
-
-  sorry
+  simp [Iris.BI.exists, Iris.BI.sExists, sExistsA]
+  use validOne.val
+  use (@validOne I Var Val _ _).property
+  constructor
+  · use m, validOne.val
+    constructor
+    · show m * 1 ≤ m
+      simp_all only [bProp, PSp.compatiblePerm, mul_one, le_refl]
+    · constructor
+      · sorry
+      · use validOne.val, validOne.val
+        constructor
+        · show 1 * 1 ≤ 1; simp
+        · simp_all only [bProp, PSp.compatiblePerm, OrderedUnitalResourceAlgebra.instValidForall.eq_1]
+          apply And.intro
+          · simp [Iris.BI.forall, Iris.BI.sForall, sForallA]
+            intro i
+            simp [Iris.BI.pure, lift]
+            let o : PSp (Var → Val) := ((@validOne I Var Val _ _).1 i).1.1
+            have : o = some 1 := by rfl
+            have ho : valid o := by
+              simp_all only [bProp, PSp.compatiblePerm, OrderedUnitalResourceAlgebra.instValidForall.eq_1, o]
+              sorry
+            aesop
+            sorry
+          · simp [Iris.BI.forall, Iris.BI.sForall, sForallA]
+            intro p u x h
+            sorry
+  · exact k
 
 end Properties
 
