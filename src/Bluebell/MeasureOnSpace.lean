@@ -1731,6 +1731,16 @@ lemma IndexedPSpPm.le_of_mul_right
   simp_all only [PSp.compatiblePerm, Pi.mul_apply, PSpPm.le_of_mul_right]
 
 @[simp]
+lemma IndexedPSpPm.le_of_mul_left
+  (I Val Var : Type*) [DecidableEq Var] [Inhabited Val]
+  {a b : IndexedPSpPm I Var Val}
+  : a ≤ a * b := by
+  intro i
+  have : a * b = b * a := mul_comm a b
+  rw [this]
+  simp_all only [PSp.compatiblePerm, Pi.mul_apply, PSpPm.le_of_mul_right]
+
+@[simp]
 lemma IndexedPSpPm.one_le
   (I Val Var : Type*) [DecidableEq Var] [Inhabited Val]
   {a : IndexedPSpPm I Var Val}

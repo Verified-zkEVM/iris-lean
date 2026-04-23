@@ -1104,6 +1104,18 @@ lemma C_True
     intro a ha hp
     trivial
 
+lemma sep_affine
+  {P Q : bProp I Var Val}
+  : P ∗ Q ⊢ P := by
+  intro m hv hp
+  obtain ⟨m₁, m₂, h₁, h₂, h₃⟩:= hp
+  have : m₁ ≤ m := by
+    have : m₁ ≤ m₁ * m₂ := by
+      apply IndexedPSpPm.le_of_mul_left
+    apply le_trans this h₁
+  have := P.upper'
+  aesop
+
 end Properties
 
 end Bluebell
