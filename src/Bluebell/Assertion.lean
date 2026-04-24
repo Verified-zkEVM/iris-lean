@@ -2,7 +2,7 @@ import Iris.BI.BIBase
 import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Data.Set.Basic
-import Bluebell.DiscreteCMRA
+import Bluebell.OURA
 import Bluebell.MeasureOnSpace
 import Iris.Algebra.UPred
 

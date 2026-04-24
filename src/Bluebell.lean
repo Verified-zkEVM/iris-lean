@@ -1,13 +1,3 @@
-/-
-import Bluebell.Algebra.CMRA
-import Bluebell.Algebra.HyperAssertion
-import Bluebell.Algebra.PSpPm
-import Bluebell.Algebra.Permission
-import Bluebell.Algebra.Probability
-import Bluebell.Core.Indexed
-import Bluebell.Logic.JointCondition
-import Bluebell.Logic.Ownership
-import Bluebell.Logic.WeakestPre
-import Bluebell.ProbabilityTheory.Coupling
-import Bluebell.ProbabilityTheory.IndepProduct
--/
+import Bluebell.Assertion
+import Bluebell.OURA
+import Bluebell.MeasureOnSpace

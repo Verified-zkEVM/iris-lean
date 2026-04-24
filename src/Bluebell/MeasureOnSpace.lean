@@ -1,6 +1,6 @@
 import Mathlib.Probability.Independence.Conditional
 import Mathlib.Data.Set.Basic
-import Bluebell.DiscreteCMRA
+import Bluebell.OURA
 
 /-! ## Independent product of probability measures -/
 
