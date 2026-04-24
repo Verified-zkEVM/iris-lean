@@ -1263,6 +1263,9 @@ instance [Inhabited Ω] : PartialOrder (PSp Ω) := {
 lemma PSp.ge_top_imp_top {p : PSp Ω} (h : ⊤ ≤ p) : p = ⊤ := by
   cases p; rfl; contradiction
 
+lemma PSp.le_top' {p : PSp Ω} : p ≤ ⊤ := by
+  apply le_top
+
 instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
   valid_one := by
     unfold valid
@@ -1331,7 +1334,7 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
     · simp [h₁]
       by_cases h₂ : ∃ s : PSpace Ω, s =ᵢ x ⊕ᵢ a
       · simp [h₂, LE.le]
-        apply le_top
+        apply PSp.le_top'
       · simp [h₂]
   valid_mono := by
     intro ps₁ ps₂ h₁ h₂
