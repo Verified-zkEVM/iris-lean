@@ -604,8 +604,25 @@ noncomputable instance assertionBI : Iris.BI (bProp I Var Val) where
     intro _ _ _ _
     exact Or.inr (fun _ _ _ hF => hF.elim)
 
+instance : Iris.BI.Persistent (BTrue : bProp I Var Val) where
+  persistent := Iris.BI.BIBase.Entails.rfl
+
 instance {P : bProp I Var Val} : Iris.BI.Affine P where
   affine := fun _ _ _ ↦ trivial
+
+instance {P : bProp I Var Val} : Iris.BI.Absorbing P where
+  absorbing := by
+    unfold Iris.BI.absorbingly
+    iintro ⟨_, h⟩
+    iexact h
+
+instance {P : bProp I Var Val} : Iris.BI.Timeless P where
+  timeless := by
+    change P ⊢ False ∨ P
+    iintro h
+    iright
+    iexact h
+
 
 end BIInstance
 
@@ -978,16 +995,12 @@ theorem or_assoc {P Q R : bProp I Var Val}
 theorem sep_ident {P : bProp I Var Val}
   : P ∗ True ⊣⊢ P := by
   refine ⟨?_, ?_⟩
-  · intro m _ hm
-    obtain ⟨b₁, b₂, hle, hPb₁, _⟩ := hm
-    refine P.upper' ?_ hPb₁
-    intro i
-    refine le_trans ?_ (hle i)
-    refine ⟨PSp.le_of_mul_left, ?_⟩
-    intro x
-    exact le_add_of_nonneg_right (zero_le _)
-  · intro m _ hm
-    exact ⟨m, 1, (mul_one m).le, hm, trivial⟩
+  · iintro ⟨h, _⟩
+    iexact h
+  · iintro h
+    isplitl [h]
+    · iexact h
+    · exact fun m a a_1 => a_1
 
 theorem sep_comm {P Q : bProp I Var Val}
   : P ∗ Q ⊣⊢ Q ∗ P := by
@@ -1118,6 +1131,13 @@ lemma sep_affine
     apply le_trans this h₁
   have := P.upper'
   aesop
+
+lemma sep_affine'
+  {P Q : bProp I Var Val}
+  : P ∗ Q ⊢ P := by
+  iintro ⟨h1, h2⟩
+  iexact h1
+
 
 end Properties
 
