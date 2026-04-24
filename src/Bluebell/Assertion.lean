@@ -604,6 +604,9 @@ noncomputable instance assertionBI : Iris.BI (bProp I Var Val) where
     intro _ _ _ _
     exact Or.inr (fun _ _ _ hF => hF.elim)
 
+instance {P : bProp I Var Val} : Iris.BI.Affine P where
+  affine := fun _ _ _ ↦ trivial
+
 end BIInstance
 
 structure IxCompatiblePermission (P : I → PSp (Var → Val)) where
