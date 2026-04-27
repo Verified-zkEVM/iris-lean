@@ -1331,7 +1331,7 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
       contradiction
     · simp [h₁]
       by_cases h₂ : ∃ s : PSpace Ω, s =ᵢ x ⊕ᵢ a
-      · simp [h₂, LE.le]
+      · simp [h₂]
         apply PSp.le_top'
       · simp [h₂]
   valid_mono := by

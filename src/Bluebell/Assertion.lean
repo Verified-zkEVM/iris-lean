@@ -701,6 +701,15 @@ def wp {Var Val : Type*}
     exact hx μ₀ c hvμ₀ (le_trans (mul_left_mono hxy) hmul)
 }
 
+def hoare {Var Val : Type*}
+  [DecidableEq Var] [Inhabited Val] [Finite Var] [Countable Val]
+  (P : bProp I Var Val)
+  (t : IndexedPSpPm I Var Val → IndexedPSpPm I Var Val)
+  (Q : bProp I Var Val) : bProp I Var Val :=
+  bpersistently (wand P (@wp I Var Val _ _ _ _ t Q))
+
+notation:100 "{" P "} " t "{" Q "}" => hoare P t Q
+
 def EWPCons
   [DecidableEq Var] [Inhabited Val] [Finite Var] [Countable Val]
   (t : IndexedPSpPm I Var Val → IndexedPSpPm I Var Val)
