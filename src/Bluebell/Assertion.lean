@@ -1090,54 +1090,32 @@ lemma C_True
   {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A}
   : ⊢ (𝒞⟨μ⟩ _v; BTrue : bProp I Var Val) := by
-  intro m hm hemp
-  refine ⟨_, ⟨1, rfl⟩, ?_⟩
-  refine ⟨_, ⟨k, rfl⟩, ?_⟩
-  refine ⟨1, 1, by aesop, ?_, 1, 1, by aesop, ?_⟩
-  · have : 1 ∈ own (1 : IndexedPSpPm I Var Val) := by simp [own]
-    assumption
-  refine ⟨?_, ?_⟩
-  · intro p hp
-    obtain ⟨i, hp⟩ := hp
-    rw [← hp]
-    have : (@ValidIndexedPSpPm.μ I Var Val _ _) 1 i
-      = (1 : MeasureOnSpace (Var → Val)).μ := by rfl
-    simp only [bProp]
-    rw [this]
-    rename_i devar invar finvar countval
-    let kk (v : A) := (k.kernel i v : @Measure (Var → Val) ⊥)
-    have : {v : A} → kk v = (1 : MeasureOnSpace (Var → Val)).μ := by
-      intro v; simp [kk]; rfl
-    have : k.kernel i = kk := by ext u; simp [kk]
-    rw [this]
-    have : (@μ.toMeasure A ⊤).bind kk = MeasureOnSpace.μ 1 := by aesop
-    rw [this]
+  unfold jointConditioning
+  iexists 1, k
+  isplitl
+  · intro m _ _ i
+    have := @IndexedPSpPm.one_le I Val Var _ _ m i
     trivial
-  · intro p hp
-    obtain ⟨a, hp⟩ := hp
-    rw [← hp]
-    simp
-    intro a ha hp
-    trivial
+  · isplitl
+    · apply Iris.BI.forall_intro
+      intro i _ _ _
+      have : (@ValidIndexedPSpPm.μ I Var Val _ _) 1 i
+        = (1 : MeasureOnSpace (Var → Val)).μ := by rfl
+      rw [this]
+      let k' (v : A) := (k.kernel i v : @Measure (Var → Val) ⊥)
+      have {v : A} : k' v = (1 : MeasureOnSpace (Var → Val)).μ := by rfl
+      have : (@μ.toMeasure A ⊤).bind k' = MeasureOnSpace.μ 1 := by aesop
+      rw [this]
+      trivial
+    · apply Iris.BI.forall_intro
+      intro v _ _ _ _ _ _
+      trivial
 
 lemma sep_affine
   {P Q : bProp I Var Val}
   : P ∗ Q ⊢ P := by
-  intro m hv hp
-  obtain ⟨m₁, m₂, h₁, h₂, h₃⟩:= hp
-  have : m₁ ≤ m := by
-    have : m₁ ≤ m₁ * m₂ := by
-      apply IndexedPSpPm.le_of_mul_left
-    apply le_trans this h₁
-  have := P.upper'
-  aesop
-
-lemma sep_affine'
-  {P Q : bProp I Var Val}
-  : P ∗ Q ⊢ P := by
   iintro ⟨h1, h2⟩
   iexact h1
-
 
 end Properties
 

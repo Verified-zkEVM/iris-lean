@@ -126,40 +126,6 @@ abbrev carrier [OrderedUnitalResourceAlgebra M] := M
 
 end OrderedUnitalResourceAlgebra
 
-/-! ## Permissions -/
-
-/-- A permission on type `α` is a map from `α` to the non-negative rationals `ℚ≥0`.
-
-We need to have the `Multiplicative` tag in order to specify that multiplication is pointwise
-addition, and unit is the constant zero map. -/
-@[reducible] def Permission (α : Type*) := Multiplicative (α → ℚ≥0)
-
-variable {α β : Type*}
-
-/-- Permissions form an `OrderedUnitalResourceAlgebra` where `≤` is defined pointwise,
-  a resource is valid iff it's below `1` pointwise, and composition is pointwise addition -/
-instance : OrderedUnitalResourceAlgebra (Permission α) := {
-  valid f := ∀ x : α, f x ≤ 1
-  one_mul := by simp
-  valid_one := by
-    intro x
-    have : 0 ≤ 1 := by aesop
-    aesop
-  valid_mono := by
-    intro f g hle hv x
-    have : f x ≤ g x := by aesop
-    grind
-  valid_mul := by
-    intro a b hab x
-    have : ∀ p q : ℚ≥0, p + q ≤ 1 → p ≤ 1 := by
-      intro p q h
-      have hpq : p ≤ p + q := by
-        exact le_add_of_nonneg_right q.property
-      exact hpq.trans h
-    aesop
-  mul_one := by aesop
-}
-
 namespace OrderedUnitalResourceAlgebra
 
 def subalgebra
