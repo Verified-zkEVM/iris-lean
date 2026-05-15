@@ -1,10 +1,11 @@
+import Iris.Algebra.UPred
 import Iris.BI.BIBase
+import Bluebell.MeasureOnSpace
+import Bluebell.OURA
+import Mathlib.Data.Set.Basic
+import Mathlib.Logic.Function.Defs
 import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Mathlib.Data.Set.Basic
-import Bluebell.OURA
-import Bluebell.MeasureOnSpace
-import Iris.Algebra.UPred
 
 open ProbabilityTheory
 open MeasureTheory (Measure IsProbabilityMeasure isProbabilityMeasure_iff measure_univ)
@@ -332,6 +333,8 @@ noncomputable instance assertionBIBase : Iris.BI.BIBase (bProp I Var Val) where
   wand := wand
   persistently := bpersistently
   later := id
+
+-- ⊢ {P} C {Q} -- ⊢ {P} [0: C_0, 1: C_1] {Q}
 
 noncomputable instance assertionBI : Iris.BI (bProp I Var Val) where
   Dist _ φ ψ := bientail φ ψ
@@ -1120,6 +1123,21 @@ lemma C_True
     intro a ha hp
     trivial
 
+lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] {μ : PMF A} :
+    (𝒞⟨μ⟩ _v; BFalse : bProp I Var Val) ⊢ BFalse := by
+  sorry
+
+lemma C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] {μ : PMF A} {μ' : PMF B}
+    {f : B → A}
+    {K : A → bProp I Var Val} :
+    Set.BijOn f (μ' · ≠ 0) (μ · ≠ 0) →
+    (∀ b : {b : B | μ' b ≠ 0}, μ' b.1 = μ (f b.1)) →
+      iprop(𝒞⟨μ⟩ a; K a) ⊢ 𝒞⟨μ'⟩ b; K (f b)
+:= by
+  sorry
+
 lemma sep_affine
   {P Q : bProp I Var Val}
   : P ∗ Q ⊢ P := by
@@ -1137,7 +1155,6 @@ lemma sep_affine'
   : P ∗ Q ⊢ P := by
   iintro ⟨h1, h2⟩
   iexact h1
-
 
 end Properties
 
