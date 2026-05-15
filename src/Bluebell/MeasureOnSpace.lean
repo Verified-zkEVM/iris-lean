@@ -1229,8 +1229,6 @@ theorem PSp.mul_defined_imp_defined
   | _, none => by intro h₁; simp_all; contradiction
   | some x, some y => by aesop
 
-end PSp
-
 instance [Inhabited Ω] : CommMonoid (PSp Ω) := {
   mul_assoc p q r := by apply PSp.mul_assoc
   mul_comm p q := by apply PSp.mul_comm
@@ -1333,7 +1331,7 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
       contradiction
     · simp [h₁]
       by_cases h₂ : ∃ s : PSpace Ω, s =ᵢ x ⊕ᵢ a
-      · simp [h₂, LE.le]
+      · simp [h₂]
         apply PSp.le_top'
       · simp [h₂]
   valid_mono := by
@@ -1347,6 +1345,48 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
       | some p₂ => intro h; contradiction
   valid_mul := by apply PSp.mul_defined_imp_defined
 }
+
+end PSp
+
+section Permission
+
+/-! ## Permissions -/
+
+/-- A permission on type `α` is a map from `α` to the non-negative rationals `ℚ≥0`.
+
+We need to have the `Multiplicative` tag in order to specify that multiplication is pointwise
+addition, and unit is the constant zero map. -/
+@[reducible] def Permission (α : Type*) := Multiplicative (α → ℚ≥0)
+
+/-- Permissions form an `OrderedUnitalResourceAlgebra` where `≤` is defined pointwise,
+  a resource is valid iff it's below `1` pointwise, and composition is pointwise addition -/
+instance {α : Type*} : OrderedUnitalResourceAlgebra (Permission α) := {
+  valid f := ∀ x : α, f x ≤ 1
+  one_mul := by simp
+  valid_one := by
+    intro x
+    have : 0 ≤ 1 := by aesop
+    aesop
+  valid_mono := by
+    intro f g hle hv x
+    have : f x ≤ g x := by aesop
+    grind
+  valid_mul := by
+    intro a b hab x
+    have : ∀ p q : ℚ≥0, p + q ≤ 1 → p ≤ 1 := by
+      intro p q h
+      have hpq : p ≤ p + q := by
+        exact le_add_of_nonneg_right q.property
+      exact hpq.trans h
+    aesop
+  mul_one := by aesop
+}
+
+@[simp]
+def Irr {Var : Type*} (p : Permission Var) :=
+  {x : Var | p x = 0}
+
+end Permission
 
 section PSpPm
 
@@ -1446,12 +1486,6 @@ lemma MeasurableSpace.generateFrom_respects_map
     | compl s _ ih => rw [Set.preimage_compl]; exact ih.compl
     | iUnion g _ ih => rw [Set.preimage_iUnion]; exact MeasurableSet.iUnion ih
 
-variable {Ω : Type*}
-
-@[simp]
-def Irr (p : Permission Var) :=
-  {x : Var | p x = 0}
-
 def PSpace.compatiblePerm
   [DecidableEq Var]
   (P : PSpace (Var → Val)) (p : Permission Var) : Prop :=
@@ -1487,31 +1521,6 @@ def ProductRA [Inhabited Val] : OrderedUnitalResourceAlgebra (PSp (Var → Val) 
 @[simp]
 def Compatible [DecidableEq Var] (x : PSp (Var → Val) × Permission Var) : Prop :=
   x.1.compatiblePerm x.2
-
-lemma preimage_empty_or_univ_of_bijective
-  {Ω Ω' : Type u}
-  (f : Ω ≃ Ω') {u : Set Ω'} (h : f ⁻¹' u = ∅ ∨ f ⁻¹' u = Set.univ)
-  :  u = ∅ ∨ u = Set.univ := by
-  have : u = f '' (f ⁻¹' u) := by aesop
-  rcases h with h₁ | h₂
-  · rw [h₁] at this
-    aesop
-  · rw [h₂] at this
-    aesop
-
-lemma MeasurableSpace.map_bot_eq_bot {Ω Ω' : Type u} (f : Ω ≃ Ω')
-  : MeasurableSpace.map f ⊥ = ⊥ := by
-  ext u; constructor
-  · intro hu
-    have hbot := (@MeasurableSpace.map_def (f := f) Ω Ω' ⊥ u).1 hu
-    have : f ⁻¹' u = ∅ ∨ f ⁻¹' u = Set.univ := measurableSet_bot_iff.mp hu
-    have : u = ∅ ∨ u = Set.univ := by
-      have := @preimage_empty_or_univ_of_bijective Ω Ω'
-      aesop
-    aesop
-  · intro hu
-    have := MeasurableSpace.measurableSet_bot_iff.mp hu
-    aesop
 
 lemma hone [DecidableEq Var] [Inhabited Val] : Compatible ⟨(1 : PSp (Var → Val)), 1⟩ := by
   simp only [Compatible, PSp.compatiblePerm]
@@ -1634,13 +1643,6 @@ instance PSpPm.instOrderedUnitalResourceAlgebra
   ProductRA.subalgebra
     (p := fun ((P : PSp (Var → Val)), p) ↦ PSp.compatiblePerm P p)
     hone hprod
-
-
-/-
-lemma PSp.le_of_mul_right
-  [Inhabited Ω] {a b : PSp Ω}
-  : a ≤ b * a := by
--/
 
 @[simp]
 lemma PSpPm.le_of_mul_right
