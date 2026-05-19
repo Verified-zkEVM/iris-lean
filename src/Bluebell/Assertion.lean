@@ -1255,6 +1255,12 @@ lemma C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
     have h_wand_fv := h_wand_all _ ⟨⟨f v.val, hfv⟩, rfl⟩
     exact h_wand_fv d hv_d h_own_d
 
+lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] {μ : PMF A}
+    {K : A → bProp I Var Val} {i : I} {E : (Var → Val) → Bool} :
+      iprop(𝒞⟨μ⟩ v; K v ∗ E⟨i⟩ = true) ⊢ iprop(E⟨i⟩ = true ∗ 𝒞⟨μ⟩ v; K (v)) := by
+      sorry
+
 lemma sep_affine
   {P Q : bProp I Var Val}
   : P ∗ Q ⊢ P := by
