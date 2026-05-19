@@ -1259,6 +1259,17 @@ lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
       iprop(𝒞⟨μ⟩ v; K v ∗ E⟨i⟩ = true) ⊢ iprop(E⟨i⟩ = true ∗ 𝒞⟨μ⟩ v; K (v)) := by
       sorry
 
+-- DRAFT of C-WP-SWAP
+-- Needs definition of OWN_X
+lemma WP_Swap {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val]
+    {μ : PMF A}
+    {t : IndexedPSpPm I Var Val → IndexedPSpPm I Var Val}
+    {Q : A → bProp I Var Val} {i : I}
+    :
+    iprop(𝒞⟨μ⟩ v; wp t (Q v) /- ∧ OWN_X -/) ⊢ iprop(wp t (𝒞⟨μ⟩ v; Q v)) := by
+    sorry
+
 lemma sep_affine
   {P Q : bProp I Var Val}
   : P ∗ Q ⊢ P := by
