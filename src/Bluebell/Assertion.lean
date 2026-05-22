@@ -1272,6 +1272,16 @@ lemma WP_Swap {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
     iprop(𝒞⟨μ⟩ v; wp t (Q v) /- ∧ OWN_X -/) ⊢ iprop(wp t (𝒞⟨μ⟩ v; Q v)) := by
     sorry
 
+-- DRAFT of new variant of CP-WP-SWAP
+lemma WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] [Countable A]
+    {μ : PMF A}
+    {t : IndexedPSpPm I Var Val → IndexedPSpPm I Var Val}
+    {Q : A → bProp I Var Val} {i : I} {E : (Var → Val) → A}
+    :
+    iprop(𝒞⟨μ⟩ v; (E⟨i⟩ ~ δ v) ∗ wp t (Q v)) ⊢ iprop(wp t (𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ Q v))) := by
+    sorry
+
 lemma sep_affine
   {P Q : bProp I Var Val}
   : P ∗ Q ⊢ P := by
