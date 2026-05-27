@@ -1120,7 +1120,15 @@ lemma C_True
 lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A} :
     (𝒞⟨μ⟩ _v; BFalse : bProp I Var Val) ⊢ BFalse := by
-  sorry
+  unfold jointConditioning
+  show entail _ _
+  intro r _ hP
+  obtain ⟨_, ⟨m, rfl⟩, h₁⟩ := hP
+  obtain ⟨_, ⟨κ, rfl⟩, h₂⟩ := h₁
+  obtain ⟨-, h_rest⟩ := h₂
+  obtain ⟨-, h_carrier_all⟩ := h_rest
+  obtain ⟨v₀, hv₀⟩ := PMF.support_nonempty μ
+  exact h_carrier_all _ ⟨⟨v₀, hv₀⟩, rfl⟩
 
 /-- Compose a CompatibleKernel with a function f : B → A -/
 private def CompatibleKernel.comp {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
