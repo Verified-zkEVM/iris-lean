@@ -1211,43 +1211,26 @@ lemma C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
   intro hbij hprob
   unfold jointConditioning
   show entail _ _
-  intro r hvalid hP
-  -- Step 1: Extract existentials from hP
+  intro r _ hP
   obtain ⟨_, ⟨m₀, rfl⟩, h₁⟩ := hP
   obtain ⟨_, ⟨κ, rfl⟩, h₂⟩ := h₁
-  -- h₂ : sep (sep (own m₀.val) (forall ...)) (forall (wand ...)) r
-  -- Step 2: Extract sep components (∗ is right-associative: own ∗ (bind ∗ wand))
-  obtain ⟨b₁, b₂, hle_r, h_own, h_right⟩ := h₂
-  -- h_own : m₀.val ≤ b₁ (from own)
-  -- h_right : sep (forall bind) (forall wand) b₂
-  obtain ⟨c₁, c₂, hle_b₂, h_bind_all, h_wand_all⟩ := h_right
-  -- Step 3: Extract bind equations
+  obtain ⟨h_own, h_rest⟩ := h₂
+  obtain ⟨h_bind_all, h_carrier_all⟩ := h_rest
   have h_bind : ∀ i : I, m₀.μ i = κ.kernel i ∘ₘ (@PMF.toMeasure A ⊤ μ) := by
     intro i
     exact h_bind_all _ ⟨i, rfl⟩
-  -- Step 4: Construct conclusion
   let κ' := κ.comp f
   refine ⟨_, ⟨m₀, rfl⟩, _, ⟨κ', rfl⟩, ?_⟩
-  -- Goal: sep (own m₀.val) (sep (forall bind') (forall wand')) r
-  refine ⟨b₁, b₂, hle_r, h_own, ?_⟩
-  -- Need: sep (forall bind' for μ') (forall wand' for μ' and K∘f) b₂
-  refine ⟨c₁, c₂, hle_b₂, ?_, ?_⟩
-  -- Left: forall bind equations with μ' and κ'
+  refine And.intro h_own (And.intro ?_ ?_)
   · intro p ⟨i, hi⟩
     subst hi
-    show m₀.μ i = (κ.comp f).kernel i ∘ₘ (@PMF.toMeasure B ⊤ μ')
-    rw [h_bind i]
-    show κ.kernel i ∘ₘ (@PMF.toMeasure A ⊤ μ) = (κ.comp f).kernel i ∘ₘ (@PMF.toMeasure B ⊤ μ')
-    show @Measure.bind A _ ⊤ _ (@PMF.toMeasure A ⊤ μ) (κ.kernel i) =
-         @Measure.bind B _ ⊤ _ (@PMF.toMeasure B ⊤ μ') ((κ.kernel i) ∘ f)
+    change m₀.μ i = (κ.comp f).kernel i ∘ₘ (@PMF.toMeasure B ⊤ μ')
+    rw [CompatibleKernel.comp, h_bind i]
     exact PMF_bind_comp_of_bijOn (κ.kernel i) hbij hprob
-  -- Right: forall wands with μ' and κ', at c₂
-  · intro p ⟨v, hv⟩
-    subst hv
-    intro d hv_d h_own_d
-    have hfv : μ (f v.val) ≠ 0 := hbij.mapsTo v.property
-    have h_wand_fv := h_wand_all _ ⟨⟨f v.val, hfv⟩, rfl⟩
-    exact h_wand_fv d hv_d h_own_d
+  · intro p ⟨v', hv'⟩
+    subst hv'
+    have hfv : μ (f v') ≠ 0 := hbij.mapsTo v'.property
+    exact h_carrier_all _ ⟨⟨f v', hfv⟩, rfl⟩
 
 lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A}
