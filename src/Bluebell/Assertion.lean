@@ -1114,7 +1114,7 @@ lemma C_True
       rw [this]
       trivial
     · apply Iris.BI.forall_intro
-      intro v _ _ _ _ _ _
+      intro v _ _ _
       trivial
 
 lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
