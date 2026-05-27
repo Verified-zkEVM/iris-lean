@@ -4,6 +4,7 @@ import Bluebell.MeasureOnSpace
 import Bluebell.OURA
 import Mathlib.Data.Set.Basic
 import Mathlib.Logic.Function.Defs
+import Mathlib.Order.SetNotation
 import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 
@@ -936,6 +937,26 @@ theorem ESureMerge
   {A : Type*}
   {E₁ E₂ : (Var → Val) → Bool} {i : I}
   : E₁⟨i⟩ = true ∗ E₂⟨i⟩ = true ⊣⊢ (fun s => E₁ s ∧ E₂ s)⟨i⟩ = true := by
+  sorry
+
+/-- `irrel` from p17 of the Bluebell paper -/
+def irrelevant {Var Val : Type*} [DecidableEq Var] [Inhabited Var] [Inhabited Val]
+  (J : Set I) (P : bProp I Var Val) :=
+    ∀ a : (I → (PSpPm Var Val)),
+      (∃ (a' : (I → (PSpPm Var Val))), valid a'
+                                      ∧ (∀ (i : I), i ∉ J → a i = a' i)
+                                      ∧ P a')
+      → P a
+
+/-- `idx` from p17 of the Bluebell paper -/
+def idx [DecidableEq Var] [Inhabited Var] [Inhabited Val]
+  (P : bProp I Var Val) : Set I :=
+    ⋂₀ {J : Set I | irrelevant {i:I | i ∉ J} P} -- Intersection of all sets satisfying a property is the smallest subset satisfying it.
+
+def And_To_Star [DecidableEq Var] [Inhabited Var] [Inhabited Val]
+  (P Q : bProp I Var Val) :
+      idx P ∩ idx Q = ∅
+    → P ∧ Q ⊢ P ∗ Q := by
   sorry
 
 end Formula
