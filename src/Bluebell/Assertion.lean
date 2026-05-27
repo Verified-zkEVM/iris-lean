@@ -678,15 +678,9 @@ def jointConditioning {A Var Val : Type*}
     ∃ m : ValidIndexedPSpPm I Var Val,
     ∃ κ : CompatibleKernel A m,
       own m.val
-        ∗ (∀ (i : I), ⌜m.μ i = Measure.bind (mα := ⊤) (mβ := m.ms i) μ (κ.kernel i)⌝)
-        ∗
-          (
-            ∀ (v : μ.support),
-              (
-                own (fun i => ⟨⟨some ⟨⟨m.ms i, κ.kernel i v⟩, κ.isProb i v⟩, m.perm i⟩, κ.isComp i v⟩) -∗
-                  (K v))
-          )
-  )
+        ∧ (∀ (i : I), ⌜m.μ i = Measure.bind (mα := ⊤) (mβ := m.ms i) μ (κ.kernel i)⌝)
+        ∧ (∀ (v : μ.support), ⌜(fun i => ⟨⟨some ⟨⟨m.ms i, κ.kernel i v⟩, κ.isProb i v⟩, m.perm i⟩, κ.isComp i v⟩) ∈ (K v).carrier⌝
+  ))
 
 notation "𝒞" "⟨" μ "⟩" v ";" K => jointConditioning μ (fun v => iprop(K))
 
