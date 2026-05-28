@@ -940,7 +940,7 @@ theorem ESureMerge
   sorry
 
 /-- `irrel` from p17 of the Bluebell paper -/
-def irrelevant {Var Val : Type*} [DecidableEq Var] [Inhabited Var] [Inhabited Val]
+def irrelevant {Var Val : Type*} [DecidableEq Var] [Inhabited Var] [Inhabited Val] [Finite I]
   (J : Set I) (P : bProp I Var Val) :=
     ∀ a : (I → (PSpPm Var Val)),
       (∃ (a' : (I → (PSpPm Var Val))), valid a'
@@ -949,15 +949,125 @@ def irrelevant {Var Val : Type*} [DecidableEq Var] [Inhabited Var] [Inhabited Va
       → P a
 
 /-- `idx` from p17 of the Bluebell paper -/
-def idx [DecidableEq Var] [Inhabited Var] [Inhabited Val]
+def idx [DecidableEq Var] [Inhabited Var] [Inhabited Val] [Finite I]
   (P : bProp I Var Val) : Set I :=
     ⋂₀ {J : Set I | irrelevant {i:I | i ∉ J} P} -- Intersection of all sets satisfying a property is the smallest subset satisfying it.
 
-def And_To_Star [DecidableEq Var] [Inhabited Var] [Inhabited Val]
+open Classical in
+/-- Auxiliary: for a valid element `a` and a valid witness `a'` agreeing with `a` on
+`J₁ ∩ J₂` (where both `J₁, J₂` are in the idx-family), `P a` holds.
+The key idea is to construct a valid intermediate element that agrees with `a'` on `J₂`
+and with `a` on `J₁`, using the validity of both `a` and `a'`. -/
+private lemma irrelevant_binary_inter [Inhabited Var] [Finite I]
+  {P : bProp I Var Val} {J₁ J₂ : Set I}
+  (hJ₁ : irrelevant {i | i ∉ J₁} P) (hJ₂ : irrelevant {i | i ∉ J₂} P)
+  {a a' : IndexedPSpPm I Var Val}
+  (hva : valid a) (hva' : valid a')
+  (hagree : ∀ i, i ∈ J₁ ∩ J₂ → a i = a' i) (hPa' : P a') : P a := by
+  -- Define intermediate: a on J₁, a' on J₁ᶜ
+  set a₁ : IndexedPSpPm I Var Val := fun i => if i ∈ J₁ then a i else a' i
+  -- a₁ is valid
+  have hva₁ : valid a₁ := by
+    intro i; dsimp [a₁]
+    split <;> [exact hva i; exact hva' i]
+  -- a₁ agrees with a' on J₂
+  have h₂ : ∀ i, i ∈ J₂ → a₁ i = a' i := by
+    intro i hi₂; dsimp [a₁]
+    split
+    · rename_i hi₁; exact hagree i ⟨hi₁, hi₂⟩
+    · rfl
+  -- P a₁ by irrelevant J₂ᶜ
+  have hPa₁ : P a₁ := by
+    apply hJ₂; exact ⟨a', hva', fun i hi => h₂ i (by rwa [Set.mem_setOf_eq, not_not] at hi), hPa'⟩
+  -- a agrees with a₁ on J₁
+  have h₁ : ∀ i, i ∈ J₁ → a i = a₁ i := by
+    intro i hi; dsimp [a₁]; rw [if_pos hi]
+  -- P a by irrelevant J₁ᶜ
+  exact hJ₁ a ⟨a₁, hva₁, fun i hi => h₁ i (by rwa [Set.mem_setOf_eq, not_not] at hi), hPa₁⟩
+
+open Classical in
+/-- For a finite family of sets satisfying irrelevance, the intersection also satisfies
+irrelevance when both elements are valid. Proved by finite induction on the family. -/
+private lemma irrelevant_sInter_valid [Inhabited Var] [Finite I]
+  {P : bProp I Var Val} {S : Set (Set I)} (hS : ∀ J ∈ S, irrelevant {i | i ∉ J} P)
+  {a a' : IndexedPSpPm I Var Val} (hva : valid a) (hva' : valid a')
+  (hagree : ∀ i, i ∈ ⋂₀ S → a i = a' i) (hPa' : P a') : P a := by
+  contrapose! hPa';
+  have h_finite_S : Set.Finite S := by
+    exact Set.toFinite S;
+  have h_ind : ∀ (S : Finset (Set I)), (∀ J ∈ S, irrelevant {i | i ∉ J} P) → ∀ (a a' : IndexedPSpPm I Var Val), valid a → valid a' → (∀ i ∈ ⋂₀ S, a i = a' i) → P a' → P a := by
+    intro S hS a a' hva hva' hagree hPa'
+    induction' S using Finset.induction with J S hS ih generalizing a a';
+    · convert hPa' using 1;
+      exact funext fun i => hagree i ( by simp +decide ) ▸ rfl;
+    · -- Define intermediate c : IndexedPSpPm I Var Val as c i = a i if i ∈ J, a' i if i ∉ J.
+      set c : IndexedPSpPm I Var Val := fun i => if i ∈ J then a i else a' i;
+      have hc_valid : valid c := by
+        exact fun i => by unfold c; split_ifs <;> [ exact hva i; exact hva' i ] ;
+      have hc_agree : ∀ i ∈ ⋂₀ S, c i = a' i := by
+        grind +splitImp;
+      have hc_P : P c := by
+        exact ih ( fun J hJ => hS J ( Finset.mem_insert_of_mem hJ ) ) c a' hc_valid hva' hc_agree hPa';
+      have := hS J ( Finset.mem_insert_self _ _ );
+      apply this;
+      grind +revert;
+  exact fun h => hPa' <| h_ind h_finite_S.toFinset ( fun J hJ => hS J <| h_finite_S.mem_toFinset.mp hJ ) a a' hva hva' ( fun i hi => hagree i <| by simpa using hi ) h
+
+open Classical in
+/-- The key locality property: `P` is irrelevant to indices outside `idx P`.
+This is stated in the Bluebell paper (p.17) as a property of the `idx` definition.
+When `I` is finite, the family `{J | irrelevant {i | i ∉ J} P}` is finite, so the
+arbitrary intersection `idx P` inherits the irrelevance property via
+`irrelevant_sInter_valid` and the `UpperSet` structure of assertions. -/
+lemma irrelevant_idx_compl [Inhabited Var] [Finite I]
+  (P : bProp I Var Val) : irrelevant {i | i ∉ idx P} P := by
+  intro a ha;
+  obtain ⟨a', ha', hagree', hPa'⟩ := ha
+  set a₀ : IndexedPSpPm I Var Val := fun i => if i ∈ idx P then a' i else 1;
+  -- By definition of $a₀$, we know that $a₀$ is valid.
+  have ha₀_valid : valid a₀ := by
+    aesop;
+  -- By definition of $a₀$, we know that $a₀$ and $a'$ agree on $\text{idx } P$.
+  have ha₀_a'_agree : ∀ i ∈ idx P, a₀ i = a' i := by
+    aesop;
+  -- By definition of $a₀$, we know that $P a₀$.
+  have ha₀_P : P a₀ := by
+    apply_rules [ irrelevant_sInter_valid ];
+    exact fun J hJ => hJ;
+  convert P.upper' _ ha₀_P using 1;
+  intro i; by_cases hi : i ∈ idx P <;> simp_all +decide ;
+  convert IndexedPSpPm.one_le ( I := I ) ( Var := Var ) ( Val := Val ) ( a := a ) i using 1;
+  aesop
+
+open Classical in
+theorem And_To_Star [Inhabited Var] [Finite I]
   (P Q : bProp I Var Val) :
       idx P ∩ idx Q = ∅
     → P ∧ Q ⊢ P ∗ Q := by
-  sorry
+  intro hdisj m hv ⟨hPm, hQm⟩
+  -- Construct b₁ = m on idx P, 1 elsewhere; b₂ = m on (idx P)ᶜ, 1 on idx P
+  refine ⟨fun i => if i ∈ idx P then m i else 1,
+          fun i => if i ∈ idx P then 1 else m i, ?_, ?_, ?_⟩
+  · -- b₁ * b₂ ≤ m
+    intro i
+    simp only [Pi.mul_apply]
+    by_cases hi : i ∈ idx P
+    · simp [hi]
+    · simp [hi]
+  · -- P b₁
+    exact irrelevant_idx_compl P (fun i => if i ∈ idx P then m i else 1)
+      ⟨m, hv, fun i hi => by simp only [Set.mem_setOf_eq, not_not] at hi; simp [hi], hPm⟩
+  · -- Q b₂
+    have hcompl : irrelevant {i | i ∉ idx Q} Q := irrelevant_idx_compl Q
+    apply hcompl
+    refine ⟨m, hv, fun i hi => ?_, hQm⟩
+    simp only [Set.mem_setOf_eq, not_not] at hi
+    have hni : i ∉ idx P := by
+      intro hip
+      have : i ∈ idx P ∩ idx Q := ⟨hip, hi⟩
+      rw [hdisj] at this
+      exact this.elim
+    simp [hni]
 
 end Formula
 
