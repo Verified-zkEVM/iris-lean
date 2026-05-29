@@ -1385,6 +1385,20 @@ lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
       iprop(𝒞⟨μ⟩ v; K v ∗ E⟨i⟩ = true) ⊢ iprop(E⟨i⟩ = true ∗ 𝒞⟨μ⟩ v; K (v)) := by
       sorry
 
+open Classical in
+lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
+  [Finite Var] [Countable Val]
+    {J₁ J₂ : Set I} (t₁ : J₁ → Term) (t₂ : J₂ → Term)
+    {Q₁ Q₂ : bProp I Var Val} :
+    let t₁_plus_t₂ := (fun (i : {i' | i' ∈ J₁ ∨ i' ∈ J₂}) => if h : i.1 ∈ J₁ then t₁ ⟨i.1, h⟩ else t₂ ⟨i.1, (by aesop)⟩)
+    -- let t₁_plus_t₂ := (fun (i : (J₁ ∪ J₂)) => if h : i.1 ∈ J₁ then t₁ ⟨i.1, (by aesop)⟩ else t₂ ⟨i.1, (by aesop)⟩)
+    -- Above gives an error on (J₁ ∪ J₂)
+    --   failed to synthesize instance of type class
+    --     Union (Type u_1)
+    (idx Q₁) ∩ J₂ ⊆ J₁ → (idx Q₂) ∪ J₁ ⊆ J₂ →
+    wp t₁ Q₁ ∧ wp t₂ Q₂ ⊢ wp t₁_plus_t₂ iprop(Q₁ ∧ Q₂) := by
+    sorry
+
 -- DRAFT of C-WP-SWAP
 -- Needs definition of OWN_X
 lemma WP_Swap {I Var Val A : Type*} [Finite I] [DecidableEq Var] [Inhabited Val]
