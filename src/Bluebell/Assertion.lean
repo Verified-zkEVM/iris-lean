@@ -1391,7 +1391,7 @@ lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
     {J₁ J₂ : Set I} (t₁ : J₁ → Term) (t₂ : J₂ → Term)
     {Q₁ Q₂ : bProp I Var Val} :
     let t₁_plus_t₂ := (fun (i : ((J₁ ∪ J₂) : Set I)) => if h : i.1 ∈ J₁ then t₁ ⟨i.1, h⟩ else t₂ ⟨i.1, (by aesop)⟩)
-    (idx Q₁) ∩ J₂ ⊆ J₁ → (idx Q₂) ∪ J₁ ⊆ J₂ →
+    (idx Q₁) ∩ J₂ ⊆ J₁ → (idx Q₂) ∩ J₁ ⊆ J₂ →
     wp t₁ Q₁ ∧ wp t₂ Q₂ ⊢ wp t₁_plus_t₂ iprop(Q₁ ∧ Q₂) := by
     sorry
 
