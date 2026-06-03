@@ -699,7 +699,8 @@ notation "⟦" t "⟧" μ => hyperTermSemantics t μ
 def hyperTermReferences (t : I → Option (PSpPm Var Val → PSpPm Var Val)) : Set I :=
   {x | (t x).isSome} -- aka `fun x => (t x).isSome` (following advice in the documentation for Set)
 
--- notation "|" t "|" => hyperTermReferences t -- Causes notation clashes.
+/-- Short for "domain" -/
+abbrev dom (t : I → Option (PSpPm Var Val → PSpPm Var Val)) := hyperTermReferences t
 
 def wp {Var Val : Type*}
   [DecidableEq Var] [Inhabited Val] [Finite Var] [Countable Val]
@@ -1408,8 +1409,8 @@ lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
         match t₂ i with
         | .some t₂_i => .some t₂_i
         | .none => .none)
-    (idx Q₁) ∩ hyperTermReferences t₂ ⊆ hyperTermReferences t₁ →
-    (idx Q₂) ∩ hyperTermReferences t₁ ⊆ hyperTermReferences t₂ →
+    (idx Q₁) ∩ dom t₂ ⊆ dom t₁ →
+    (idx Q₂) ∩ dom t₁ ⊆ dom t₂ →
     wp t₁ Q₁ ∧ wp t₂ Q₂ ⊢ wp t₁_plus_t₂ iprop(Q₁ ∧ Q₂) := by
     sorry
 
