@@ -1408,7 +1408,8 @@ lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
         match t₂ i with
         | .some t₂_i => .some t₂_i
         | .none => .none)
-    (idx Q₁) ∩ J₂ ⊆ J₁ → (idx Q₂) ∩ J₁ ⊆ J₂ →
+    (idx Q₁) ∩ hyperTermReferences t₂ ⊆ hyperTermReferences t₁ →
+    (idx Q₂) ∩ hyperTermReferences t₁ ⊆ hyperTermReferences t₂ →
     wp t₁ Q₁ ∧ wp t₂ Q₂ ⊢ wp t₁_plus_t₂ iprop(Q₁ ∧ Q₂) := by
     sorry
 
