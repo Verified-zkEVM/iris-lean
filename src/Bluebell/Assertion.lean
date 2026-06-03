@@ -1396,9 +1396,18 @@ lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 open Classical in
 lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
   [Finite Var] [Countable Val]
-    {J₁ J₂ : Set I} (t₁ : J₁ → Term) (t₂ : J₂ → Term)
+    (t₁ t₂ : I → Option (PSpPm Var Val → PSpPm Var Val))
     {Q₁ Q₂ : bProp I Var Val} :
-    let t₁_plus_t₂ := (fun (i : ((J₁ ∪ J₂) : Set I)) => if h : i.1 ∈ J₁ then t₁ ⟨i.1, h⟩ else t₂ ⟨i.1, (by aesop)⟩)
+    let t₁_plus_t₂ : I → Option (PSpPm Var Val → PSpPm Var Val) := (fun i : I => 
+      match t₁ i with
+      | .some t₁_i =>
+        match t₂ i with
+        | .some t₂_i => if t₁_i = t₂_i then t₁_i else sorry -- Perhaps: .none
+        | .none => .some t₁_i
+      |.none =>
+        match t₂ i with
+        | .some t₂_i => .some t₂_i
+        | .none => .none)
     (idx Q₁) ∩ J₂ ⊆ J₁ → (idx Q₂) ∩ J₁ ⊆ J₂ →
     wp t₁ Q₁ ∧ wp t₂ Q₂ ⊢ wp t₁_plus_t₂ iprop(Q₁ ∧ Q₂) := by
     sorry
