@@ -696,7 +696,7 @@ def hyperTermSemantics {Var Val : Type*} [DecidableEq Var] [Inhabited Val]
 
 notation "⟦" t "⟧" μ => hyperTermSemantics t μ
 
-def hyperTermReferences (t : I → Option (PspPm → PspPm)) : Set I :=
+def hyperTermReferences (t : I → Option (PSpPm Var Val → PSpPm Var Val)) : Set I :=
   {x | (t x).isSome} -- aka `fun x => (t x).isSome` (following advice in the documentation for Set)
 
 -- notation "|" t "|" => hyperTermReferences t -- Causes notation clashes.
