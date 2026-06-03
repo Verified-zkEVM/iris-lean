@@ -685,15 +685,31 @@ def jointConditioning {A Var Val : Type*}
 
 notation "𝒞" "⟨" μ "⟩" v ";" K => jointConditioning μ (fun v => iprop(K))
 
+def hyperTermSemantics {Var Val : Type*} [DecidableEq Var] [Inhabited Val]
+      (t : I → Option ((PSpPm Var Val) → (PSpPm Var Val)))
+      (μ : IndexedPSpPm I Var Val)
+  : IndexedPSpPm I Var Val :=
+  fun (i : I) =>
+    match t i with
+    | .some t_i => t_i (μ i)
+    | .none => μ i
+
+notation "⟦" t "⟧" μ => hyperTermSemantics t μ
+
+def hyperTermReferences (t : I → Option (PspPm → PspPm)) : Set I :=
+  {x | (t x).isSome} -- aka `fun x => (t x).isSome` (following advice in the documentation for Set)
+
+-- notation "|" t "|" => hyperTermReferences t -- Causes notation clashes.
+
 def wp {Var Val : Type*}
   [DecidableEq Var] [Inhabited Val] [Finite Var] [Countable Val]
-  (t : IndexedPSpPm I Var Val → IndexedPSpPm I Var Val)
+  (t : I → Option (PSpPm Var Val → PSpPm Var Val))
   (Q : bProp I Var Val) : bProp I Var Val := {
   carrier := fun a =>
     ∀ μ₀ : IndexedPSpPm I Var Val,
       ∀ c : IndexedPSpPm I Var Val,
         ✓ μ₀ → (a * c) ≤ μ₀ → ∃ b : IndexedPSpPm I Var Val,
-          (b * c) ≤ t μ₀ ∧ ✓ b ∧ Q b
+          (b * c) ≤ (⟦t⟧ μ₀) ∧ ✓ b ∧ Q b
   upper' := by
     intro x y hxy hx μ₀ c hvμ₀ hmul
     exact hx μ₀ c hvμ₀ (le_trans (mul_left_mono hxy) hmul)
@@ -702,7 +718,7 @@ def wp {Var Val : Type*}
 def hoare {Var Val : Type*}
   [DecidableEq Var] [Inhabited Val] [Finite Var] [Countable Val]
   (P : bProp I Var Val)
-  (t : IndexedPSpPm I Var Val → IndexedPSpPm I Var Val)
+  (t : I → Option (PSpPm Var Val → PSpPm Var Val))
   (Q : bProp I Var Val) : bProp I Var Val :=
   bpersistently (wand P (@wp I Var Val _ _ _ _ t Q))
 
@@ -710,17 +726,17 @@ notation:100 "{" P "} " t "{" Q "}" => hoare P t Q
 
 def EWPCons
   [DecidableEq Var] [Inhabited Val] [Finite Var] [Countable Val]
-  (t : IndexedPSpPm I Var Val → IndexedPSpPm I Var Val)
+  (t : I → Option (PSpPm Var Val → PSpPm Var Val))
   (Q Q' : bProp I Var Val) (hQ : Q ⊢ Q')
   : wp t Q ⊢ wp t Q' := by
   intro m _ hm μ₀ c hvμ₀ hmul
   obtain ⟨b, hbc, hvb, hQb⟩ := hm μ₀ c hvμ₀ hmul
   exact ⟨b, hbc, hvb, hQ b hvb hQb⟩
 
-def EWPFrame
-  [DecidableEq Var] [Inhabited Val] [Finite Var] [Countable Val]
-  (t : IndexedPSpPm I Var Val → IndexedPSpPm I Var Val)
-  (ht : ∀ μ, ✓ μ → ✓ (t μ))
+lemma EWPFrame
+  [Finite Var] [Countable Val]
+  (t : I → Option (PSpPm Var Val → PSpPm Var Val))
+  (ht : ∀ μ, ✓ μ → ✓ (⟦t⟧ μ))
   (P Q : bProp I Var Val)
   : P ∗ wp t Q ⊢ wp t iprop(P ∗ Q) := by
   intro m _ hPwpQ μ₀ c' hvμ₀ hmc'
@@ -732,11 +748,11 @@ def EWPFrame
       _ ≤ m * c' := mul_left_mono hle
       _ ≤ μ₀ := hmc'
   obtain ⟨b₀, hb₀c, hvb₀, hQb₀⟩ := hwpQ μ₀ (a₁ * c') hvμ₀ ha₂_le
-  have hb_c' : (a₁ * b₀) * c' ≤ t μ₀ :=
+  have hb_c' : (a₁ * b₀) * c' ≤ ⟦t⟧ μ₀ :=
     calc (a₁ * b₀) * c'
         = (b₀ * a₁) * c' := by rw [mul_comm a₁ b₀]
       _ = b₀ * (a₁ * c') := mul_assoc _ _ _
-      _ ≤ t μ₀ := hb₀c
+      _ ≤ ⟦t⟧ μ₀ := hb₀c
   have hvab : ✓ (a₁ * b₀) := valid_mul (valid_mono hb_c' (ht μ₀ hvμ₀))
   exact ⟨a₁ * b₀, hb_c', hvab, a₁, b₀, le_refl _, hPa₁, hQb₀⟩
 
