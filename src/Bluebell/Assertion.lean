@@ -1417,7 +1417,7 @@ lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
 lemma WP_Swap {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val]
     {μ : PMF A}
-    {t : IndexedPSpPm I Var Val → IndexedPSpPm I Var Val}
+    {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
     {Q : A → bProp I Var Val} {i : I}
     :
     iprop(𝒞⟨μ⟩ v; wp t (Q v) /- ∧ OWN_X -/) ⊢ iprop(wp t (𝒞⟨μ⟩ v; Q v)) := by
@@ -1427,7 +1427,7 @@ lemma WP_Swap {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 lemma WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] [Countable A]
     {μ : PMF A}
-    {t : IndexedPSpPm I Var Val → IndexedPSpPm I Var Val}
+    {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
     {Q : A → bProp I Var Val} {i : I} {E : (Var → Val) → A}
     :
     iprop(𝒞⟨μ⟩ v; (E⟨i⟩ ~ δ v) ∗ wp t (Q v)) ⊢ iprop(wp t (𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ Q v))) := by
