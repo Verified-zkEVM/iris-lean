@@ -1446,6 +1446,13 @@ lemma WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
     iprop(𝒞⟨μ⟩ v; (E⟨i⟩ ~ δ v) ∗ wp t (Q v)) ⊢ iprop(wp t (𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ Q v))) := by
     sorry
 
+lemma Prod_Split {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+  {μ₁ : PMF A} {μ₂ : PMF B}
+  {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B} :
+  (fun s => (E₁ s, E₂ s))⟨i⟩ ~ (μ₁ ⊗ μ₂)
+  ⊢ E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂ := by
+    sorry
+
 lemma sep_affine
   {P Q : bProp I Var Val}
   : P ∗ Q ⊢ P := by
