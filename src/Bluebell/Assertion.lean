@@ -142,7 +142,12 @@ def PMF.toDiscMeasure_is_probability {A : Type*} (μ : PMF A)
 
 def product {A B : Type*} (μ₁ : PMF A) (μ₂ : PMF B) : PMF (A × B) :=
   ⟨fun ((a, b) : (A × B)) => μ₁ a * μ₂ b,
-    (by sorry)⟩
+    (by 
+      have h : ∑' (p : A × B), μ₁ p.1 * μ₂ p.2 = 1 := by
+        simp_rw [ENNReal.tsum_prod', ENNReal.tsum_mul_left, ENNReal.tsum_mul_right,
+          PMF.tsum_coe, mul_one]
+      convert h ▸ ENNReal.summable.hasSum)
+  ⟩
 
 notation μ₁ "⊗" μ₂ => product μ₁ μ₂
 
