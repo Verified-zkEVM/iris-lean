@@ -140,6 +140,12 @@ def PMF.toDiscMeasure_is_probability {A : Type*} (μ : PMF A)
   apply isProbabilityMeasure_iff.2
   simp_all only [toDiscMeasure, measure_univ]
 
+def product {A B : Type*} (μ₁ : PMF A) (μ₂ : PMF B) : PMF (A × B) :=
+  ⟨fun ((a, b) : (A × B)) => μ₁ a * μ₂ b,
+    (by sorry)⟩
+
+notation μ₁ "⊗" μ₂ => product μ₁ μ₂
+
 instance {A : Type*} : Coe (PMF A) (@Measure A ⊤) where
   coe μ := @μ.toMeasure A ⊤
 
