@@ -1471,6 +1471,97 @@ lemma sep_affine
   iintro ⟨h1, h2⟩
   iexact h1
 
+-- # Derived Rules:
+
+-- ## Ownership and distribution related rules
+
+-- See ESureDirac (Done, and proved)
+
+lemma Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  {E : (Var → Val) → A}
+  {v v' : A} :
+  iprop((fun s => E s = v)⟨i⟩ = true) ∗ iprop((fun s => E s = v')⟨i⟩ = true)
+  ⊢ ⌜ v = v' ⌝ := by
+    sorry
+
+lemma Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
+  {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
+  {μ : PMF A}
+  {f : A → B} {fInv : B → A}
+  (hfl : Function.LeftInverse f fInv)  -- f ∘ fInv = id -- TODO: do we need both?
+  (hfr : Function.RightInverse f fInv) -- fInv ∘ f = id
+  :
+  E₁⟨i⟩ ~ μ ∗ ((fun s => E₂ s = f (E₁ s))⟨i⟩ = true) ⊢ E₂⟨i⟩ ~ (⟨μ ∘ fInv, (by sorry)⟩) -- TODO: fill sorry
+  := by
+    sorry
+
+-- See EDiracDup (Done, not proved)
+
+lemma Dist_Supp {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  {E : (Var → Val) → A}
+  {μ : PMF A}
+  :
+  E⟨i⟩ ~ μ ⊢ E⟨i⟩ ~ μ ∗ (fun s => E s ∈ μ.support)⟨i⟩ = true := by
+    sorry
+
+lemma Dist_Fun {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
+  {E : (Var → Val) → A}
+  {μ : PMF A}
+  {f : A → B} {fInv : B → A}
+  (hfl : Function.LeftInverse f fInv)  -- f ∘ fInv = id -- TODO: do we need both?
+  (hfr : Function.RightInverse f fInv) -- fInv ∘ f = id
+  :
+  E⟨i⟩ ~ μ ⊢ (fun s => (f ∘ E) s)⟨i⟩ ~ (⟨μ ∘ fInv, (by sorry)⟩) -- TODO: fill sorry
+  := by
+    sorry
+
+lemma Prod_Unsplit {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+  {μ₁ : PMF A} {μ₂ : PMF B}
+  {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B} :
+  E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂
+  ⊢ (fun s => (E₁ s, E₂ s))⟨i⟩ ~ (μ₁ ⊗ μ₂) := by
+    sorry
+
+-- ## Joint conditioning rules
+
+-- C_Fuse -- TODO
+
+-- C_Swap -- TODO
+
+lemma Sure_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] {μ : PMF A}
+  {i : I} {E : (Var → Val) → Bool}
+  :
+  iprop(𝒞⟨μ⟩ v; E⟨i⟩ = true) ⊢ E⟨i⟩ = true := by
+    sorry
+
+lemma Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] {μ μ' : PMF A}
+  {i : I} {E : (Var → Val) → A}
+  :
+  iprop(𝒞⟨μ⟩ v; E⟨i⟩ ~ μ') ⊢ iprop(E⟨i⟩ ~ μ') := by
+    sorry
+
+-- C_Sure_Proj -- TODO
+
+-- C_Sure_Proj_Many -- TODO
+
+lemma C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val]
+  {μ₁ : PMF A} {μ₂ : PMF B}
+  {i : I}
+  {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
+  :
+  iprop(𝒞⟨μ₁⟩ v₁; (fun s => E₁ s = v₁)⟨i⟩ = true ∗ E₂⟨i⟩ ~ μ₂)
+  ⊢ E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂ := by
+    sorry
+
+-- C_Dist_Proj -- TODO
+
+-- ## Relational Lifting Rules -- TODO
+
+-- ## WP rules -- TODO (Needs the shallow-embedding first)
+
 end Properties
 
 end Bluebell
