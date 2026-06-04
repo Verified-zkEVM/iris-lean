@@ -1453,6 +1453,18 @@ lemma Prod_Split {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
   ⊢ E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂ := by
     sorry
 
+def pvar (E : (Var → Val) → Bool) : Set Var :=
+  {x : Var | ∃ (σ : Var → Val) (v : Val), E σ ≠ E (Function.update σ x v)}
+
+def pabs (P : bProp I Var Val) (X : Set Var) : Prop := sorry -- TODO: Formalise pabs
+
+lemma Sure_And_Star {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  {P : bProp I Var Val}
+  {E : (Var → Val) → Bool} :
+  pabs P (pvar E) →
+  iprop(E⟨i⟩ = true ∧ P) ⊢ iprop(E⟨i⟩ = true ∗ P) := by
+    sorry
+
 lemma sep_affine
   {P Q : bProp I Var Val}
   : P ∗ Q ⊢ P := by
