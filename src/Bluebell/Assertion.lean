@@ -1517,6 +1517,13 @@ lemma Dist_Supp {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### PROD-UNSPLIT
 
+lemma Prod_Unsplit {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+  {μ₁ : PMF A} {μ₂ : PMF B}
+  {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B} :
+  E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂
+  ⊢ (fun s => (E₁ s, E₂ s))⟨i⟩ ~ (μ₁ ⊗ μ₂) := by
+    sorry -- TODO: Rule PROD-UNSPLIT proof
+
 -- ## Joint conditioning
 
 -- ### C-FUSE
@@ -1721,12 +1728,6 @@ lemma sep_affine
 -- See EDiracDup (Done, not proved)
 
 
-lemma Prod_Unsplit {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
-  {μ₁ : PMF A} {μ₂ : PMF B}
-  {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B} :
-  E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂
-  ⊢ (fun s => (E₁ s, E₂ s))⟨i⟩ ~ (μ₁ ⊗ μ₂) := by
-    sorry
 
 -- ## Joint conditioning rules
 
