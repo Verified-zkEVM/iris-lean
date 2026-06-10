@@ -1045,7 +1045,7 @@ theorem Sure_Merge
   {A : Type*}
   {E₁ E₂ : (Var → Val) → Bool} {i : I}
   : E₁⟨i⟩ = true ∗ E₂⟨i⟩ = true ⊣⊢ (fun s => E₁ s ∧ E₂ s)⟨i⟩ = true := by
-  sorry
+  sorry -- TODO: Rule SURE-MERGE proof
 
 -- ### SURE-AND-STAR
 
@@ -1054,7 +1054,7 @@ lemma Sure_And_Star {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val
   {E : (Var → Val) → Bool} :
   pabs P (pvar E) →
   iprop(E⟨i⟩ = true ∧ P) ⊢ iprop(E⟨i⟩ = true ∗ P) := by
-    sorry
+    sorry -- TODO: Rule SURE-AND-STAR proof
 
 -- ### PROD-SPLIT
 
@@ -1063,7 +1063,7 @@ lemma Prod_Split {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B} :
   (fun s => (E₁ s, E₂ s))⟨i⟩ ~ (μ₁ ⊗ μ₂)
   ⊢ E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂ := by
-    sorry
+    sorry -- TODO: Rule PROD-SPLIT proof
 
 -- ## Joint conditioning rules
 
@@ -1110,6 +1110,8 @@ lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   exact h_carrier_all _ ⟨⟨v₀, hv₀⟩, rfl⟩
 
 -- ### C-CONS
+
+-- TODO: Rule C-CONS spec+proof
 
 -- ### C-FRAME
 
