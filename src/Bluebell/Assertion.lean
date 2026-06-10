@@ -1508,6 +1508,13 @@ theorem Dirac_Dup
 
 -- ### DIST-SUPP
 
+lemma Dist_Supp {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  {E : (Var → Val) → A}
+  {μ : PMF A}
+  :
+  E⟨i⟩ ~ μ ⊢ E⟨i⟩ ~ μ ∗ (fun s => E s ∈ μ.support)⟨i⟩ = true := by
+    sorry -- TODO: Rule DIRAC-SUPP proof
+
 -- ### PROD-UNSPLIT
 
 -- ## Joint conditioning
@@ -1713,12 +1720,6 @@ lemma sep_affine
 
 -- See EDiracDup (Done, not proved)
 
-lemma Dist_Supp {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  {E : (Var → Val) → A}
-  {μ : PMF A}
-  :
-  E⟨i⟩ ~ μ ⊢ E⟨i⟩ ~ μ ∗ (fun s => E s ∈ μ.support)⟨i⟩ = true := by
-    sorry
 
 lemma Prod_Unsplit {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
   {μ₁ : PMF A} {μ₂ : PMF B}
