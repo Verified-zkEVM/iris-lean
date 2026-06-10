@@ -1060,6 +1060,8 @@ theorem And_To_Star [Inhabited Var] [Finite I]
       exact this.elim
     simp [hni]
 
+-- DONE: Rule AND-TO-STAR
+
 -- ### DIST-INJ
 
 open MeasureTheory in
@@ -1151,6 +1153,8 @@ theorem Dist_Inj
     _ = @Measure.map _ _ (P'.ms i) ⊤ E (P'.μ i) := (bridge P').symm
     _ = @PMF.toMeasure A ⊤ μ' := hμ₂
 
+-- DONE: Rule DIST-INJ
+
 -- ### SURE-MERGE
 
 theorem Sure_Merge
@@ -1206,6 +1210,8 @@ lemma C_True
       intro v _ _ _
       trivial
 
+-- DONE: Rule C-TRUE
+
 -- ### C-FALSE
 
 lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
@@ -1220,6 +1226,8 @@ lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   obtain ⟨-, h_carrier_all⟩ := h_rest
   obtain ⟨v₀, hv₀⟩ := PMF.support_nonempty μ
   exact h_carrier_all _ ⟨⟨v₀, hv₀⟩, rfl⟩
+
+-- DONE: Rule C-FALSE
 
 -- ### C-CONS
 
@@ -1240,7 +1248,6 @@ lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 -- ### C-ASSOC
 
 -- TODO: Rule C-ASSOC spec+proof
-
 
 -- ### C-UNASSOC
 
@@ -1369,6 +1376,8 @@ lemma C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
     have hfv : μ (f v') ≠ 0 := hbij.mapsTo v'.property
     exact h_carrier_all _ ⟨⟨f v', hfv⟩, rfl⟩
 
+-- DONE: Rule C-TRANSF
+
 -- ### SURE-STR-CONVEX
 
 lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
@@ -1400,6 +1409,8 @@ theorem WP_Cons
   obtain ⟨b, hbc, hvb, hQb⟩ := hm μ₀ c hvμ₀ hmul
   exact ⟨b, hbc, hvb, hQ b hvb hQb⟩
 
+-- DONE: Rule WP-CONS
+
 -- ### WP-FRAME
 
 lemma WP_Frame
@@ -1424,6 +1435,8 @@ lemma WP_Frame
       _ ≤ ⟦t⟧ μ₀ := hb₀c
   have hvab : ✓ (a₁ * b₀) := valid_mul (valid_mono hb_c' (ht μ₀ hvμ₀))
   exact ⟨a₁ * b₀, hb_c', hvab, a₁, b₀, le_refl _, hPa₁, hQb₀⟩
+
+-- DONE: Rule WP-FRAME
 
 -- ### WP-NEST
 
@@ -1605,6 +1618,8 @@ theorem Sure_Dirac
       · rw [Set.preimage_const_of_notMem hv_s, MeasureTheory.measure_empty]
         simp only [PMF.dirac, Measure.toPMF_toMeasure, Measure.dirac_apply', MeasurableSpace.measurableSet_top]
         exact (Set.indicator_of_notMem hv_s _).symm
+
+-- DONE: Rule SURE-DIRAC
 
 -- ### SURE-EQ-INJ
 
