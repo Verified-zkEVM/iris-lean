@@ -1238,7 +1238,7 @@ lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-FRAME
 
--- TODO: Rule C-FRAME (translate spec)
+-- TODO: Rule C-FRAME spec+proof (translate spec)
 
 -- theorem C_frame {P : HyperAssertion I α V} : P ∗ 𝑪_ μ K ⊢ 𝑪_ μ (fun v => sep P (K v)) := by
 --   sorry
