@@ -736,29 +736,6 @@ def hoare {Var Val : Type*}
 
 notation:100 "{" P "} " t "{" Q "}" => hoare P t Q
 
-lemma EWPFrame
-  [Finite Var] [Countable Val]
-  (t : I → Option (PSpPm Var Val → PSpPm Var Val))
-  (ht : ∀ μ, ✓ μ → ✓ (⟦t⟧ μ))
-  (P Q : bProp I Var Val)
-  : P ∗ wp t Q ⊢ wp t iprop(P ∗ Q) := by
-  intro m _ hPwpQ μ₀ c' hvμ₀ hmc'
-  obtain ⟨a₁, a₂, hle, hPa₁, hwpQ⟩ := hPwpQ
-  have ha₂_le : a₂ * (a₁ * c') ≤ μ₀ :=
-    calc a₂ * (a₁ * c')
-        = (a₂ * a₁) * c' := (mul_assoc _ _ _).symm
-      _ = (a₁ * a₂) * c' := by rw [mul_comm a₂ a₁]
-      _ ≤ m * c' := mul_left_mono hle
-      _ ≤ μ₀ := hmc'
-  obtain ⟨b₀, hb₀c, hvb₀, hQb₀⟩ := hwpQ μ₀ (a₁ * c') hvμ₀ ha₂_le
-  have hb_c' : (a₁ * b₀) * c' ≤ ⟦t⟧ μ₀ :=
-    calc (a₁ * b₀) * c'
-        = (b₀ * a₁) * c' := by rw [mul_comm a₁ b₀]
-      _ = b₀ * (a₁ * c') := mul_assoc _ _ _
-      _ ≤ ⟦t⟧ μ₀ := hb₀c
-  have hvab : ✓ (a₁ * b₀) := valid_mul (valid_mono hb_c' (ht μ₀ hvμ₀))
-  exact ⟨a₁ * b₀, hb_c', hvab, a₁, b₀, le_refl _, hPa₁, hQb₀⟩
-
 private lemma ValidPSpPm.map_μ_eq_map_PSpace_μ {A : Type*}
     (pp : ValidPSpPm Var Val) (E : (Var → Val) → A) :
     @Measure.map _ _ pp.ms ⊤ E pp.μ = @Measure.map _ _ pp.PSpace.1.ms ⊤ E pp.PSpace.1.μ := by
@@ -1280,6 +1257,30 @@ theorem WP_Cons
   exact ⟨b, hbc, hvb, hQ b hvb hQb⟩
 
 -- ### WP-FRAME
+
+lemma WP_Frame
+  [Finite Var] [Countable Val]
+  (t : I → Option (PSpPm Var Val → PSpPm Var Val))
+  (ht : ∀ μ, ✓ μ → ✓ (⟦t⟧ μ))
+  (P Q : bProp I Var Val)
+  : P ∗ wp t Q ⊢ wp t iprop(P ∗ Q) := by
+  intro m _ hPwpQ μ₀ c' hvμ₀ hmc'
+  obtain ⟨a₁, a₂, hle, hPa₁, hwpQ⟩ := hPwpQ
+  have ha₂_le : a₂ * (a₁ * c') ≤ μ₀ :=
+    calc a₂ * (a₁ * c')
+        = (a₂ * a₁) * c' := (mul_assoc _ _ _).symm
+      _ = (a₁ * a₂) * c' := by rw [mul_comm a₂ a₁]
+      _ ≤ m * c' := mul_left_mono hle
+      _ ≤ μ₀ := hmc'
+  obtain ⟨b₀, hb₀c, hvb₀, hQb₀⟩ := hwpQ μ₀ (a₁ * c') hvμ₀ ha₂_le
+  have hb_c' : (a₁ * b₀) * c' ≤ ⟦t⟧ μ₀ :=
+    calc (a₁ * b₀) * c'
+        = (b₀ * a₁) * c' := by rw [mul_comm a₁ b₀]
+      _ = b₀ * (a₁ * c') := mul_assoc _ _ _
+      _ ≤ ⟦t⟧ μ₀ := hb₀c
+  have hvab : ✓ (a₁ * b₀) := valid_mul (valid_mono hb_c' (ht μ₀ hvμ₀))
+  exact ⟨a₁ * b₀, hb_c', hvab, a₁, b₀, le_refl _, hPa₁, hQb₀⟩
+
 
 -- ### WP-NEST
 
