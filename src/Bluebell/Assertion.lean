@@ -745,6 +745,150 @@ private lemma ValidPSpPm.map_μ_eq_map_PSpace_μ {A : Type*}
   | none => exact absurd rfl hv.1
   | some m' => rfl
 
+section Properties
+
+theorem and_ident {P : bProp I Var Val}
+  : P ∧ BTrue ⊣⊢ P := by
+  constructor
+  · intro m _ hm
+    exact hm.1
+  · intro m _ hm
+    exact ⟨hm, trivial⟩
+
+theorem and_comm {P Q : bProp I Var Val}
+  : P ∧ Q ⊣⊢ Q ∧ P := by
+  constructor
+  · intro m _ hm
+    exact ⟨hm.2, hm.1⟩
+  · intro m _ hm
+    exact ⟨hm.2, hm.1⟩
+
+theorem and_assoc {P Q R : bProp I Var Val}
+  : (P ∧ Q) ∧ R ⊣⊢ P ∧ (Q ∧ R) := by
+  constructor
+  · intro m _ hm
+    exact ⟨hm.1.1, hm.1.2, hm.2⟩
+  · intro m _ hm
+    exact ⟨⟨hm.1, hm.2.1⟩, hm.2.2⟩
+
+theorem or_ident {P : bProp I Var Val}
+  : P ∨ BFalse ⊣⊢ P := by
+  constructor
+  · intro m _ hm
+    rcases hm with hP | hF
+    · exact hP
+    · exact hF.elim
+  · intro m _ hm
+    exact Or.inl hm
+
+theorem or_comm {P Q : bProp I Var Val}
+  : P ∨ Q ⊣⊢ Q ∨ P := by
+  constructor
+  · intro m _ hm
+    exact hm.symm
+  · intro m _ hm
+    exact hm.symm
+
+theorem or_assoc {P Q R : bProp I Var Val}
+  : (P ∨ Q) ∨ R ⊣⊢ P ∨ (Q ∨ R) := by
+  constructor
+  · intro m _ hm
+    rcases hm with (hP | hQ) | hR
+    · exact Or.inl hP
+    · exact Or.inr (Or.inl hQ)
+    · exact Or.inr (Or.inr hR)
+  · intro m _ hm
+    rcases hm with hP | hQ | hR
+    · exact Or.inl (Or.inl hP)
+    · exact Or.inl (Or.inr hQ)
+    · exact Or.inr hR
+
+theorem sep_ident {P : bProp I Var Val}
+  : P ∗ True ⊣⊢ P := by
+  refine ⟨?_, ?_⟩
+  · iintro ⟨h, _⟩
+    iexact h
+  · iintro h
+    isplitl [h]
+    · iexact h
+    · exact fun m a a_1 => a_1
+
+theorem sep_comm {P Q : bProp I Var Val}
+  : P ∗ Q ⊣⊢ Q ∗ P := by
+  constructor
+  · intro m hv hm
+    obtain ⟨b₁, ⟨b₂, h⟩⟩ := hm
+    use b₂, b₁
+    have : b₁ * b₂ = b₂ * b₁ := CommMonoid.mul_comm b₁ b₂
+    aesop
+  · intro m hv hm
+    obtain ⟨b₁, ⟨b₂, h⟩⟩ := hm
+    use b₂, b₁
+    have : b₁ * b₂ = b₂ * b₁ := CommMonoid.mul_comm b₁ b₂
+    aesop
+
+theorem sep_assoc {P Q R : bProp I Var Val}
+  : (P ∗ Q) ∗ R ⊣⊢ P ∗ (Q ∗ R) := by
+  constructor
+  · intro m _ hm
+    obtain ⟨b₁, b₂, hle, ⟨c₁, c₂, hle', hPc₁, hQc₂⟩, hRb₂⟩ := hm
+    refine ⟨c₁, c₂ * b₂, ?_, hPc₁, c₂, b₂, le_refl _, hQc₂, hRb₂⟩
+    calc c₁ * (c₂ * b₂)
+        = (c₁ * c₂) * b₂ := (mul_assoc c₁ c₂ b₂).symm
+      _ ≤ b₁ * b₂ := mul_left_mono hle'
+      _ ≤ m := hle
+  · intro m _ hm
+    obtain ⟨b₁, b₂, hle, hPb₁, ⟨c₁, c₂, hle', hQc₁, hRc₂⟩⟩ := hm
+    refine ⟨b₁ * c₁, c₂, ?_, ⟨b₁, c₁, le_refl _, hPb₁, hQc₁⟩, hRc₂⟩
+    calc (b₁ * c₁) * c₂
+        = b₁ * (c₁ * c₂) := mul_assoc b₁ c₁ c₂
+      _ ≤ b₁ * b₂ := by
+          rw [mul_comm b₁ (c₁ * c₂), mul_comm b₁ b₂]
+          exact mul_left_mono hle'
+      _ ≤ m := hle
+
+variable [Finite Var] [Countable Val]
+
+example {P : bProp I Var Val} : ⊢ P -∗ BTrue := by
+  exact Iris.BI.entails_wand fun m a a_1 => trivial
+
+omit [Finite Var] [Countable Val]
+lemma emp_implies_own_unit : emp ⊢ own (1 : IndexedPSpPm I Var Val) := by
+  intro m hv hemp
+  have : m ∈ {a | 1 ≤ a} := by
+    have : 1 ≤ m := IndexedPSpPm.one_le I Val Var
+    aesop
+  assumption
+
+lemma true_subst_star
+  {P Q : bProp I Var Val} (h : Q ⊣⊢ BTrue)
+  : P ⊢ P ∗ Q := by
+  intro m hv hp
+  simp [Iris.BI.sep]
+  have : m ∈ sep P Q := by
+    simp [Membership.mem, Set.Mem, sep]
+    use m, 1
+    have : Q 1 := by
+      have : 1 ∈ (BTrue : bProp I Var Val) := by
+        simp [Membership.mem, Set.Mem, BTrue]
+        trivial
+      have := h.2 1 (by aesop) this
+      assumption
+    constructor
+    · have : m * 1 = m := MulOneClass.mul_one m
+      rw [this]
+    · exact ⟨hp, by assumption⟩
+  assumption
+
+
+lemma sep_affine
+  {P Q : bProp I Var Val}
+  : P ∗ Q ⊢ P := by
+  iintro ⟨h1, h2⟩
+  iexact h1
+
+end Properties
+
 section BluebellRules
 
 -- # Additional definitions used in Bluebell rules
@@ -1634,147 +1778,6 @@ end BluebellRules
 
 end Formula
 
-section Properties
-
-theorem and_ident {P : bProp I Var Val}
-  : P ∧ BTrue ⊣⊢ P := by
-  constructor
-  · intro m _ hm
-    exact hm.1
-  · intro m _ hm
-    exact ⟨hm, trivial⟩
-
-theorem and_comm {P Q : bProp I Var Val}
-  : P ∧ Q ⊣⊢ Q ∧ P := by
-  constructor
-  · intro m _ hm
-    exact ⟨hm.2, hm.1⟩
-  · intro m _ hm
-    exact ⟨hm.2, hm.1⟩
-
-theorem and_assoc {P Q R : bProp I Var Val}
-  : (P ∧ Q) ∧ R ⊣⊢ P ∧ (Q ∧ R) := by
-  constructor
-  · intro m _ hm
-    exact ⟨hm.1.1, hm.1.2, hm.2⟩
-  · intro m _ hm
-    exact ⟨⟨hm.1, hm.2.1⟩, hm.2.2⟩
-
-theorem or_ident {P : bProp I Var Val}
-  : P ∨ BFalse ⊣⊢ P := by
-  constructor
-  · intro m _ hm
-    rcases hm with hP | hF
-    · exact hP
-    · exact hF.elim
-  · intro m _ hm
-    exact Or.inl hm
-
-theorem or_comm {P Q : bProp I Var Val}
-  : P ∨ Q ⊣⊢ Q ∨ P := by
-  constructor
-  · intro m _ hm
-    exact hm.symm
-  · intro m _ hm
-    exact hm.symm
-
-theorem or_assoc {P Q R : bProp I Var Val}
-  : (P ∨ Q) ∨ R ⊣⊢ P ∨ (Q ∨ R) := by
-  constructor
-  · intro m _ hm
-    rcases hm with (hP | hQ) | hR
-    · exact Or.inl hP
-    · exact Or.inr (Or.inl hQ)
-    · exact Or.inr (Or.inr hR)
-  · intro m _ hm
-    rcases hm with hP | hQ | hR
-    · exact Or.inl (Or.inl hP)
-    · exact Or.inl (Or.inr hQ)
-    · exact Or.inr hR
-
-theorem sep_ident {P : bProp I Var Val}
-  : P ∗ True ⊣⊢ P := by
-  refine ⟨?_, ?_⟩
-  · iintro ⟨h, _⟩
-    iexact h
-  · iintro h
-    isplitl [h]
-    · iexact h
-    · exact fun m a a_1 => a_1
-
-theorem sep_comm {P Q : bProp I Var Val}
-  : P ∗ Q ⊣⊢ Q ∗ P := by
-  constructor
-  · intro m hv hm
-    obtain ⟨b₁, ⟨b₂, h⟩⟩ := hm
-    use b₂, b₁
-    have : b₁ * b₂ = b₂ * b₁ := CommMonoid.mul_comm b₁ b₂
-    aesop
-  · intro m hv hm
-    obtain ⟨b₁, ⟨b₂, h⟩⟩ := hm
-    use b₂, b₁
-    have : b₁ * b₂ = b₂ * b₁ := CommMonoid.mul_comm b₁ b₂
-    aesop
-
-theorem sep_assoc {P Q R : bProp I Var Val}
-  : (P ∗ Q) ∗ R ⊣⊢ P ∗ (Q ∗ R) := by
-  constructor
-  · intro m _ hm
-    obtain ⟨b₁, b₂, hle, ⟨c₁, c₂, hle', hPc₁, hQc₂⟩, hRb₂⟩ := hm
-    refine ⟨c₁, c₂ * b₂, ?_, hPc₁, c₂, b₂, le_refl _, hQc₂, hRb₂⟩
-    calc c₁ * (c₂ * b₂)
-        = (c₁ * c₂) * b₂ := (mul_assoc c₁ c₂ b₂).symm
-      _ ≤ b₁ * b₂ := mul_left_mono hle'
-      _ ≤ m := hle
-  · intro m _ hm
-    obtain ⟨b₁, b₂, hle, hPb₁, ⟨c₁, c₂, hle', hQc₁, hRc₂⟩⟩ := hm
-    refine ⟨b₁ * c₁, c₂, ?_, ⟨b₁, c₁, le_refl _, hPb₁, hQc₁⟩, hRc₂⟩
-    calc (b₁ * c₁) * c₂
-        = b₁ * (c₁ * c₂) := mul_assoc b₁ c₁ c₂
-      _ ≤ b₁ * b₂ := by
-          rw [mul_comm b₁ (c₁ * c₂), mul_comm b₁ b₂]
-          exact mul_left_mono hle'
-      _ ≤ m := hle
-
-variable [Finite Var] [Countable Val]
-
-example {P : bProp I Var Val} : ⊢ P -∗ BTrue := by
-  exact Iris.BI.entails_wand fun m a a_1 => trivial
-
-omit [Finite Var] [Countable Val]
-lemma emp_implies_own_unit : emp ⊢ own (1 : IndexedPSpPm I Var Val) := by
-  intro m hv hemp
-  have : m ∈ {a | 1 ≤ a} := by
-    have : 1 ≤ m := IndexedPSpPm.one_le I Val Var
-    aesop
-  assumption
-
-lemma true_subst_star
-  {P Q : bProp I Var Val} (h : Q ⊣⊢ BTrue)
-  : P ⊢ P ∗ Q := by
-  intro m hv hp
-  simp [Iris.BI.sep]
-  have : m ∈ sep P Q := by
-    simp [Membership.mem, Set.Mem, sep]
-    use m, 1
-    have : Q 1 := by
-      have : 1 ∈ (BTrue : bProp I Var Val) := by
-        simp [Membership.mem, Set.Mem, BTrue]
-        trivial
-      have := h.2 1 (by aesop) this
-      assumption
-    constructor
-    · have : m * 1 = m := MulOneClass.mul_one m
-      rw [this]
-    · exact ⟨hp, by assumption⟩
-  assumption
-
-
-lemma sep_affine
-  {P Q : bProp I Var Val}
-  : P ∗ Q ⊢ P := by
-  iintro ⟨h1, h2⟩
-  iexact h1
 
 -- # Derived Rules:
 
@@ -1806,7 +1809,5 @@ lemma sep_affine
 -- ## Relational Lifting Rules -- TODO
 
 -- ## WP rules -- TODO (Needs the shallow-embedding first)
-
-end Properties
 
 end Bluebell
