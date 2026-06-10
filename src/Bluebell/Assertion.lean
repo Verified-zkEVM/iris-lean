@@ -802,6 +802,26 @@ def pvar (E : (Var → Val) → Bool) : Set Var :=
 -- For SURE-AND-STAR
 def pabs (P : bProp I Var Val) (X : Set Var) : Prop := sorry -- TODO: Formalise pabs
 
+-- For C-TRUE
+noncomputable instance : OfNat (ValidIndexedPSpPm I Var Val) 1 where
+  ofNat := ⟨1, by aesop⟩
+
+-- For C-TRUE
+noncomputable def validOne : ValidIndexedPSpPm I Var Val := 1
+
+-- For C-TRUE
+noncomputable def k {A : Type*} : CompatibleKernel A (@validOne I Var Val _ _) := {
+  kernel := fun i _ => PSpace.unit.1.μ
+  isProb := fun i a => by
+    have := (@validOne.PSpace I Var Val _ _ i).2
+    assumption
+  isComp := by
+    intro i a
+    cases h : (@validOne I Var Val _ _).1 i
+    obtain ⟨p, h⟩ := h
+    aesop
+}
+
 -- # The primitive (non-WP) rules of Bluebell (see Fig. 9)
 
 -- ## Distribution ownership rules
@@ -1048,6 +1068,31 @@ lemma Prod_Split {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 -- ## Joint conditioning rules
 
 -- ### C-TRUE
+
+lemma C_True
+  {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] {μ : PMF A}
+  : ⊢ (𝒞⟨μ⟩ _v; BTrue : bProp I Var Val) := by
+  unfold jointConditioning
+  iexists 1, k
+  isplitl
+  · intro m _ _ i
+    have := @IndexedPSpPm.one_le I Val Var _ _ m i
+    trivial
+  · isplitl
+    · apply Iris.BI.forall_intro
+      intro i _ _ _
+      have : (@ValidIndexedPSpPm.μ I Var Val _ _) 1 i
+        = (1 : MeasureOnSpace (Var → Val)).μ := by rfl
+      rw [this]
+      let k' (v : A) := (k.kernel i v : @Measure (Var → Val) ⊥)
+      have {v : A} : k' v = (1 : MeasureOnSpace (Var → Val)).μ := by rfl
+      have : (@μ.toMeasure A ⊤).bind k' = MeasureOnSpace.μ 1 := by aesop
+      rw [this]
+      trivial
+    · apply Iris.BI.forall_intro
+      intro v _ _ _
+      trivial
 
 -- ### C-FALSE
 
@@ -1402,48 +1447,6 @@ lemma true_subst_star
       rw [this]
     · exact ⟨hp, by assumption⟩
   assumption
-
-noncomputable instance : OfNat (ValidIndexedPSpPm I Var Val) 1 where
-  ofNat := ⟨1, by aesop⟩
-
-noncomputable def validOne : ValidIndexedPSpPm I Var Val := 1
-
-noncomputable def k {A : Type*} : CompatibleKernel A (@validOne I Var Val _ _) := {
-  kernel := fun i _ => PSpace.unit.1.μ
-  isProb := fun i a => by
-    have := (@validOne.PSpace I Var Val _ _ i).2
-    assumption
-  isComp := by
-    intro i a
-    cases h : (@validOne I Var Val _ _).1 i
-    obtain ⟨p, h⟩ := h
-    aesop
-}
-
-lemma C_True
-  {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] {μ : PMF A}
-  : ⊢ (𝒞⟨μ⟩ _v; BTrue : bProp I Var Val) := by
-  unfold jointConditioning
-  iexists 1, k
-  isplitl
-  · intro m _ _ i
-    have := @IndexedPSpPm.one_le I Val Var _ _ m i
-    trivial
-  · isplitl
-    · apply Iris.BI.forall_intro
-      intro i _ _ _
-      have : (@ValidIndexedPSpPm.μ I Var Val _ _) 1 i
-        = (1 : MeasureOnSpace (Var → Val)).μ := by rfl
-      rw [this]
-      let k' (v : A) := (k.kernel i v : @Measure (Var → Val) ⊥)
-      have {v : A} : k' v = (1 : MeasureOnSpace (Var → Val)).μ := by rfl
-      have : (@μ.toMeasure A ⊤).bind k' = MeasureOnSpace.μ 1 := by aesop
-      rw [this]
-      trivial
-    · apply Iris.BI.forall_intro
-      intro v _ _ _
-      trivial
 
 lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A} :
