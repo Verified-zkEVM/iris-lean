@@ -1332,24 +1332,41 @@ lemma C_WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
     iprop(𝒞⟨μ⟩ v; (E⟨i⟩ ~ δ v) ∗ wp t (Q v)) ⊢ iprop(wp t (𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ Q v))) := by
     sorry -- TODO: Rule C-WP-SWAP proof
 
-
 -- ## Program WP rules
+
+-- TODO: Shallow embedding
 
 -- ### WP-SKIP
 
+-- TODO: Rule WP-SKIP spec+proof
+
 -- ### WP-SEQ
+
+-- TODO: Rule WP-SEQ spec+proof
 
 -- ### WP-ASSIGN
 
+-- TODO: Rule WP-ASSIGN spec+proof
+
 -- ### WP-SAMP
+
+-- TODO: Rule WP-SAMP spec+proof
 
 -- ### WP-IF-PRIM
 
+-- TODO: Rule WP-IF-PRIM spec+proof
+
 -- ### WP-BIND
+
+-- TODO: Rule WP-BIND spec+proof
 
 -- ### WP-LOOP-UNF
 
+-- TODO: Rule WP-LOOP-UNF spec+proof
+
 -- ### WP-LOOP
+
+-- TODO: Rule WP-LOOP spec+proof
 
 -- # Derived (non-WP) rules (see Fig. 11)
 
