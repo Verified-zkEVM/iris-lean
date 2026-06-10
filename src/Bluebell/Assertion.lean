@@ -736,15 +736,6 @@ def hoare {Var Val : Type*}
 
 notation:100 "{" P "} " t "{" Q "}" => hoare P t Q
 
-def EWPCons
-  [DecidableEq Var] [Inhabited Val] [Finite Var] [Countable Val]
-  (t : I → Option (PSpPm Var Val → PSpPm Var Val))
-  (Q Q' : bProp I Var Val) (hQ : Q ⊢ Q')
-  : wp t Q ⊢ wp t Q' := by
-  intro m _ hm μ₀ c hvμ₀ hmul
-  obtain ⟨b, hbc, hvb, hQb⟩ := hm μ₀ c hvμ₀ hmul
-  exact ⟨b, hbc, hvb, hQ b hvb hQb⟩
-
 lemma EWPFrame
   [Finite Var] [Countable Val]
   (t : I → Option (PSpPm Var Val → PSpPm Var Val))
@@ -1278,6 +1269,15 @@ lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 -- ## Structural WP rules
 
 -- ### WP-CONS
+
+theorem WP_Cons
+  [Finite Var] [Countable Val]
+  (t : I → Option (PSpPm Var Val → PSpPm Var Val))
+  (Q Q' : bProp I Var Val) (hQ : Q ⊢ Q')
+  : wp t Q ⊢ wp t Q' := by
+  intro m _ hm μ₀ c hvμ₀ hmul
+  obtain ⟨b, hbc, hvb, hQb⟩ := hm μ₀ c hvμ₀ hmul
+  exact ⟨b, hbc, hvb, hQ b hvb hQb⟩
 
 -- ### WP-FRAME
 
