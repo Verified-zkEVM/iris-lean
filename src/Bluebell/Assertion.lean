@@ -1115,17 +1115,32 @@ lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-FRAME
 
+-- TODO: Rule C-FRAME
+
 -- ### C-UNIT-L
+
+-- TODO: Rule C-UNIT-L spec+proof
 
 -- ### C-UNIT-R
 
+-- TODO: Rule C-UNIT-L spec+proof
+
 -- ### C-ASSOC
+
+-- TODO: Rule C-ASSOC spec+proof
+
 
 -- ### C-UNASSOC
 
+-- TODO: Rule C-UNASSOC spec+proof
+
 -- ### C-AND
 
+-- TODO: Rule C-AND spec+proof
+
 -- ### C-SKOLEM
+
+-- TODO: Rule C-SKOLEM spec+proof
 
 -- ### C-TRANSF
 
