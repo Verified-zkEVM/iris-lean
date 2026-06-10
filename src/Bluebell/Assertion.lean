@@ -1267,7 +1267,11 @@ lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-FOR-ALL
 
+-- TODO: Rule C-FOR-ALL spec+proof
+
 -- ### C-PURE
+
+-- TODO: Rule C-PURE spec+proof
 
 -- # The primitive WP rules of Bluebell (see Fig. 10)
 
