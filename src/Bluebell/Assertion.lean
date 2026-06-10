@@ -1545,6 +1545,13 @@ lemma Sure_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### DIST-CONVEX
 
+lemma Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] {μ μ' : PMF A}
+  {i : I} {E : (Var → Val) → A}
+  :
+  iprop(𝒞⟨μ⟩ v; E⟨i⟩ ~ μ') ⊢ iprop(E⟨i⟩ ~ μ') := by
+    sorry -- TODO: Rule DIST-CONVEX proof
+
 -- ### C-SURE-PROJ
 
 -- ### C-SURE-PROJ-MANY
@@ -1746,13 +1753,6 @@ lemma sep_affine
 
 -- C_Swap -- TODO
 
-
-lemma Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] {μ μ' : PMF A}
-  {i : I} {E : (Var → Val) → A}
-  :
-  iprop(𝒞⟨μ⟩ v; E⟨i⟩ ~ μ') ⊢ iprop(E⟨i⟩ ~ μ') := by
-    sorry
 
 -- C_Sure_Proj -- TODO
 
