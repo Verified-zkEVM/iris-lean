@@ -1554,7 +1554,11 @@ lemma Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-SURE-PROJ
 
+-- TODO: Rule C-SURE-PROJ spec+proof
+
 -- ### C-SURE-PROJ-MANY
+
+-- TODO: Rule C-SURE-PROJ-MANY spec+proof
 
 -- ### C-EXTRACT
 
