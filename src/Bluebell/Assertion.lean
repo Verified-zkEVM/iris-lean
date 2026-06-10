@@ -1374,65 +1374,7 @@ lemma C_WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### SURE-DIRAC
 
--- ### SURE-EQ-INJ
-
--- ### SURE-SUB
-
--- ### DIST-FUN
-
--- ### DIRAC-DUP
-
--- ### DIST-SUPP
-
--- ### PROD-UNSPLIT
-
--- ## Joint conditioning
-
--- ### C-FUSE
-
--- ### C-SWAP
-
--- ### SURE-CONVEX
-
--- ### DIST-CONVEX
-
--- ### C-SURE-PROJ
-
--- ### C-SURE-PROJ-MANY
-
--- ### C-EXTRACT
-
--- ### C-DIST-PROJ
-
--- ## Relational lifting
-
--- ### RL-CONS
-
--- ### RL-UNARY
-
--- ### RL-EQ-DIST
-
--- ### RL-CONVEX
-
--- ### RL-MERGE
-
--- ### RL-SURE-MERGE
-
--- ### COUPLING
-
--- # Derived WP rules (see Fig. 12)
-
--- ### WP-LOOP-0
-
--- ### WP-LOOP-LOCKSTEP
-
--- ### WP-RL-ASSIGN
-
--- ### WP-IF-UNARY 
-
-end BluebellRules
-
-theorem ESureDirac
+theorem Sure_Dirac
   {A : Type*} [Countable A] [DecidableEq A] {E : (Var → Val) → A} {i : I} {v : A}
   : E⟨i⟩ ~ δ v ⊣⊢ E⟨i⟩ = v := by
   constructor
@@ -1519,6 +1461,66 @@ theorem ESureDirac
       · rw [Set.preimage_const_of_notMem hv_s, MeasureTheory.measure_empty]
         simp only [PMF.dirac, Measure.toPMF_toMeasure, Measure.dirac_apply', MeasurableSpace.measurableSet_top]
         exact (Set.indicator_of_notMem hv_s _).symm
+
+
+-- ### SURE-EQ-INJ
+
+-- ### SURE-SUB
+
+-- ### DIST-FUN
+
+-- ### DIRAC-DUP
+
+-- ### DIST-SUPP
+
+-- ### PROD-UNSPLIT
+
+-- ## Joint conditioning
+
+-- ### C-FUSE
+
+-- ### C-SWAP
+
+-- ### SURE-CONVEX
+
+-- ### DIST-CONVEX
+
+-- ### C-SURE-PROJ
+
+-- ### C-SURE-PROJ-MANY
+
+-- ### C-EXTRACT
+
+-- ### C-DIST-PROJ
+
+-- ## Relational lifting
+
+-- ### RL-CONS
+
+-- ### RL-UNARY
+
+-- ### RL-EQ-DIST
+
+-- ### RL-CONVEX
+
+-- ### RL-MERGE
+
+-- ### RL-SURE-MERGE
+
+-- ### COUPLING
+
+-- # Derived WP rules (see Fig. 12)
+
+-- ### WP-LOOP-0
+
+-- ### WP-LOOP-LOCKSTEP
+
+-- ### WP-RL-ASSIGN
+
+-- ### WP-IF-UNARY 
+
+end BluebellRules
+
 
 theorem EDiracDup
   {A : Type*} [Countable A]
