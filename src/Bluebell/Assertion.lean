@@ -1774,40 +1774,6 @@ lemma C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 
 end BluebellRules
 
-
-
 end Formula
-
-
--- # Derived Rules:
-
--- ## Ownership and distribution related rules
-
--- See ESureDirac (Done, and proved)
-
-
-
-
--- See EDiracDup (Done, not proved)
-
-
-
--- ## Joint conditioning rules
-
--- C_Fuse -- TODO
-
--- C_Swap -- TODO
-
-
--- C_Sure_Proj -- TODO
-
--- C_Sure_Proj_Many -- TODO
-
-
--- C_Dist_Proj -- TODO
-
--- ## Relational Lifting Rules -- TODO
-
--- ## WP rules -- TODO (Needs the shallow-embedding first)
 
 end Bluebell
