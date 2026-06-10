@@ -1462,8 +1462,14 @@ theorem Sure_Dirac
         simp only [PMF.dirac, Measure.toPMF_toMeasure, Measure.dirac_apply', MeasurableSpace.measurableSet_top]
         exact (Set.indicator_of_notMem hv_s _).symm
 
-
 -- ### SURE-EQ-INJ
+
+lemma Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  {E : (Var → Val) → A}
+  {v v' : A} :
+  iprop((fun s => E s = v)⟨i⟩ = true) ∗ iprop((fun s => E s = v')⟨i⟩ = true)
+  ⊢ ⌜ v = v' ⌝ := by
+    sorry -- TODO: Rule SURE-EQ-INJ proof
 
 -- ### SURE-SUB
 
@@ -1678,13 +1684,6 @@ lemma sep_affine
 -- ## Ownership and distribution related rules
 
 -- See ESureDirac (Done, and proved)
-
-lemma Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  {E : (Var → Val) → A}
-  {v v' : A} :
-  iprop((fun s => E s = v)⟨i⟩ = true) ∗ iprop((fun s => E s = v')⟨i⟩ = true)
-  ⊢ ⌜ v = v' ⌝ := by
-    sorry
 
 lemma Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
