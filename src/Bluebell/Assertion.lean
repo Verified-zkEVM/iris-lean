@@ -1528,9 +1528,20 @@ lemma Prod_Unsplit {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Va
 
 -- ### C-FUSE
 
+-- TODO: Rule C-FUSE spec+proof
+
 -- ### C-SWAP
 
+-- TODO: Rule C-SWAP spec+proof
+
 -- ### SURE-CONVEX
+
+lemma Sure_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] {μ : PMF A}
+  {i : I} {E : (Var → Val) → Bool}
+  :
+  iprop(𝒞⟨μ⟩ v; E⟨i⟩ = true) ⊢ E⟨i⟩ = true := by
+    sorry -- TODO: Rule SURE-CONVEX proof
 
 -- ### DIST-CONVEX
 
@@ -1735,12 +1746,6 @@ lemma sep_affine
 
 -- C_Swap -- TODO
 
-lemma Sure_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] {μ : PMF A}
-  {i : I} {E : (Var → Val) → Bool}
-  :
-  iprop(𝒞⟨μ⟩ v; E⟨i⟩ = true) ⊢ E⟨i⟩ = true := by
-    sorry
 
 lemma Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ μ' : PMF A}
