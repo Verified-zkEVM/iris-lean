@@ -923,6 +923,95 @@ theorem And_To_Star [Inhabited Var] [Finite I]
 
 -- ### DIST-INJ
 
+open MeasureTheory in
+theorem Dist_Inj
+  {A : Type*} {E : (Var → Val) → A} {i : I} {μ μ' : PMF A}
+  : E⟨i⟩ ~ μ ∧ E⟨i⟩ ~ μ' ⊢ ⌜μ = μ'⌝ := by
+  intro m hv h
+  obtain ⟨h₁, h₂⟩ := h
+  obtain ⟨q₁, ⟨P, hq₁P⟩, hq₁m⟩ := h₁
+  subst hq₁P
+  obtain ⟨b₁, b₂, hle, hown, body⟩ := hq₁m
+  obtain ⟨q₁', ⟨p, hq₁'p⟩, hq₁'b₁⟩ := hown
+  subst hq₁'p
+  obtain ⟨hpown, hsome⟩ := hq₁'b₁
+  obtain ⟨q₂, ⟨P', hq₂P'⟩, hq₂m⟩ := h₂
+  subst hq₂P'
+  obtain ⟨b₁', b₂', hle', hown', body'⟩ := hq₂m
+  obtain ⟨q₂', ⟨p', hq₂'p'⟩, hq₂'b₁'⟩ := hown'
+  subst hq₂'p'
+  obtain ⟨hpown', hsome'⟩ := hq₂'b₁'
+  simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body body'
+  obtain ⟨ham, hμ₁⟩ := body
+  obtain ⟨ham', hμ₂⟩ := body'
+  have hv_i : valid (m i) := hv i
+  have hmi_ne_top : (m i).1.1 ≠ ⊤ := hv_i.1
+  match hmi : (m i).1.1 with
+  | none => contradiction
+  | some y =>
+  have hPi_le_m := le_trans (hpown i).1 (le_trans PSp.le_of_mul_left (hle i).1)
+  have hP'i_le_m := le_trans (hpown' i).1 (le_trans PSp.le_of_mul_left (hle' i).1)
+  rw [hmi] at hPi_le_m hP'i_le_m
+  have hxy : P.PSpace i ≤ y := by cases hPi_le_m; assumption
+  have hx'y : P'.PSpace i ≤ y := by cases hP'i_le_m; assumption
+  have key : @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ
+    = @Measure.map _ _ (P'.PSpace i).1.ms ⊤ E (P'.PSpace i).1.μ := by
+    apply @Measure.ext _ ⊤
+    intro u hu
+    simp only [ValidIndexedPSpPm.PSpace] at *
+    rw [Measure.map_apply_of_aemeasurable ham hu, Measure.map_apply_of_aemeasurable ham' hu]
+    letI : MeasurableSpace A := ⊤
+    set f := AEMeasurable.mk E ham
+    set f' := AEMeasurable.mk E ham'
+    have hf_meas : @Measurable _ _ (P.PSpace i).1.ms ⊤ f := by measurability
+    have hf'_meas : @Measurable _ _ (P'.PSpace i).1.ms ⊤ f' := by measurability
+    have hf_ae : f =ᵐ[(P.PSpace i).1.μ] E := (AEMeasurable.ae_eq_mk ham).symm
+    have hf'_ae : f' =ᵐ[(P'.PSpace i).1.μ] E := (AEMeasurable.ae_eq_mk ham').symm
+    have h1 : (P.PSpace i).1.μ (E ⁻¹' u) = (P.PSpace i).1.μ (f ⁻¹' u) :=
+      measure_congr (hf_ae.symm.preimage u)
+    have h3 : (P'.PSpace i).1.μ (E ⁻¹' u) = (P'.PSpace i).1.μ (f' ⁻¹' u) :=
+      measure_congr (hf'_ae.symm.preimage u)
+    have h2 : (P.PSpace i).1.μ (f ⁻¹' u) = y.1.μ (f ⁻¹' u) :=
+      MeasureOnSpace.le_preserves_measure hxy (hf_meas hu)
+    have h4 : (P'.PSpace i).1.μ (f' ⁻¹' u) = y.1.μ (f' ⁻¹' u) :=
+      MeasureOnSpace.le_preserves_measure hx'y (hf'_meas hu)
+    have extend_ae : ∀ {g : (Var → Val) → A} {z : PSpace (Var → Val)}
+      (hzy : z ≤ y) (_ : g =ᵐ[z.1.μ] E), g =ᵐ[y.1.μ] E := by
+      intro g z hzy hg_ae
+      rw [Filter.EventuallyEq, ae_iff] at hg_ae
+      rcases @exists_measurable_superset_of_null _ z.1.ms z.1.μ _ hg_ae
+        with ⟨N, hN_sub, hN_meas, hN_null⟩
+      have hN_y : y.1.μ N = 0 := by
+        rw [← hN_null]; exact (MeasureOnSpace.le_preserves_measure hzy hN_meas).symm
+      exact measure_mono_null hN_sub hN_y
+    have hff'_ae : f =ᵐ[y.1.μ] f' :=
+      (extend_ae hxy hf_ae).trans (extend_ae hx'y hf'_ae).symm
+    have h5 : y.1.μ (f ⁻¹' u) = y.1.μ (f' ⁻¹' u) :=
+      measure_congr (hff'_ae.preimage u)
+    change (P.PSpace i).1.μ (E ⁻¹' u) = (P'.PSpace i).1.μ (E ⁻¹' u)
+    rw [h1, h2, h5, ← h4, ← h3]
+  show μ = μ'
+  apply @PMF.toMeasure_injective A ⊤
+  have bridge : ∀ (Q : ValidIndexedPSpPm I Var Val),
+      @Measure.map _ _ (Q.ms i) ⊤ E (Q.μ i)
+      = @Measure.map _ _ (Q.PSpace i).1.ms ⊤ E (Q.PSpace i).1.μ := by
+    intro Q
+    obtain ⟨Qval, Qprop⟩ := Q
+    have hv_Q := Qprop i
+    rcases hQi : Qval i with ⟨⟨P_, perm_⟩, hcomp⟩
+    simp only [hQi, valid] at hv_Q
+    cases hP_ : P_ with
+    | none => subst hP_; exact absurd rfl hv_Q.1
+    | some m' =>
+      subst hP_
+      exact ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨Qval i, Qprop i⟩ E
+  calc @PMF.toMeasure A ⊤ μ
+      = @Measure.map _ _ (P.ms i) ⊤ E (P.μ i) := hμ₁.symm
+    _ = @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ := bridge P
+    _ = @Measure.map _ _ (P'.PSpace i).1.ms ⊤ E (P'.PSpace i).1.μ := key
+    _ = @Measure.map _ _ (P'.ms i) ⊤ E (P'.μ i) := (bridge P').symm
+    _ = @PMF.toMeasure A ⊤ μ' := hμ₂
+
 -- ### SURE-MERGE
 
 -- ### SURE-AND-STAR
@@ -1054,95 +1143,6 @@ theorem And_To_Star [Inhabited Var] [Finite I]
 -- ### WP-IF-UNARY 
 
 end BluebellRules
-
-open MeasureTheory in
-theorem EDistInj
-  {A : Type*} {E : (Var → Val) → A} {i : I} {μ μ' : PMF A}
-  : E⟨i⟩ ~ μ ∧ E⟨i⟩ ~ μ' ⊢ ⌜μ = μ'⌝ := by
-  intro m hv h
-  obtain ⟨h₁, h₂⟩ := h
-  obtain ⟨q₁, ⟨P, hq₁P⟩, hq₁m⟩ := h₁
-  subst hq₁P
-  obtain ⟨b₁, b₂, hle, hown, body⟩ := hq₁m
-  obtain ⟨q₁', ⟨p, hq₁'p⟩, hq₁'b₁⟩ := hown
-  subst hq₁'p
-  obtain ⟨hpown, hsome⟩ := hq₁'b₁
-  obtain ⟨q₂, ⟨P', hq₂P'⟩, hq₂m⟩ := h₂
-  subst hq₂P'
-  obtain ⟨b₁', b₂', hle', hown', body'⟩ := hq₂m
-  obtain ⟨q₂', ⟨p', hq₂'p'⟩, hq₂'b₁'⟩ := hown'
-  subst hq₂'p'
-  obtain ⟨hpown', hsome'⟩ := hq₂'b₁'
-  simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body body'
-  obtain ⟨ham, hμ₁⟩ := body
-  obtain ⟨ham', hμ₂⟩ := body'
-  have hv_i : valid (m i) := hv i
-  have hmi_ne_top : (m i).1.1 ≠ ⊤ := hv_i.1
-  match hmi : (m i).1.1 with
-  | none => contradiction
-  | some y =>
-  have hPi_le_m := le_trans (hpown i).1 (le_trans PSp.le_of_mul_left (hle i).1)
-  have hP'i_le_m := le_trans (hpown' i).1 (le_trans PSp.le_of_mul_left (hle' i).1)
-  rw [hmi] at hPi_le_m hP'i_le_m
-  have hxy : P.PSpace i ≤ y := by cases hPi_le_m; assumption
-  have hx'y : P'.PSpace i ≤ y := by cases hP'i_le_m; assumption
-  have key : @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ
-    = @Measure.map _ _ (P'.PSpace i).1.ms ⊤ E (P'.PSpace i).1.μ := by
-    apply @Measure.ext _ ⊤
-    intro u hu
-    simp only [ValidIndexedPSpPm.PSpace] at *
-    rw [Measure.map_apply_of_aemeasurable ham hu, Measure.map_apply_of_aemeasurable ham' hu]
-    letI : MeasurableSpace A := ⊤
-    set f := AEMeasurable.mk E ham
-    set f' := AEMeasurable.mk E ham'
-    have hf_meas : @Measurable _ _ (P.PSpace i).1.ms ⊤ f := by measurability
-    have hf'_meas : @Measurable _ _ (P'.PSpace i).1.ms ⊤ f' := by measurability
-    have hf_ae : f =ᵐ[(P.PSpace i).1.μ] E := (AEMeasurable.ae_eq_mk ham).symm
-    have hf'_ae : f' =ᵐ[(P'.PSpace i).1.μ] E := (AEMeasurable.ae_eq_mk ham').symm
-    have h1 : (P.PSpace i).1.μ (E ⁻¹' u) = (P.PSpace i).1.μ (f ⁻¹' u) :=
-      measure_congr (hf_ae.symm.preimage u)
-    have h3 : (P'.PSpace i).1.μ (E ⁻¹' u) = (P'.PSpace i).1.μ (f' ⁻¹' u) :=
-      measure_congr (hf'_ae.symm.preimage u)
-    have h2 : (P.PSpace i).1.μ (f ⁻¹' u) = y.1.μ (f ⁻¹' u) :=
-      MeasureOnSpace.le_preserves_measure hxy (hf_meas hu)
-    have h4 : (P'.PSpace i).1.μ (f' ⁻¹' u) = y.1.μ (f' ⁻¹' u) :=
-      MeasureOnSpace.le_preserves_measure hx'y (hf'_meas hu)
-    have extend_ae : ∀ {g : (Var → Val) → A} {z : PSpace (Var → Val)}
-      (hzy : z ≤ y) (_ : g =ᵐ[z.1.μ] E), g =ᵐ[y.1.μ] E := by
-      intro g z hzy hg_ae
-      rw [Filter.EventuallyEq, ae_iff] at hg_ae
-      rcases @exists_measurable_superset_of_null _ z.1.ms z.1.μ _ hg_ae
-        with ⟨N, hN_sub, hN_meas, hN_null⟩
-      have hN_y : y.1.μ N = 0 := by
-        rw [← hN_null]; exact (MeasureOnSpace.le_preserves_measure hzy hN_meas).symm
-      exact measure_mono_null hN_sub hN_y
-    have hff'_ae : f =ᵐ[y.1.μ] f' :=
-      (extend_ae hxy hf_ae).trans (extend_ae hx'y hf'_ae).symm
-    have h5 : y.1.μ (f ⁻¹' u) = y.1.μ (f' ⁻¹' u) :=
-      measure_congr (hff'_ae.preimage u)
-    change (P.PSpace i).1.μ (E ⁻¹' u) = (P'.PSpace i).1.μ (E ⁻¹' u)
-    rw [h1, h2, h5, ← h4, ← h3]
-  show μ = μ'
-  apply @PMF.toMeasure_injective A ⊤
-  have bridge : ∀ (Q : ValidIndexedPSpPm I Var Val),
-      @Measure.map _ _ (Q.ms i) ⊤ E (Q.μ i)
-      = @Measure.map _ _ (Q.PSpace i).1.ms ⊤ E (Q.PSpace i).1.μ := by
-    intro Q
-    obtain ⟨Qval, Qprop⟩ := Q
-    have hv_Q := Qprop i
-    rcases hQi : Qval i with ⟨⟨P_, perm_⟩, hcomp⟩
-    simp only [hQi, valid] at hv_Q
-    cases hP_ : P_ with
-    | none => subst hP_; exact absurd rfl hv_Q.1
-    | some m' =>
-      subst hP_
-      exact ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨Qval i, Qprop i⟩ E
-  calc @PMF.toMeasure A ⊤ μ
-      = @Measure.map _ _ (P.ms i) ⊤ E (P.μ i) := hμ₁.symm
-    _ = @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ := bridge P
-    _ = @Measure.map _ _ (P'.PSpace i).1.ms ⊤ E (P'.PSpace i).1.μ := key
-    _ = @Measure.map _ _ (P'.ms i) ⊤ E (P'.μ i) := (bridge P').symm
-    _ = @PMF.toMeasure A ⊤ μ' := hμ₂
 
 theorem ESureDirac
   {A : Type*} [Countable A] [DecidableEq A] {E : (Var → Val) → A} {i : I} {v : A}
