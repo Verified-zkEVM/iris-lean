@@ -1281,8 +1281,9 @@ lemma WP_Frame
   have hvab : ✓ (a₁ * b₀) := valid_mul (valid_mono hb_c' (ht μ₀ hvμ₀))
   exact ⟨a₁ * b₀, hb_c', hvab, a₁, b₀, le_refl _, hPa₁, hQb₀⟩
 
-
 -- ### WP-NEST
+
+-- TODO: Rule WP-NEST spec+proof
 
 -- ### WP-CONJ
 
