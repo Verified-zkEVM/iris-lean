@@ -1259,6 +1259,12 @@ lemma C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### SURE-STR-CONVEX
 
+lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] {μ : PMF A}
+    {K : A → bProp I Var Val} {i : I} {E : (Var → Val) → Bool} :
+      iprop(𝒞⟨μ⟩ v; K v ∗ E⟨i⟩ = true) ⊢ iprop(E⟨i⟩ = true ∗ 𝒞⟨μ⟩ v; K (v)) := by
+      sorry -- TODO: Rule SURE-STR-CONVEX proof
+
 -- ### C-FOR-ALL
 
 -- ### C-PURE
@@ -1592,11 +1598,6 @@ lemma true_subst_star
   assumption
 
 
-lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] {μ : PMF A}
-    {K : A → bProp I Var Val} {i : I} {E : (Var → Val) → Bool} :
-      iprop(𝒞⟨μ⟩ v; K v ∗ E⟨i⟩ = true) ⊢ iprop(E⟨i⟩ = true ∗ 𝒞⟨μ⟩ v; K (v)) := by
-      sorry
 
 open Classical in
 lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
