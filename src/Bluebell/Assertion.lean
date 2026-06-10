@@ -795,6 +795,13 @@ def idx [DecidableEq Var] [Inhabited Var] [Inhabited Val] [Finite I]
   (P : bProp I Var Val) : Set I :=
     ⋂₀ {J : Set I | irrelevant {i:I | i ∉ J} P} -- Intersection of all sets satisfying a property is the smallest subset satisfying it.
 
+-- For SURE-AND-STAR
+def pvar (E : (Var → Val) → Bool) : Set Var :=
+  {x : Var | ∃ (σ : Var → Val) (v : Val), E σ ≠ E (Function.update σ x v)}
+
+-- For SURE-AND-STAR
+def pabs (P : bProp I Var Val) (X : Set Var) : Prop := sorry -- TODO: Formalise pabs
+
 -- # The primitive (non-WP) rules of Bluebell (see Fig. 9)
 
 -- ## Distribution ownership rules
@@ -1021,6 +1028,13 @@ theorem Sure_Merge
   sorry
 
 -- ### SURE-AND-STAR
+
+lemma Sure_And_Star {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  {P : bProp I Var Val}
+  {E : (Var → Val) → Bool} :
+  pabs P (pvar E) →
+  iprop(E⟨i⟩ = true ∧ P) ⊢ iprop(E⟨i⟩ = true ∗ P) := by
+    sorry
 
 -- ### PROD-SPLIT
 
@@ -1601,18 +1615,6 @@ lemma Prod_Split {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B} :
   (fun s => (E₁ s, E₂ s))⟨i⟩ ~ (μ₁ ⊗ μ₂)
   ⊢ E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂ := by
-    sorry
-
-def pvar (E : (Var → Val) → Bool) : Set Var :=
-  {x : Var | ∃ (σ : Var → Val) (v : Val), E σ ≠ E (Function.update σ x v)}
-
-def pabs (P : bProp I Var Val) (X : Set Var) : Prop := sorry -- TODO: Formalise pabs
-
-lemma Sure_And_Star {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  {P : bProp I Var Val}
-  {E : (Var → Val) → Bool} :
-  pabs P (pvar E) →
-  iprop(E⟨i⟩ = true ∧ P) ⊢ iprop(E⟨i⟩ = true ∗ P) := by
     sorry
 
 lemma sep_affine
