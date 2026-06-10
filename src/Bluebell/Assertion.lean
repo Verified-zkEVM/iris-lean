@@ -1231,31 +1231,60 @@ lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-CONS
 
--- TODO: Rule C-CONS spec+proof
+-- TODO: Rule C-CONS spec+proof (translate spec)
+
+-- theorem C_conseq (h : ∀ v, K₁ v ⊢ K₂ v) : 𝑪_ μ K₁ ⊢ 𝑪_ μ K₂ := by
+--   sorry
 
 -- ### C-FRAME
 
--- TODO: Rule C-FRAME
+-- TODO: Rule C-FRAME (translate spec)
+
+-- theorem C_frame {P : HyperAssertion I α V} : P ∗ 𝑪_ μ K ⊢ 𝑪_ μ (fun v => sep P (K v)) := by
+--   sorry
 
 -- ### C-UNIT-L
 
--- TODO: Rule C-UNIT-L spec+proof
+-- TODO: Rule C-UNIT-L spec+proof (translate spec)
+
+-- theorem C_unit_left [Countable β] [MeasurableSingletonClass β] {v₀ : β} :
+--     𝑪_ (Measure.dirac v₀).toPMF K ⊣⊢ K v₀ := by
+--   sorry
 
 -- ### C-UNIT-R
 
--- TODO: Rule C-UNIT-L spec+proof
+-- TODO: Rule C-UNIT-L spec+proof (translate spec)
+
+-- theorem C_unit_right [DecidableEq β] {i : I} {E : (α → V) → β} {μ : PMF β} :
+--     assertSampledFrom i E μ ⊣⊢ 𝑪_ μ (fun v => assertTrue i (fun x => E x = v)) := by
+--   sorry
 
 -- ### C-ASSOC
 
--- TODO: Rule C-ASSOC spec+proof
+-- TODO: Rule C-ASSOC spec+proof (translate spec)
+
+-- theorem C_assoc {β₁ β₂ : Type _} [MeasurableSpace β₁] [MeasurableSpace β₂]
+--     {μ : PMF β₁} {κ : β₁ → PMF β₂} {K : β₁ × β₂ → HyperAssertion I α V} :
+--       𝑪_ μ (fun v => 𝑪_ (κ v) (fun w => K (v, w))) ⊢
+--         𝑪_ (do let v ← μ; let w ← κ v; return (v, w)) K := by
+--   sorry
 
 -- ### C-UNASSOC
 
--- TODO: Rule C-UNASSOC spec+proof
+-- TODO: Rule C-UNASSOC spec+proof (translate spec)
+
+-- theorem C_unassoc {β₁ β₂ : Type _} [MeasurableSpace β₁] [MeasurableSpace β₂]
+--     {μ : PMF β₁} {κ : β₁ → PMF β₂} {K : β₂ → HyperAssertion I α V} :
+--       𝑪_ (μ.bind κ) (fun w => K w) ⊢ 𝑪_ μ (fun v => 𝑪_ (κ v) (fun w => K w)) := by
+--   sorry
 
 -- ### C-AND
 
--- TODO: Rule C-AND spec+proof
+-- TODO: Rule C-AND spec+proof (translate spec)
+
+-- theorem C_and [DecidableEq I] [Fintype I] (h : ∀ v, relevantIndices (K₁ v) ∩ relevantIndices (K₂ v) = ∅) :
+--     𝑪_ μ K₁ ∧ 𝑪_ μ K₂ ⊢ 𝑪_ μ (fun v => and (K₁ v) (K₂ v)) := by
+--   sorry
 
 -- ### C-SKOLEM
 
@@ -1388,11 +1417,19 @@ lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-FOR-ALL
 
--- TODO: Rule C-FOR-ALL spec+proof
+-- TODO: Rule C-FOR-ALL spec+proof (translate spec)
+
+-- theorem C_forall {γ : Type*} {Q : β × γ → HyperAssertion I α V} :
+--     𝑪_ μ (fun v => «forall» (fun x => Q (v, x))) ⊢ ∀ x, 𝑪_ μ (fun v => Q (v, x)) := by
+--   sorry
 
 -- ### C-PURE
 
--- TODO: Rule C-PURE spec+proof
+-- TODO: Rule C-PURE spec+proof (translate spec)
+
+-- theorem C_pure {s : Set β} :
+--     ⌜ ∑' x : s, μ x = 1 ⌝ ∗ 𝑪_ μ K ⊣⊢ 𝑪_ μ (fun v => sep (pure (v ∈ s)) (K v)) := by
+--   sorry
 
 -- # The primitive WP rules of Bluebell (see Fig. 10)
 
