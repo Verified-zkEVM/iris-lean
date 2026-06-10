@@ -1574,31 +1574,59 @@ lemma C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-DIST-PROJ
 
+-- TODO: Rule C-DIST-PROJ spec+proof
+
 -- ## Relational lifting
+
+-- TODO: Formalise relational lifting
 
 -- ### RL-CONS
 
+-- TODO: Rule RL-CONS spec+proof
+
 -- ### RL-UNARY
+
+-- TODO: Rule RL-UNARY spec+proof
 
 -- ### RL-EQ-DIST
 
+-- TODO: Rule RL-EQ-DIST spec+proof
+
 -- ### RL-CONVEX
+
+-- TODO: Rule RL-CONVEX spec+proof
 
 -- ### RL-MERGE
 
+-- TODO: Rule RL-MERGE spec+proof
+
 -- ### RL-SURE-MERGE
+
+-- TODO: Rule RL-SURE-MERGE spec+proof
 
 -- ### COUPLING
 
+-- TODO: Rule COUPLING spec+proof
+
 -- # Derived WP rules (see Fig. 12)
+
+-- TODO: Shallow embedding
 
 -- ### WP-LOOP-0
 
+-- TODO: Rule WP-LOOP-0 spec+proof
+
 -- ### WP-LOOP-LOCKSTEP
+
+-- TODO: Rule WP-LOOP-LOCKSTEP spec+proof
 
 -- ### WP-RL-ASSIGN
 
+-- TODO: Rule WP-RL-ASSIGN spec+proof
+
 -- ### WP-IF-UNARY 
+
+-- TODO: Rule WP-IF-UNARY spec+proof
 
 end BluebellRules
 
