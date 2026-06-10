@@ -1499,6 +1499,13 @@ lemma Dist_Fun {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### DIRAC-DUP
 
+theorem Dirac_Dup
+  {A : Type*} [Countable A]
+  {E : (Var → Val) → A} (i : I) (v : A)
+  :   E⟨i⟩ ~ δ v
+    ⊢ E⟨i⟩ ~ δ v ∗ E⟨i⟩ ~ δ v := by
+  sorry -- TODO: Rule DIRAC-DUP proof
+
 -- ### DIST-SUPP
 
 -- ### PROD-UNSPLIT
@@ -1550,12 +1557,6 @@ lemma Dist_Fun {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
 end BluebellRules
 
 
-theorem EDiracDup
-  {A : Type*} [Countable A]
-  {E : (Var → Val) → A} (i : I) (v : A)
-  :   E⟨i⟩ ~ δ v
-    ⊢ E⟨i⟩ ~ δ v ∗ E⟨i⟩ ~ δ v := by
-  sorry
 
 end Formula
 
