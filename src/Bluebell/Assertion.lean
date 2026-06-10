@@ -1309,8 +1309,29 @@ lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
     wp t₁ Q₁ ∧ wp t₂ Q₂ ⊢ wp t₁_plus_t₂ iprop(Q₁ ∧ Q₂) := by
     sorry -- TODO: Rule WP-CONJ proof
 
-
 -- ### C-WP-SWAP
+
+-- DRAFT of C-WP-SWAP
+-- Needs definition of OWN_X
+lemma C_WP_Swap {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val]
+    {μ : PMF A}
+    {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
+    {Q : A → bProp I Var Val} {i : I}
+    :
+    iprop(𝒞⟨μ⟩ v; wp t (Q v) /- ∧ OWN_X -/) ⊢ iprop(wp t (𝒞⟨μ⟩ v; Q v)) := by
+    sorry -- TODO: Rule confirm new version of C-WP-SWAP
+
+-- DRAFT of new variant of CP-WP-SWAP
+lemma C_WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] [Countable A]
+    {μ : PMF A}
+    {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
+    {Q : A → bProp I Var Val} {i : I} {E : (Var → Val) → A}
+    :
+    iprop(𝒞⟨μ⟩ v; (E⟨i⟩ ~ δ v) ∗ wp t (Q v)) ⊢ iprop(wp t (𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ Q v))) := by
+    sorry -- TODO: Rule C-WP-SWAP proof
+
 
 -- ## Program WP rules
 
@@ -1626,29 +1647,6 @@ lemma true_subst_star
     · exact ⟨hp, by assumption⟩
   assumption
 
-
-
-
--- DRAFT of C-WP-SWAP
--- Needs definition of OWN_X
-lemma WP_Swap {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val]
-    {μ : PMF A}
-    {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
-    {Q : A → bProp I Var Val} {i : I}
-    :
-    iprop(𝒞⟨μ⟩ v; wp t (Q v) /- ∧ OWN_X -/) ⊢ iprop(wp t (𝒞⟨μ⟩ v; Q v)) := by
-    sorry
-
--- DRAFT of new variant of CP-WP-SWAP
-lemma WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] [Countable A]
-    {μ : PMF A}
-    {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
-    {Q : A → bProp I Var Val} {i : I} {E : (Var → Val) → A}
-    :
-    iprop(𝒞⟨μ⟩ v; (E⟨i⟩ ~ δ v) ∗ wp t (Q v)) ⊢ iprop(wp t (𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ Q v))) := by
-    sorry
 
 lemma sep_affine
   {P Q : bProp I Var Val}
