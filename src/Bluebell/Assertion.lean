@@ -1144,6 +1144,119 @@ lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-TRANSF
 
+-- #### C-TRANSF: Helper lemmas and helper definition
+
+/-- Compose a CompatibleKernel with a function f : B → A -/
+private def CompatibleKernel.comp {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+    {m₀ : ValidIndexedPSpPm I Var Val}
+    (κ : CompatibleKernel A m₀) (f : B → A) : CompatibleKernel B m₀ where
+  kernel i b := κ.kernel i (f b)
+  isProb i b := κ.isProb i (f b)
+  isComp i b := κ.isComp i (f b)
+
+/-
+Tsum over a PMF is invariant under a support-preserving bijection.
+-/
+private lemma PMF_tsum_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
+    {f : B → A}
+    (h : A → ENNReal)
+    (hbij : Set.BijOn f (μ' · ≠ 0) (μ · ≠ 0))
+    (hprob : (∀ b : B, μ' b ≠ 0 → μ' b = μ (f b))) :
+    ∑' a, μ a * h a = ∑' b, μ' b * h (f b) := by
+  convert ( tsum_eq_tsum_of_ne_zero_bij _ _ _ _ );
+  use fun x => f x;
+  · exact fun x y hxy => Subtype.ext <| hbij.injOn ( by aesop ) ( by aesop ) hxy;
+  · intro a ha;
+    have := hbij.surjOn ( show a ∈ { a | μ a ≠ 0 } from by aesop ) ; aesop;
+  · intros h₂
+    rw [hprob]
+    aesop
+
+/-- The key measure-theoretic lemma: PMF.toMeasure.bind is invariant under
+    a support-preserving bijection with matching probabilities. -/
+private lemma PMF_bind_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
+    {f : B → A}
+    {β : Type*} {mβ : MeasurableSpace β}
+    (k : A → @Measure β mβ)    
+    (hbij : Set.BijOn f (μ' · ≠ 0) (μ · ≠ 0))
+    (hprob : (∀ b : B, μ' b ≠ 0 → μ' b = μ (f b))) :
+    @Measure.bind A β ⊤ mβ (@PMF.toMeasure A ⊤ μ) k =
+    @Measure.bind B β ⊤ mβ (@PMF.toMeasure B ⊤ μ') (k ∘ f) := by
+  letI instA : MeasurableSpace A := ⊤
+  letI instB : MeasurableSpace B := ⊤
+  haveI : MeasurableSingletonClass A := ⟨fun _ => MeasurableSpace.measurableSet_top⟩
+  haveI : MeasurableSingletonClass B := ⟨fun _ => MeasurableSpace.measurableSet_top⟩
+  -- PMF.toMeasure = sum of weighted Diracs
+  have pmf_sum_A : PMF.toMeasure μ =
+      Measure.sum (fun a => (μ a : ENNReal) • Measure.dirac a) := by
+    ext s hs
+    rw [PMF.toMeasure_apply μ hs, Measure.sum_apply _ hs]
+    congr 1; ext a
+    simp only [Measure.smul_apply, smul_eq_mul, Measure.dirac_apply' a hs, Set.indicator]
+    split_ifs <;> simp
+  have pmf_sum_B : PMF.toMeasure μ' =
+      Measure.sum (fun b => (μ' b : ENNReal) • Measure.dirac b) := by
+    ext s hs
+    rw [PMF.toMeasure_apply μ' hs, Measure.sum_apply _ hs]
+    congr 1; ext b
+    simp only [Measure.smul_apply, smul_eq_mul, Measure.dirac_apply' b hs, Set.indicator]
+    split_ifs <;> simp
+  -- lintegral against PMF.toMeasure
+  have pmf_lint_A : ∀ (g : A → ENNReal),
+      ∫⁻ a, g a ∂(PMF.toMeasure μ) = ∑' a, μ a * g a := by
+    intro g; rw [pmf_sum_A, MeasureTheory.lintegral_sum_measure]
+    congr 1; ext a; rw [MeasureTheory.lintegral_smul_measure]; congr 1
+    exact MeasureTheory.lintegral_dirac a g
+  have pmf_lint_B : ∀ (g : B → ENNReal),
+      ∫⁻ b, g b ∂(PMF.toMeasure μ') = ∑' b, μ' b * g b := by
+    intro g; rw [pmf_sum_B, MeasureTheory.lintegral_sum_measure]
+    congr 1; ext b; rw [MeasureTheory.lintegral_smul_measure]; congr 1
+    exact MeasureTheory.lintegral_dirac b g
+  -- Main proof
+  ext s hs
+  have haemA : AEMeasurable k (PMF.toMeasure μ) :=
+    ⟨k, fun _ _ => MeasurableSpace.measurableSet_top, MeasureTheory.ae_eq_refl k⟩
+  have haemB : AEMeasurable (k ∘ f) (PMF.toMeasure μ') :=
+    ⟨k ∘ f, fun _ _ => MeasurableSpace.measurableSet_top, MeasureTheory.ae_eq_refl _⟩
+  rw [Measure.bind_apply hs haemA, Measure.bind_apply hs haemB]
+  rw [pmf_lint_A, pmf_lint_B]
+  simp_rw [Function.comp_apply]
+  exact PMF_tsum_comp_of_bijOn (fun a => (k a) s) hbij hprob
+
+-- #### C-TRANSF: Spec & Proof
+
+lemma C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val] {μ : PMF A} {μ' : PMF B}
+    {f : B → A}
+    {K : A → bProp I Var Val} :
+    Set.BijOn f (μ' · ≠ 0) (μ · ≠ 0) →
+    (∀ b : B, μ' b ≠ 0 → μ' b = μ (f b)) →
+      iprop(𝒞⟨μ⟩ a; K a) ⊢ 𝒞⟨μ'⟩ b; K (f b)
+:= by
+  intro hbij hprob
+  unfold jointConditioning
+  show entail _ _
+  intro r _ hP
+  obtain ⟨_, ⟨m₀, rfl⟩, h₁⟩ := hP
+  obtain ⟨_, ⟨κ, rfl⟩, h₂⟩ := h₁
+  obtain ⟨h_own, h_rest⟩ := h₂
+  obtain ⟨h_bind_all, h_carrier_all⟩ := h_rest
+  have h_bind : ∀ i : I, m₀.μ i = κ.kernel i ∘ₘ (@PMF.toMeasure A ⊤ μ) := by
+    intro i
+    exact h_bind_all _ ⟨i, rfl⟩
+  let κ' := κ.comp f
+  refine ⟨_, ⟨m₀, rfl⟩, _, ⟨κ', rfl⟩, ?_⟩
+  refine And.intro h_own (And.intro ?_ ?_)
+  · intro p ⟨i, hi⟩
+    subst hi
+    change m₀.μ i = (κ.comp f).kernel i ∘ₘ (@PMF.toMeasure B ⊤ μ')
+    rw [CompatibleKernel.comp, h_bind i]
+    exact PMF_bind_comp_of_bijOn (κ.kernel i) hbij hprob
+  · intro p ⟨v', hv'⟩
+    subst hv'
+    have hfv : μ (f v') ≠ 0 := hbij.mapsTo v'.property
+    exact h_carrier_all _ ⟨⟨f v', hfv⟩, rfl⟩
+
 -- ### SURE-STR-CONVEX
 
 -- ### C-FOR-ALL
@@ -1478,115 +1591,6 @@ lemma true_subst_star
     · exact ⟨hp, by assumption⟩
   assumption
 
-/-- Compose a CompatibleKernel with a function f : B → A -/
-private def CompatibleKernel.comp {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
-    {m₀ : ValidIndexedPSpPm I Var Val}
-    (κ : CompatibleKernel A m₀) (f : B → A) : CompatibleKernel B m₀ where
-  kernel i b := κ.kernel i (f b)
-  isProb i b := κ.isProb i (f b)
-  isComp i b := κ.isComp i (f b)
-
-/-
-Tsum over a PMF is invariant under a support-preserving bijection.
--/
-private lemma PMF_tsum_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
-    {f : B → A}
-    (h : A → ENNReal)
-    (hbij : Set.BijOn f (μ' · ≠ 0) (μ · ≠ 0))
-    (hprob : (∀ b : B, μ' b ≠ 0 → μ' b = μ (f b))) :
-    ∑' a, μ a * h a = ∑' b, μ' b * h (f b) := by
-  convert ( tsum_eq_tsum_of_ne_zero_bij _ _ _ _ );
-  use fun x => f x;
-  · exact fun x y hxy => Subtype.ext <| hbij.injOn ( by aesop ) ( by aesop ) hxy;
-  · intro a ha;
-    have := hbij.surjOn ( show a ∈ { a | μ a ≠ 0 } from by aesop ) ; aesop;
-  · intros h₂
-    rw [hprob]
-    aesop
-
-/-- The key measure-theoretic lemma: PMF.toMeasure.bind is invariant under
-    a support-preserving bijection with matching probabilities. -/
-private lemma PMF_bind_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
-    {f : B → A}
-    {β : Type*} {mβ : MeasurableSpace β}
-    (k : A → @Measure β mβ)    
-    (hbij : Set.BijOn f (μ' · ≠ 0) (μ · ≠ 0))
-    (hprob : (∀ b : B, μ' b ≠ 0 → μ' b = μ (f b))) :
-    @Measure.bind A β ⊤ mβ (@PMF.toMeasure A ⊤ μ) k =
-    @Measure.bind B β ⊤ mβ (@PMF.toMeasure B ⊤ μ') (k ∘ f) := by
-  letI instA : MeasurableSpace A := ⊤
-  letI instB : MeasurableSpace B := ⊤
-  haveI : MeasurableSingletonClass A := ⟨fun _ => MeasurableSpace.measurableSet_top⟩
-  haveI : MeasurableSingletonClass B := ⟨fun _ => MeasurableSpace.measurableSet_top⟩
-  -- PMF.toMeasure = sum of weighted Diracs
-  have pmf_sum_A : PMF.toMeasure μ =
-      Measure.sum (fun a => (μ a : ENNReal) • Measure.dirac a) := by
-    ext s hs
-    rw [PMF.toMeasure_apply μ hs, Measure.sum_apply _ hs]
-    congr 1; ext a
-    simp only [Measure.smul_apply, smul_eq_mul, Measure.dirac_apply' a hs, Set.indicator]
-    split_ifs <;> simp
-  have pmf_sum_B : PMF.toMeasure μ' =
-      Measure.sum (fun b => (μ' b : ENNReal) • Measure.dirac b) := by
-    ext s hs
-    rw [PMF.toMeasure_apply μ' hs, Measure.sum_apply _ hs]
-    congr 1; ext b
-    simp only [Measure.smul_apply, smul_eq_mul, Measure.dirac_apply' b hs, Set.indicator]
-    split_ifs <;> simp
-  -- lintegral against PMF.toMeasure
-  have pmf_lint_A : ∀ (g : A → ENNReal),
-      ∫⁻ a, g a ∂(PMF.toMeasure μ) = ∑' a, μ a * g a := by
-    intro g; rw [pmf_sum_A, MeasureTheory.lintegral_sum_measure]
-    congr 1; ext a; rw [MeasureTheory.lintegral_smul_measure]; congr 1
-    exact MeasureTheory.lintegral_dirac a g
-  have pmf_lint_B : ∀ (g : B → ENNReal),
-      ∫⁻ b, g b ∂(PMF.toMeasure μ') = ∑' b, μ' b * g b := by
-    intro g; rw [pmf_sum_B, MeasureTheory.lintegral_sum_measure]
-    congr 1; ext b; rw [MeasureTheory.lintegral_smul_measure]; congr 1
-    exact MeasureTheory.lintegral_dirac b g
-  -- Main proof
-  ext s hs
-  have haemA : AEMeasurable k (PMF.toMeasure μ) :=
-    ⟨k, fun _ _ => MeasurableSpace.measurableSet_top, MeasureTheory.ae_eq_refl k⟩
-  have haemB : AEMeasurable (k ∘ f) (PMF.toMeasure μ') :=
-    ⟨k ∘ f, fun _ _ => MeasurableSpace.measurableSet_top, MeasureTheory.ae_eq_refl _⟩
-  rw [Measure.bind_apply hs haemA, Measure.bind_apply hs haemB]
-  rw [pmf_lint_A, pmf_lint_B]
-  simp_rw [Function.comp_apply]
-  exact PMF_tsum_comp_of_bijOn (fun a => (k a) s) hbij hprob
-
-
-lemma C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] {μ : PMF A} {μ' : PMF B}
-    {f : B → A}
-    {K : A → bProp I Var Val} :
-    Set.BijOn f (μ' · ≠ 0) (μ · ≠ 0) →
-    (∀ b : B, μ' b ≠ 0 → μ' b = μ (f b)) →
-      iprop(𝒞⟨μ⟩ a; K a) ⊢ 𝒞⟨μ'⟩ b; K (f b)
-:= by
-  intro hbij hprob
-  unfold jointConditioning
-  show entail _ _
-  intro r _ hP
-  obtain ⟨_, ⟨m₀, rfl⟩, h₁⟩ := hP
-  obtain ⟨_, ⟨κ, rfl⟩, h₂⟩ := h₁
-  obtain ⟨h_own, h_rest⟩ := h₂
-  obtain ⟨h_bind_all, h_carrier_all⟩ := h_rest
-  have h_bind : ∀ i : I, m₀.μ i = κ.kernel i ∘ₘ (@PMF.toMeasure A ⊤ μ) := by
-    intro i
-    exact h_bind_all _ ⟨i, rfl⟩
-  let κ' := κ.comp f
-  refine ⟨_, ⟨m₀, rfl⟩, _, ⟨κ', rfl⟩, ?_⟩
-  refine And.intro h_own (And.intro ?_ ?_)
-  · intro p ⟨i, hi⟩
-    subst hi
-    change m₀.μ i = (κ.comp f).kernel i ∘ₘ (@PMF.toMeasure B ⊤ μ')
-    rw [CompatibleKernel.comp, h_bind i]
-    exact PMF_bind_comp_of_bijOn (κ.kernel i) hbij hprob
-  · intro p ⟨v', hv'⟩
-    subst hv'
-    have hfv : μ (f v') ≠ 0 := hbij.mapsTo v'.property
-    exact h_carrier_all _ ⟨⟨f v', hfv⟩, rfl⟩
 
 lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A}
