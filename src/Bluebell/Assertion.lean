@@ -1473,6 +1473,17 @@ lemma Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### SURE-SUB
 
+lemma Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
+  {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
+  {μ : PMF A}
+  {f : A → B} {fInv : B → A}
+  (hfl : Function.LeftInverse f fInv)  -- f ∘ fInv = id -- TODO: do we need both?
+  (hfr : Function.RightInverse f fInv) -- fInv ∘ f = id
+  :
+  E₁⟨i⟩ ~ μ ∗ ((fun s => E₂ s = f (E₁ s))⟨i⟩ = true) ⊢ E₂⟨i⟩ ~ (⟨μ ∘ fInv, (by sorry)⟩) -- TODO: fill sorry
+  := by
+    sorry -- TODO: Rule SURE-SUB proof
+
 -- ### DIST-FUN
 
 -- ### DIRAC-DUP
@@ -1685,16 +1696,6 @@ lemma sep_affine
 
 -- See ESureDirac (Done, and proved)
 
-lemma Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
-  {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
-  {μ : PMF A}
-  {f : A → B} {fInv : B → A}
-  (hfl : Function.LeftInverse f fInv)  -- f ∘ fInv = id -- TODO: do we need both?
-  (hfr : Function.RightInverse f fInv) -- fInv ∘ f = id
-  :
-  E₁⟨i⟩ ~ μ ∗ ((fun s => E₂ s = f (E₁ s))⟨i⟩ = true) ⊢ E₂⟨i⟩ ~ (⟨μ ∘ fInv, (by sorry)⟩) -- TODO: fill sorry
-  := by
-    sorry
 
 lemma Dist_Fun {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
   {E : (Var → Val) → A}
