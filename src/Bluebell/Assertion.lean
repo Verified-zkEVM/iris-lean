@@ -1486,6 +1486,17 @@ lemma Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### DIST-FUN
 
+lemma Dist_Fun {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
+  {E : (Var → Val) → A}
+  {μ : PMF A}
+  {f : A → B} {fInv : B → A}
+  (hfl : Function.LeftInverse f fInv)  -- f ∘ fInv = id -- TODO: do we need both?
+  (hfr : Function.RightInverse f fInv) -- fInv ∘ f = id
+  :
+  E⟨i⟩ ~ μ ⊢ (fun s => (f ∘ E) s)⟨i⟩ ~ (⟨μ ∘ fInv, (by sorry)⟩) -- TODO: fill sorry
+  := by
+    sorry -- TODO: Rule DIST-FUN proof
+
 -- ### DIRAC-DUP
 
 -- ### DIST-SUPP
@@ -1697,16 +1708,7 @@ lemma sep_affine
 -- See ESureDirac (Done, and proved)
 
 
-lemma Dist_Fun {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
-  {E : (Var → Val) → A}
-  {μ : PMF A}
-  {f : A → B} {fInv : B → A}
-  (hfl : Function.LeftInverse f fInv)  -- f ∘ fInv = id -- TODO: do we need both?
-  (hfr : Function.RightInverse f fInv) -- fInv ∘ f = id
-  :
-  E⟨i⟩ ~ μ ⊢ (fun s => (f ∘ E) s)⟨i⟩ ~ (⟨μ ∘ fInv, (by sorry)⟩) -- TODO: fill sorry
-  := by
-    sorry
+
 
 -- See EDiracDup (Done, not proved)
 
