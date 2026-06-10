@@ -1014,6 +1014,12 @@ theorem Dist_Inj
 
 -- ### SURE-MERGE
 
+theorem Sure_Merge
+  {A : Type*}
+  {E₁ E₂ : (Var → Val) → Bool} {i : I}
+  : E₁⟨i⟩ = true ∗ E₂⟨i⟩ = true ⊣⊢ (fun s => E₁ s ∧ E₂ s)⟨i⟩ = true := by
+  sorry
+
 -- ### SURE-AND-STAR
 
 -- ### PROD-SPLIT
@@ -1237,12 +1243,6 @@ theorem EDiracDup
   {E : (Var → Val) → A} (i : I) (v : A)
   :   E⟨i⟩ ~ δ v
     ⊢ E⟨i⟩ ~ δ v ∗ E⟨i⟩ ~ δ v := by
-  sorry
-
-theorem ESureMerge
-  {A : Type*}
-  {E₁ E₂ : (Var → Val) → Bool} {i : I}
-  : E₁⟨i⟩ = true ∗ E₂⟨i⟩ = true ⊣⊢ (fun s => E₁ s ∧ E₂ s)⟨i⟩ = true := by
   sorry
 
 end Formula
