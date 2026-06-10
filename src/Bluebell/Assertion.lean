@@ -1409,7 +1409,9 @@ open Classical in
 lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
   [Finite Var] [Countable Val]
     (t₁ t₂ : I → Option (PSpPm Var Val → PSpPm Var Val))
-    {Q₁ Q₂ : bProp I Var Val} :
+    {Q₁ Q₂ : bProp I Var Val}
+    (h_ts_agree : ∀ i : I, i ∈ dom t₁ ∩ dom t₂ → t₁ i = t₂ i)
+     :
     let t₁_plus_t₂ : I → Option (PSpPm Var Val → PSpPm Var Val) := (fun i : I => 
       match t₁ i with
       | .some t₁_i =>
