@@ -1562,6 +1562,16 @@ lemma Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-EXTRACT
 
+lemma C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+  [Finite Var] [Countable Val]
+  {μ₁ : PMF A} {μ₂ : PMF B}
+  {i : I}
+  {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
+  :
+  iprop(𝒞⟨μ₁⟩ v₁; (fun s => E₁ s = v₁)⟨i⟩ = true ∗ E₂⟨i⟩ ~ μ₂)
+  ⊢ E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂ := by
+    sorry -- TODO: Rule C-EXTRACT proof
+
 -- ### C-DIST-PROJ
 
 -- ## Relational lifting
@@ -1762,15 +1772,6 @@ lemma sep_affine
 
 -- C_Sure_Proj_Many -- TODO
 
-lemma C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val]
-  {μ₁ : PMF A} {μ₂ : PMF B}
-  {i : I}
-  {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
-  :
-  iprop(𝒞⟨μ₁⟩ v₁; (fun s => E₁ s = v₁)⟨i⟩ = true ∗ E₂⟨i⟩ ~ μ₂)
-  ⊢ E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂ := by
-    sorry
 
 -- C_Dist_Proj -- TODO
 
