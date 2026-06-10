@@ -1287,6 +1287,29 @@ lemma WP_Frame
 
 -- ### WP-CONJ
 
+open Classical in
+lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
+  [Finite Var] [Countable Val]
+    (t₁ t₂ : I → Option (PSpPm Var Val → PSpPm Var Val))
+    {Q₁ Q₂ : bProp I Var Val}
+    (h_ts_agree : ∀ i : I, i ∈ dom t₁ ∩ dom t₂ → t₁ i = t₂ i)
+     :
+    let t₁_plus_t₂ : I → Option (PSpPm Var Val → PSpPm Var Val) := (fun i : I => 
+      match t₁ i with
+      | .some t₁_i =>
+        match t₂ i with
+        | .some t₂_i => if t₁_i = t₂_i then t₁_i else sorry -- Perhaps: .none
+        | .none => .some t₁_i
+      |.none =>
+        match t₂ i with
+        | .some t₂_i => .some t₂_i
+        | .none => .none)
+    (idx Q₁) ∩ dom t₂ ⊆ dom t₁ →
+    (idx Q₂) ∩ dom t₁ ⊆ dom t₂ →
+    wp t₁ Q₁ ∧ wp t₂ Q₂ ⊢ wp t₁_plus_t₂ iprop(Q₁ ∧ Q₂) := by
+    sorry -- TODO: Rule WP-CONJ proof
+
+
 -- ### C-WP-SWAP
 
 -- ## Program WP rules
@@ -1605,27 +1628,6 @@ lemma true_subst_star
 
 
 
-open Classical in
-lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
-  [Finite Var] [Countable Val]
-    (t₁ t₂ : I → Option (PSpPm Var Val → PSpPm Var Val))
-    {Q₁ Q₂ : bProp I Var Val}
-    (h_ts_agree : ∀ i : I, i ∈ dom t₁ ∩ dom t₂ → t₁ i = t₂ i)
-     :
-    let t₁_plus_t₂ : I → Option (PSpPm Var Val → PSpPm Var Val) := (fun i : I => 
-      match t₁ i with
-      | .some t₁_i =>
-        match t₂ i with
-        | .some t₂_i => if t₁_i = t₂_i then t₁_i else sorry -- Perhaps: .none
-        | .none => .some t₁_i
-      |.none =>
-        match t₂ i with
-        | .some t₂_i => .some t₂_i
-        | .none => .none)
-    (idx Q₁) ∩ dom t₂ ⊆ dom t₁ →
-    (idx Q₂) ∩ dom t₁ ⊆ dom t₂ →
-    wp t₁ Q₁ ∧ wp t₂ Q₂ ⊢ wp t₁_plus_t₂ iprop(Q₁ ∧ Q₂) := by
-    sorry
 
 -- DRAFT of C-WP-SWAP
 -- Needs definition of OWN_X
