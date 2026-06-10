@@ -1165,7 +1165,7 @@ theorem Sure_Merge
 
 -- ### SURE-AND-STAR
 
-lemma Sure_And_Star {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Sure_And_Star {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   {P : bProp I Var Val}
   {E : (Var → Val) → Bool} :
   pabs P (pvar E) →
@@ -1174,7 +1174,7 @@ lemma Sure_And_Star {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val
 
 -- ### PROD-SPLIT
 
-lemma Prod_Split {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Prod_Split {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
   {μ₁ : PMF A} {μ₂ : PMF B}
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B} :
   (fun s => (E₁ s, E₂ s))⟨i⟩ ~ (μ₁ ⊗ μ₂)
@@ -1185,7 +1185,7 @@ lemma Prod_Split {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-TRUE
 
-lemma C_True
+theorem C_True
   {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A}
   : ⊢ (𝒞⟨μ⟩ _v; BTrue : bProp I Var Val) := by
@@ -1214,7 +1214,7 @@ lemma C_True
 
 -- ### C-FALSE
 
-lemma C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A} :
     (𝒞⟨μ⟩ _v; BFalse : bProp I Var Val) ⊢ BFalse := by
   unfold jointConditioning
@@ -1373,7 +1373,7 @@ private lemma PMF_bind_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
 
 -- #### C-TRANSF: Spec & Proof
 
-lemma C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+theorem C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A} {μ' : PMF B}
     {f : B → A}
     {K : A → bProp I Var Val} :
@@ -1409,7 +1409,7 @@ lemma C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### SURE-STR-CONVEX
 
-lemma Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A}
     {K : A → bProp I Var Val} {i : I} {E : (Var → Val) → Bool} :
       iprop(𝒞⟨μ⟩ v; K v ∗ E⟨i⟩ = true) ⊢ iprop(E⟨i⟩ = true ∗ 𝒞⟨μ⟩ v; K (v)) := by
@@ -1450,7 +1450,7 @@ theorem WP_Cons
 
 -- ### WP-FRAME
 
-lemma WP_Frame
+theorem WP_Frame
   [Finite Var] [Countable Val]
   (t : I → Option (PSpPm Var Val → PSpPm Var Val))
   (ht : ∀ μ, ✓ μ → ✓ (⟦t⟧ μ))
@@ -1482,7 +1482,7 @@ lemma WP_Frame
 -- ### WP-CONJ
 
 open Classical in
-lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
+theorem WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
   [Finite Var] [Countable Val]
     (t₁ t₂ : I → Option (PSpPm Var Val → PSpPm Var Val))
     {Q₁ Q₂ : bProp I Var Val}
@@ -1507,7 +1507,7 @@ lemma WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
 
 -- DRAFT of C-WP-SWAP
 -- Needs definition of OWN_X
-lemma C_WP_Swap {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem C_WP_Swap {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val]
     {μ : PMF A}
     {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
@@ -1517,7 +1517,7 @@ lemma C_WP_Swap {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
     sorry -- TODO: Rule confirm new version of C-WP-SWAP
 
 -- DRAFT of new variant of CP-WP-SWAP
-lemma C_WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem C_WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] [Countable A]
     {μ : PMF A}
     {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
@@ -1660,7 +1660,7 @@ theorem Sure_Dirac
 
 -- ### SURE-EQ-INJ
 
-lemma Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   {E : (Var → Val) → A}
   {v v' : A} :
   iprop((fun s => E s = v)⟨i⟩ = true) ∗ iprop((fun s => E s = v')⟨i⟩ = true)
@@ -1669,7 +1669,7 @@ lemma Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### SURE-SUB
 
-lemma Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
+theorem Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
   {μ : PMF A}
   {f : A → B} {fInv : B → A}
@@ -1682,7 +1682,7 @@ lemma Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### DIST-FUN
 
-lemma Dist_Fun {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
+theorem Dist_Fun {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
   {E : (Var → Val) → A}
   {μ : PMF A}
   {f : A → B} {fInv : B → A}
@@ -1704,7 +1704,7 @@ theorem Dirac_Dup
 
 -- ### DIST-SUPP
 
-lemma Dist_Supp {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Dist_Supp {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   {E : (Var → Val) → A}
   {μ : PMF A}
   :
@@ -1713,7 +1713,7 @@ lemma Dist_Supp {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### PROD-UNSPLIT
 
-lemma Prod_Unsplit {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Prod_Unsplit {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
   {μ₁ : PMF A} {μ₂ : PMF B}
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B} :
   E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂
@@ -1732,7 +1732,7 @@ lemma Prod_Unsplit {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Va
 
 -- ### SURE-CONVEX
 
-lemma Sure_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Sure_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A}
   {i : I} {E : (Var → Val) → Bool}
   :
@@ -1741,7 +1741,7 @@ lemma Sure_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### DIST-CONVEX
 
-lemma Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ μ' : PMF A}
   {i : I} {E : (Var → Val) → A}
   :
@@ -1758,7 +1758,7 @@ lemma Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-EXTRACT
 
-lemma C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+theorem C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val]
   {μ₁ : PMF A} {μ₂ : PMF B}
   {i : I}
