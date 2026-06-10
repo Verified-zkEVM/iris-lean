@@ -777,6 +777,148 @@ private lemma ValidPSpPm.map_μ_eq_map_PSpace_μ {A : Type*}
   | none => exact absurd rfl hv.1
   | some m' => rfl
 
+section BluebellRules
+
+-- # The primitive (non-WP) rules of Bluebell (see Fig. 9)
+
+-- ## Distribution ownership rules
+
+-- ### AND-TO-STAR
+
+-- ### DIST-INJ
+
+-- ### SURE-MERGE
+
+-- ### SURE-AND-STAR
+
+-- ### PROD-SPLIT
+
+-- ## Joint conditioning rules
+
+-- ### C-TRUE
+
+-- ### C-FALSE
+
+-- ### C-CONS
+
+-- ### C-FRAME
+
+-- ### C-UNIT-L
+
+-- ### C-UNIT-R
+
+-- ### C-ASSOC
+
+-- ### C-UNASSOC
+
+-- ### C-AND
+
+-- ### C-SKOLEM
+
+-- ### C-TRANSF
+
+-- ### SURE-STR-CONVEX
+
+-- ### C-FOR-ALL
+
+-- ### C-PURE
+
+-- # The primitive WP rules of Bluebell (see Fig. 10)
+
+-- ## Structural WP rules
+
+-- ### WP-CONS
+
+-- ### WP-FRAME
+
+-- ### WP-NEST
+
+-- ### WP-CONJ
+
+-- ### C-WP-SWAP
+
+-- ## Program WP rules
+
+-- ### WP-SKIP
+
+-- ### WP-SEQ
+
+-- ### WP-ASSIGN
+
+-- ### WP-SAMP
+
+-- ### WP-IF-PRIM
+
+-- ### WP-BIND
+
+-- ### WP-LOOP-UNF
+
+-- ### WP-LOOP
+
+-- # Derived (non-WP) rules (see Fig. 11)
+
+-- ## Ownership and distributions
+
+-- ### SURE-DIRAC
+
+-- ### SURE-EQ-INJ
+
+-- ### SURE-SUB
+
+-- ### DIST-FUN
+
+-- ### DIRAC-DUP
+
+-- ### DIST-SUPP
+
+-- ### PROD-UNSPLIT
+
+-- ## Joint conditioning
+
+-- ### C-FUSE
+
+-- ### C-SWAP
+
+-- ### SURE-CONVEX
+
+-- ### DIST-CONVEX
+
+-- ### C-SURE-PROJ
+
+-- ### C-SURE-PROJ-MANY
+
+-- ### C-EXTRACT
+
+-- ### C-DIST-PROJ
+
+-- ## Relational lifting
+
+-- ### RL-CONS
+
+-- ### RL-UNARY
+
+-- ### RL-EQ-DIST
+
+-- ### RL-CONVEX
+
+-- ### RL-MERGE
+
+-- ### RL-SURE-MERGE
+
+-- ### COUPLING
+
+-- # Derived WP rules (see Fig. 12)
+
+-- ### WP-LOOP-0
+
+-- ### WP-LOOP-LOCKSTEP
+
+-- ### WP-RL-ASSIGN
+
+-- ### WP-IF-UNARY 
+
+end BluebellRules
+
 open MeasureTheory in
 theorem EDistInj
   {A : Type*} {E : (Var → Val) → A} {i : I} {μ μ' : PMF A}
