@@ -1786,7 +1786,7 @@ def relationLifting {X : Set (I × Var)} (R : Set (X → Val)) : bProp I Var Val
 
 notation " ⌊ " R " ⌋ " => relationLifting R
 
--- ### RL-CONS ⌊⌋
+-- ### RL-CONS
 
 theorem RL_Cons {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
     R₁ ⊆ R₂ → ⌊R₁⌋ ⊢ ⌊R₂⌋ := by
