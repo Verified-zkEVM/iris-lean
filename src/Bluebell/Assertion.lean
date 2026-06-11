@@ -142,7 +142,7 @@ def PMF.toDiscMeasure_is_probability {A : Type*} (μ : PMF A)
 
 def product {A B : Type*} (μ₁ : PMF A) (μ₂ : PMF B) : PMF (A × B) :=
   ⟨fun ((a, b) : (A × B)) => μ₁ a * μ₂ b,
-    (by 
+    (by
       have h : ∑' (p : A × B), μ₁ p.1 * μ₂ p.2 = 1 := by
         simp_rw [ENNReal.tsum_prod', ENNReal.tsum_mul_left, ENNReal.tsum_mul_right,
           PMF.tsum_coe, mul_one]
@@ -1325,7 +1325,7 @@ private lemma PMF_tsum_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
 private lemma PMF_bind_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
     {f : B → A}
     {β : Type*} {mβ : MeasurableSpace β}
-    (k : A → @Measure β mβ)    
+    (k : A → @Measure β mβ)
     (hbij : Set.BijOn f (μ' · ≠ 0) (μ · ≠ 0))
     (hprob : (∀ b : B, μ' b ≠ 0 → μ' b = μ (f b))) :
     @Measure.bind A β ⊤ mβ (@PMF.toMeasure A ⊤ μ) k =
@@ -1488,7 +1488,7 @@ theorem WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
     {Q₁ Q₂ : bProp I Var Val}
     (h_ts_agree : ∀ i : I, i ∈ dom t₁ ∩ dom t₂ → t₁ i = t₂ i)
      :
-    let t₁_plus_t₂ : I → Option (PSpPm Var Val → PSpPm Var Val) := (fun i : I => 
+    let t₁_plus_t₂ : I → Option (PSpPm Var Val → PSpPm Var Val) := (fun i : I =>
       match t₁ i with
       | .some t₁_i =>
         match t₂ i with
@@ -1776,6 +1776,12 @@ theorem C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- TODO: Formalise relational lifting
 
+def relationLifting [Finite Var] [Countable Val] [Inhabited Val] (X : Set (I × Var)) (R : Set (X → Val)) : bProp I Var Val :=
+  iprop(∃ μ : PMF (X → Val),
+      ⌜ ∑' r : R, μ r = 1 ⌝ ∗
+      𝒞⟨μ⟩ v; ∀ (xi : X), (fun (s : Var → Val) => s xi.1.2 = v xi)⟨xi.1.1⟩ = True
+    )
+
 -- ### RL-CONS
 
 -- TODO: Rule RL-CONS spec+proof
@@ -1820,7 +1826,7 @@ theorem C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- TODO: Rule WP-RL-ASSIGN spec+proof
 
--- ### WP-IF-UNARY 
+-- ### WP-IF-UNARY
 
 -- TODO: Rule WP-IF-UNARY spec+proof
 
