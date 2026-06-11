@@ -1068,8 +1068,6 @@ theorem And_To_Star [Inhabited Var] [Finite I]
       exact this.elim
     simp [hni]
 
--- DONE: Rule AND-TO-STAR
-
 -- ### DIST-INJ
 
 open MeasureTheory in
@@ -1162,8 +1160,6 @@ theorem Dist_Inj
     _ = @Measure.map _ _ (P'.ms i) ⊤ E (P'.μ i) := (bridge P').symm
     _ = @PMF.toMeasure A ⊤ μ' := hμ₂
 
--- DONE: Rule DIST-INJ
-
 -- ### SURE-MERGE
 
 theorem Sure_Merge
@@ -1217,8 +1213,6 @@ theorem C_True
       intro v _ _ _
       trivial
 
--- DONE: Rule C-TRUE
-
 -- ### C-FALSE
 
 theorem C_False {A : Type*} {μ : PMF A} :
@@ -1232,8 +1226,6 @@ theorem C_False {A : Type*} {μ : PMF A} :
   obtain ⟨-, h_carrier_all⟩ := h_rest
   obtain ⟨v₀, hv₀⟩ := PMF.support_nonempty μ
   exact h_carrier_all _ ⟨⟨v₀, hv₀⟩, rfl⟩
-
--- DONE: Rule C-FALSE
 
 -- ### C-CONS
 
@@ -1261,6 +1253,8 @@ theorem C_Cons {α : Type} {K₁ K₂ : α → bProp I Var Val} {μ : PMF α} (h
   intro p ⟨v, hv⟩
   subst hv
   exact h v _ (jointConditioning_elem_valid m₀ κ v) (h_carrier_all _ ⟨v, rfl⟩)
+
+-- DONE: Rule C-CONS
 
 -- ### C-FRAME
 
@@ -1431,8 +1425,6 @@ theorem C_Transf {A B : Type*}
     have hfv : μ (f v') ≠ 0 := hbij.mapsTo v'.property
     exact h_carrier_all _ ⟨⟨f v', hfv⟩, rfl⟩
 
--- DONE: Rule C-TRANSF
-
 -- ### SURE-STR-CONVEX
 
 theorem Sure_Str_Convex {A : Type*} {μ : PMF A}
@@ -1470,8 +1462,6 @@ theorem WP_Cons
   obtain ⟨b, hbc, hvb, hQb⟩ := hm μ₀ c hvμ₀ hmul
   exact ⟨b, hbc, hvb, hQ b hvb hQb⟩
 
--- DONE: Rule WP-CONS
-
 -- ### WP-FRAME
 
 theorem WP_Frame
@@ -1495,8 +1485,6 @@ theorem WP_Frame
       _ ≤ ⟦t⟧ μ₀ := hb₀c
   have hvab : ✓ (a₁ * b₀) := valid_mul (valid_mono hb_c' (ht μ₀ hvμ₀))
   exact ⟨a₁ * b₀, hb_c', hvab, a₁, b₀, le_refl _, hPa₁, hQb₀⟩
-
--- DONE: Rule WP-FRAME
 
 -- ### WP-NEST
 
@@ -1682,8 +1670,6 @@ theorem Sure_Dirac
         simp only [PMF.dirac, Measure.toPMF_toMeasure, Measure.dirac_apply', MeasurableSpace.measurableSet_top]
         exact (Set.indicator_of_notMem hv_s _).symm
 
--- DONE: Rule SURE-DIRAC
-
 -- ### SURE-EQ-INJ
 
 theorem Sure_Eq_Inj {A : Type*} {i : I} [DecidableEq A]
@@ -1825,6 +1811,8 @@ theorem RL_Cons {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
   have h_sum_eq_one : ∑' r : R₁, μ r = 1 := hpure
   exact le_antisymm h_sum_le_one (h_sum_eq_one ▸ h_sum_le)
 
+-- DONE: Rule RL-CONS
+
 -- ### RL-UNARY
 
 -- TODO: Rule RL-UNARY spec+proof
@@ -1836,14 +1824,14 @@ theorem RL_Cons {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
 -- ### RL-CONVEX
 
 theorem RL_Convex {α : Type} {X : Set (I × Var)} {μ : PMF α} {R : Set (X → Val)} :
-  (𝒞⟨μ⟩ v; ⌊R⌋) ⊢ ⌊R⌋ := sorry
-
--- TODO: Rule RL-CONVEX spec+proof
+  (𝒞⟨μ⟩ v; ⌊R⌋) ⊢ ⌊R⌋ := by
+    sorry -- TODO: Rule RL-CONVEX proof
 
 -- ### RL-MERGE
 
 theorem RL_Merge {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
-  ⌊R₁⌋ ∗ ⌊R₂⌋ ⊢ ⌊ R₁ ∩ R₂ ⌋ := sorry
+  ⌊R₁⌋ ∗ ⌊R₂⌋ ⊢ ⌊ R₁ ∩ R₂ ⌋ := by
+    sorry -- TODO: Rule RL-SURE-MERGE proof
 
 -- ### RL-SURE-MERGE
 
