@@ -895,8 +895,10 @@ section BluebellRules
 
 -- # Additional definitions used in Bluebell rules
 
+variable [Finite Var] [Countable Val]
+
 /-- `irrel` from p17 of the Bluebell paper -/
-def irrelevant {Var Val : Type*} [DecidableEq Var] [Inhabited Var] [Inhabited Val] [Finite I]
+def irrelevant
   (J : Set I) (P : bProp I Var Val) :=
     ∀ a : (I → (PSpPm Var Val)),
       (∃ (a' : (I → (PSpPm Var Val))), valid a'
@@ -905,7 +907,7 @@ def irrelevant {Var Val : Type*} [DecidableEq Var] [Inhabited Var] [Inhabited Va
       → P a
 
 /-- `idx` from p17 of the Bluebell paper -/
-def idx [DecidableEq Var] [Inhabited Var] [Inhabited Val] [Finite I]
+def idx
   (P : bProp I Var Val) : Set I :=
     ⋂₀ {J : Set I | irrelevant {i:I | i ∉ J} P} -- Intersection of all sets satisfying a property is the smallest subset satisfying it.
 
@@ -945,11 +947,12 @@ noncomputable def k {A : Type*} : CompatibleKernel A (@validOne I Var Val _ _) :
 -- #### AND-TO-STAR: Helper lemmas
 
 open Classical in
+omit [Finite Var] [Countable Val] in
 /-- Auxiliary: for a valid element `a` and a valid witness `a'` agreeing with `a` on
 `J₁ ∩ J₂` (where both `J₁, J₂` are in the idx-family), `P a` holds.
 The key idea is to construct a valid intermediate element that agrees with `a'` on `J₂`
 and with `a` on `J₁`, using the validity of both `a` and `a'`. -/
-private lemma irrelevant_binary_inter [Inhabited Var] [Finite I]
+private lemma irrelevant_binary_inter
   {P : bProp I Var Val} {J₁ J₂ : Set I}
   (hJ₁ : irrelevant {i | i ∉ J₁} P) (hJ₂ : irrelevant {i | i ∉ J₂} P)
   {a a' : IndexedPSpPm I Var Val}
@@ -977,6 +980,7 @@ private lemma irrelevant_binary_inter [Inhabited Var] [Finite I]
   exact hJ₁ a ⟨a₁, hva₁, fun i hi => h₁ i (by rwa [Set.mem_setOf_eq, not_not] at hi), hPa₁⟩
 
 open Classical in
+omit [Finite Var] [Countable Val] in
 /-- For a finite family of sets satisfying irrelevance, the intersection also satisfies
 irrelevance when both elements are valid. Proved by finite induction on the family. -/
 private lemma irrelevant_sInter_valid [Inhabited Var] [Finite I]
@@ -1005,6 +1009,7 @@ private lemma irrelevant_sInter_valid [Inhabited Var] [Finite I]
   exact fun h => hPa' <| h_ind h_finite_S.toFinset ( fun J hJ => hS J <| h_finite_S.mem_toFinset.mp hJ ) a a' hva hva' ( fun i hi => hagree i <| by simpa using hi ) h
 
 open Classical in
+omit [Finite Var] [Countable Val] in
 /-- The key locality property: `P` is irrelevant to indices outside `idx P`.
 This is stated in the Bluebell paper (p.17) as a property of the `idx` definition.
 When `I` is finite, the family `{J | irrelevant {i | i ∉ J} P}` is finite, so the
@@ -1033,6 +1038,7 @@ private lemma irrelevant_idx_compl [Inhabited Var] [Finite I]
 -- #### AND-TO-STAR: Spec & Proof
 
 open Classical in
+omit [Finite Var] [Countable Val] in
 theorem And_To_Star [Inhabited Var] [Finite I]
   (P Q : bProp I Var Val) :
       idx P ∩ idx Q = ∅
@@ -1067,6 +1073,7 @@ theorem And_To_Star [Inhabited Var] [Finite I]
 -- ### DIST-INJ
 
 open MeasureTheory in
+omit [Finite Var] [Countable Val] in
 theorem Dist_Inj
   {A : Type*} {E : (Var → Val) → A} {i : I} {μ μ' : PMF A}
   : E⟨i⟩ ~ μ ∧ E⟨i⟩ ~ μ' ⊢ ⌜μ = μ'⌝ := by
@@ -1166,7 +1173,7 @@ theorem Sure_Merge
   sorry -- TODO: Rule SURE-MERGE proof
 -- ### SURE-AND-STAR
 
-theorem Sure_And_Star {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Sure_And_Star {i : I} {A : Type*}
   {P : bProp I Var Val}
   {E : (Var → Val) → Prop} :
   pabs P (pvar E) →
@@ -1175,7 +1182,7 @@ theorem Sure_And_Star {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited V
 
 -- ### PROD-SPLIT
 
-theorem Prod_Split {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Prod_Split {i : I} {A B : Type*}
   {μ₁ : PMF A} {μ₂ : PMF B}
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B} :
   (fun s => (E₁ s, E₂ s))⟨i⟩ ~ (μ₁ ⊗ μ₂)
@@ -1187,8 +1194,7 @@ theorem Prod_Split {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Va
 -- ### C-TRUE
 
 theorem C_True
-  {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] {μ : PMF A}
+  {A : Type*} {μ : PMF A}
   : ⊢ (𝒞⟨μ⟩ _v; BTrue : bProp I Var Val) := by
   unfold jointConditioning
   iexists 1, k
@@ -1215,8 +1221,7 @@ theorem C_True
 
 -- ### C-FALSE
 
-theorem C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] {μ : PMF A} :
+theorem C_False {A : Type*} {μ : PMF A} :
     (𝒞⟨μ⟩ _v; BFalse : bProp I Var Val) ⊢ BFalse := by
   unfold jointConditioning
   show entail _ _
@@ -1234,7 +1239,7 @@ theorem C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- TODO: Rule C-CONS spec+proof (translate spec)
 
-theorem C_Cons [Finite Var] [Countable Val] {α : Type} {K₁ K₂ : α → bProp I Var Val} {μ : PMF α} (h : ∀ v, K₁ v ⊢ K₂ v) :
+theorem C_Cons {α : Type} {K₁ K₂ : α → bProp I Var Val} {μ : PMF α} (h : ∀ v, K₁ v ⊢ K₂ v) :
     iprop(𝒞⟨μ⟩ v; K₁ v) ⊢ 𝒞⟨μ⟩ v; K₂ v := by
   sorry
 
@@ -1297,7 +1302,7 @@ theorem C_Cons [Finite Var] [Countable Val] {α : Type} {K₁ K₂ : α → bPro
 -- #### C-TRANSF: Helper lemmas and helper definition
 
 /-- Compose a CompatibleKernel with a function f : B → A -/
-private def CompatibleKernel.comp {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+private def CompatibleKernel.comp {A B : Type*}
     {m₀ : ValidIndexedPSpPm I Var Val}
     (κ : CompatibleKernel A m₀) (f : B → A) : CompatibleKernel B m₀ where
   kernel i b := κ.kernel i (f b)
@@ -1375,13 +1380,13 @@ private lemma PMF_bind_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
 
 -- #### C-TRANSF: Spec & Proof
 
-theorem C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] {μ : PMF A} {μ' : PMF B}
-    {f : B → A}
-    {K : A → bProp I Var Val} :
-    Set.BijOn f (μ' · ≠ 0) (μ · ≠ 0) →
-    (∀ b : B, μ' b ≠ 0 → μ' b = μ (f b)) →
-      iprop(𝒞⟨μ⟩ a; K a) ⊢ 𝒞⟨μ'⟩ b; K (f b)
+theorem C_Transf {A B : Type*}
+  {μ : PMF A} {μ' : PMF B}
+  {f : B → A}
+  {K : A → bProp I Var Val} :
+  Set.BijOn f (μ' · ≠ 0) (μ · ≠ 0) →
+  (∀ b : B, μ' b ≠ 0 → μ' b = μ (f b)) →
+    iprop(𝒞⟨μ⟩ a; K a) ⊢ 𝒞⟨μ'⟩ b; K (f b)
 := by
   intro hbij hprob
   unfold jointConditioning
@@ -1411,10 +1416,9 @@ theorem C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### SURE-STR-CONVEX
 
-theorem Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] {μ : PMF A}
-    {K : A → bProp I Var Val} {i : I} {E : (Var → Val) → Prop} :
-      iprop(𝒞⟨μ⟩ v; K v ∗ almostSurely E i) ⊢ iprop(almostSurely E i ∗ 𝒞⟨μ⟩ v; K (v)) := by
+theorem Sure_Str_Convex {A : Type*} {μ : PMF A}
+  {K : A → bProp I Var Val} {i : I} {E : (Var → Val) → Prop} :
+    iprop(𝒞⟨μ⟩ v; K v ∗ almostSurely E i) ⊢ iprop(almostSurely E i ∗ 𝒞⟨μ⟩ v; K (v)) := by
       sorry -- TODO: Rule SURE-STR-CONVEX proof
 
 -- ### C-FOR-ALL
@@ -1440,7 +1444,6 @@ theorem Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 -- ### WP-CONS
 
 theorem WP_Cons
-  [Finite Var] [Countable Val]
   (t : I → Option (PSpPm Var Val → PSpPm Var Val))
   (Q Q' : bProp I Var Val) (hQ : Q ⊢ Q')
   : wp t Q ⊢ wp t Q' := by
@@ -1453,7 +1456,6 @@ theorem WP_Cons
 -- ### WP-FRAME
 
 theorem WP_Frame
-  [Finite Var] [Countable Val]
   (t : I → Option (PSpPm Var Val → PSpPm Var Val))
   (ht : ∀ μ, ✓ μ → ✓ (⟦t⟧ μ))
   (P Q : bProp I Var Val)
@@ -1484,8 +1486,7 @@ theorem WP_Frame
 -- ### WP-CONJ
 
 open Classical in
-theorem WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
-  [Finite Var] [Countable Val]
+theorem WP_Conj
     (t₁ t₂ : I → Option (PSpPm Var Val → PSpPm Var Val))
     {Q₁ Q₂ : bProp I Var Val}
     (h_ts_agree : ∀ i : I, i ∈ dom t₁ ∩ dom t₂ → t₁ i = t₂ i)
@@ -1509,23 +1510,21 @@ theorem WP_Conj [Finite I] [DecidableEq Var] [Inhabited Val] [Inhabited Var]
 
 -- DRAFT of C-WP-SWAP
 -- Needs definition of OWN_X
-theorem C_WP_Swap {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val]
-    {μ : PMF A}
-    {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
-    {Q : A → bProp I Var Val} {i : I}
-    :
-    iprop(𝒞⟨μ⟩ v; wp t (Q v) /- ∧ OWN_X -/) ⊢ iprop(wp t (𝒞⟨μ⟩ v; Q v)) := by
+theorem C_WP_Swap {A : Type*}
+  {μ : PMF A}
+  {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
+  {Q : A → bProp I Var Val} {i : I}
+  :
+  iprop(𝒞⟨μ⟩ v; wp t (Q v) /- ∧ OWN_X -/) ⊢ iprop(wp t (𝒞⟨μ⟩ v; Q v)) := by
     sorry -- TODO: Rule confirm new version of C-WP-SWAP
 
 -- DRAFT of new variant of CP-WP-SWAP
-theorem C_WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] [Countable A]
-    {μ : PMF A}
-    {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
-    {Q : A → bProp I Var Val} {i : I} {E : (Var → Val) → A}
-    :
-    iprop(𝒞⟨μ⟩ v; (E⟨i⟩ ~ δ v) ∗ wp t (Q v)) ⊢ iprop(wp t (𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ Q v))) := by
+theorem C_WP_Swap' {A : Type*} [Countable A]
+  {μ : PMF A}
+  {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
+  {Q : A → bProp I Var Val} {i : I} {E : (Var → Val) → A}
+  :
+  iprop(𝒞⟨μ⟩ v; (E⟨i⟩ ~ δ v) ∗ wp t (Q v)) ⊢ iprop(wp t (𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ Q v))) := by
     sorry -- TODO: Rule C-WP-SWAP proof
 
 -- ## Program WP rules
@@ -1570,6 +1569,7 @@ theorem C_WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### SURE-DIRAC
 
+omit [Finite Var] [Countable Val] in
 theorem Sure_Dirac
   {A : Type*} [Countable A] [DecidableEq A] {E : (Var → Val) → A} {i : I} {v : A}
   : E⟨i⟩ ~ δ v ⊣⊢ almostSurely (fun s ↦ E s = v) i := by
@@ -1667,7 +1667,7 @@ theorem Sure_Dirac
 
 -- ### SURE-EQ-INJ
 
-theorem Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val] [DecidableEq A]
+theorem Sure_Eq_Inj {A : Type*} {i : I} [DecidableEq A]
   {E : (Var → Val) → A}
   {v v' : A} :
   iprop(almostSurely (fun s => E s = v) i) ∗ iprop(almostSurely (fun s => E s = v') i)
@@ -1676,7 +1676,7 @@ theorem Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val
 
 -- ### SURE-SUB
 
-theorem Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
+theorem Sure_Sub {A B: Type*} {i : I}
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
   {μ : PMF A}
   {f : A → B}
@@ -1687,7 +1687,7 @@ theorem Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### DIST-FUN
 
-theorem Dist_Fun {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
+theorem Dist_Fun {i : I} {A B: Type*}
   {E : (Var → Val) → A}
   {μ : PMF A}
   {f : A → B}
@@ -1707,7 +1707,7 @@ theorem Dirac_Dup
 
 -- ### DIST-SUPP
 
-theorem Dist_Supp {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Dist_Supp {i : I} {A : Type*}
   {E : (Var → Val) → A}
   {μ : PMF A}
   :
@@ -1716,7 +1716,7 @@ theorem Dist_Supp {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### PROD-UNSPLIT
 
-theorem Prod_Unsplit {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Prod_Unsplit {A B : Type*} {i : I}
   {μ₁ : PMF A} {μ₂ : PMF B}
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B} :
   E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂
@@ -1735,8 +1735,8 @@ theorem Prod_Unsplit {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited 
 
 -- ### SURE-CONVEX
 
-theorem Sure_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] {μ : PMF A}
+theorem Sure_Convex {A : Type*}
+  {μ : PMF A}
   {i : I} {E : (Var → Val) → Prop}
   :
   (𝒞⟨μ⟩ v; almostSurely E i) ⊢ almostSurely E i := by
@@ -1744,8 +1744,8 @@ theorem Sure_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### DIST-CONVEX
 
-theorem Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val] {μ μ' : PMF A}
+theorem Dist_Convex {A : Type*}
+  {μ μ' : PMF A}
   {i : I} {E : (Var → Val) → A}
   :
   (𝒞⟨μ⟩ v; E⟨i⟩ ~ μ') ⊢ E⟨i⟩ ~ μ' := by
@@ -1761,8 +1761,7 @@ theorem Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- ### C-EXTRACT
 
-theorem C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
-  [Finite Var] [Countable Val]
+theorem C_Extract {A B : Type*}
   {μ₁ : PMF A} {μ₂ : PMF B}
   {i : I}
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
@@ -1779,7 +1778,7 @@ theorem C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- TODO: Formalise relational lifting
 
-def relationLifting [Finite Var] [Countable Val] {X : Set (I × Var)} (R : Set (X → Val)) : bProp I Var Val :=
+def relationLifting {X : Set (I × Var)} (R : Set (X → Val)) : bProp I Var Val :=
   iprop(∃ μ : PMF (X → Val),
       ⌜ ∑' r : R, μ r = 1 ⌝ ∗
       𝒞⟨μ⟩ v; ∀ (xi : X), almostSurely (fun (s : Var → Val) => s xi.1.2 = v xi) xi.1.1
@@ -1789,7 +1788,7 @@ notation " ⌊ " R " ⌋ " => relationLifting R
 
 -- ### RL-CONS ⌊⌋
 
-theorem RL_Cons [Finite Var] [Countable Val] {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
+theorem RL_Cons {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
     R₁ ⊆ R₂ → ⌊R₁⌋ ⊢ ⌊R₂⌋ := by
   sorry
 
@@ -1803,14 +1802,14 @@ theorem RL_Cons [Finite Var] [Countable Val] {X : Set (I × Var)} {R₁ R₂ : S
 
 -- ### RL-CONVEX
 
-theorem RL_Convex {α : Type} [Finite Var] [Countable Val] {X : Set (I × Var)} {μ : PMF α} {R : Set (X → Val)} :
+theorem RL_Convex {α : Type} {X : Set (I × Var)} {μ : PMF α} {R : Set (X → Val)} :
   (𝒞⟨μ⟩ v; ⌊R⌋) ⊢ ⌊R⌋ := sorry
 
 -- TODO: Rule RL-CONVEX spec+proof
 
 -- ### RL-MERGE
 
-theorem RL_Merge [Finite Var] [Countable Val] {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
+theorem RL_Merge {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
   ⌊R₁⌋ ∗ ⌊R₂⌋ ⊢ ⌊ R₁ ∩ R₂ ⌋ := sorry
 
 -- ### RL-SURE-MERGE
