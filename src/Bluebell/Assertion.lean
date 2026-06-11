@@ -668,10 +668,12 @@ def hasDistribution {A : Type*} (E : (Var → Val) → A) (i : I) (μ : PMF A)
 
 notation:100 E:100 "⟨" i:100 "⟩" " ~ " p:100 => hasDistribution E i p
 
-def almostSurely (E : (Var → Val) → Bool) (i : I) : bProp I Var Val :=
+def almostSurely (E : (Var → Val) → Prop) (i : I) : bProp I Var Val :=
   E⟨i⟩ ~ δ True
 
-notation:100 E:100 "⟨" i:100 "⟩" " = " v:100 => almostSurely (E · = v) i
+-- notation:100 E:100 "⟨" i:100 "⟩" " = " v:100 => almostSurely (E · = v) i
+
+-- notation "⌈" E "[" i "]⌉" => almostSurely E i
 
 def ownRV {A : Type*} (E : (Var → Val) → A) (i : I) : bProp I Var Val :=
   iprop(∃ μ : PMF A, E⟨i⟩ ~ μ)
@@ -908,7 +910,7 @@ def idx [DecidableEq Var] [Inhabited Var] [Inhabited Val] [Finite I]
     ⋂₀ {J : Set I | irrelevant {i:I | i ∉ J} P} -- Intersection of all sets satisfying a property is the smallest subset satisfying it.
 
 -- For SURE-AND-STAR
-def pvar (E : (Var → Val) → Bool) : Set Var :=
+def pvar (E : (Var → Val) → Prop) : Set Var :=
   {x : Var | ∃ (σ : Var → Val) (v : Val), E σ ≠ E (Function.update σ x v)}
 
 -- For SURE-AND-STAR
@@ -1159,17 +1161,16 @@ theorem Dist_Inj
 
 theorem Sure_Merge
   {A : Type*}
-  {E₁ E₂ : (Var → Val) → Bool} {i : I}
-  : E₁⟨i⟩ = true ∗ E₂⟨i⟩ = true ⊣⊢ (fun s => E₁ s ∧ E₂ s)⟨i⟩ = true := by
+  {E₁ E₂ : (Var → Val) → Prop} {i : I}
+  : (almostSurely E₁ i) ∗ (almostSurely E₂ i) ⊣⊢ (almostSurely (fun s => E₁ s ∧ E₂ s) i ) := by
   sorry -- TODO: Rule SURE-MERGE proof
-
 -- ### SURE-AND-STAR
 
 theorem Sure_And_Star {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   {P : bProp I Var Val}
-  {E : (Var → Val) → Bool} :
+  {E : (Var → Val) → Prop} :
   pabs P (pvar E) →
-  iprop(E⟨i⟩ = true ∧ P) ⊢ iprop(E⟨i⟩ = true ∗ P) := by
+  iprop(almostSurely E i ∧ P) ⊢ iprop(almostSurely E i ∗ P) := by
     sorry -- TODO: Rule SURE-AND-STAR proof
 
 -- ### PROD-SPLIT
@@ -1233,8 +1234,9 @@ theorem C_False {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- TODO: Rule C-CONS spec+proof (translate spec)
 
--- theorem C_conseq (h : ∀ v, K₁ v ⊢ K₂ v) : 𝑪_ μ K₁ ⊢ 𝑪_ μ K₂ := by
---   sorry
+theorem C_Cons [Finite Var] [Countable Val] {α : Type} {K₁ K₂ : α → bProp I Var Val} {μ : PMF α} (h : ∀ v, K₁ v ⊢ K₂ v) :
+    iprop(𝒞⟨μ⟩ v; K₁ v) ⊢ 𝒞⟨μ⟩ v; K₂ v := by
+  sorry
 
 -- ### C-FRAME
 
@@ -1411,8 +1413,8 @@ theorem C_Transf {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 
 theorem Sure_Str_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A}
-    {K : A → bProp I Var Val} {i : I} {E : (Var → Val) → Bool} :
-      iprop(𝒞⟨μ⟩ v; K v ∗ E⟨i⟩ = true) ⊢ iprop(E⟨i⟩ = true ∗ 𝒞⟨μ⟩ v; K (v)) := by
+    {K : A → bProp I Var Val} {i : I} {E : (Var → Val) → Prop} :
+      iprop(𝒞⟨μ⟩ v; K v ∗ almostSurely E i) ⊢ iprop(almostSurely E i ∗ 𝒞⟨μ⟩ v; K (v)) := by
       sorry -- TODO: Rule SURE-STR-CONVEX proof
 
 -- ### C-FOR-ALL
@@ -1570,7 +1572,7 @@ theorem C_WP_Swap' {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
 
 theorem Sure_Dirac
   {A : Type*} [Countable A] [DecidableEq A] {E : (Var → Val) → A} {i : I} {v : A}
-  : E⟨i⟩ ~ δ v ⊣⊢ E⟨i⟩ = v := by
+  : E⟨i⟩ ~ δ v ⊣⊢ almostSurely (fun s ↦ E s = v) i := by
   constructor
   · intro m hv h
     obtain ⟨q, ⟨P, hqP⟩, hqm⟩ := h
@@ -1581,34 +1583,35 @@ theorem Sure_Dirac
     obtain ⟨ham, hμ⟩ := body
     obtain ⟨E', hE'_meas, hE'_ae⟩ := ham
     letI : MeasurableSpace A := ⊤
-    have hg : @Measurable A Bool ⊤ ⊤ (fun a => decide (a = v)) := fun _ _ => trivial
+    letI : MeasurableSpace Prop := ⊤
+    have hg : @Measurable A Prop ⊤ ⊤ (fun a => a = v) := fun _ _ => trivial
     have bridge_E : @Measure.map _ _ (P.ms i) ⊤ E (P.μ i)
         = @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ :=
       ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨P.val i, P.property i⟩ E
     rw [bridge_E] at hμ
     constructor
-    · refine ⟨(fun a => decide (a = v)) ∘ E', hg.comp hE'_meas, ?_⟩
-      exact hE'_ae.fun_comp (fun a => decide (a = v))
-    · have bridge_dec : @Measure.map _ _ (P.ms i) ⊤ (fun x => decide (E x = v)) (P.μ i)
-          = @Measure.map _ _ (P.PSpace i).1.ms ⊤ (fun x => decide (E x = v))
+    · refine ⟨(fun a => a = v) ∘ E', hg.comp hE'_meas, ?_⟩
+      exact hE'_ae.fun_comp (fun a => a = v)
+    · have bridge_prop : @Measure.map _ _ (P.ms i) ⊤ (fun s => E s = v) (P.μ i)
+          = @Measure.map _ _ (P.PSpace i).1.ms ⊤ (fun s => E s = v)
               (P.PSpace i).1.μ :=
         ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨P.val i, P.property i⟩ _
-      rw [bridge_dec]
+      rw [bridge_prop]
       apply @Measure.ext _ ⊤
       intro s hs
       have ham_E : AEMeasurable E (P.PSpace i).1.μ := ⟨E', hE'_meas, hE'_ae⟩
-      have ham_c : AEMeasurable (fun x => decide (E x = v)) (P.PSpace i).1.μ := by
-        refine ⟨(fun a => decide (a = v)) ∘ E', hg.comp hE'_meas, ?_⟩
-        exact hE'_ae.fun_comp (fun a => decide (a = v))
-      rw [Measure.map_apply_of_aemeasurable (mβ := ⊤) ham_c hs]
-      change (P.PSpace i).1.μ (E ⁻¹' ((fun a => decide (a = v)) ⁻¹' s)) = _
+      have ham_p : AEMeasurable (fun x => E x = v) (P.PSpace i).1.μ := by
+        refine ⟨(fun a => a = v) ∘ E', hg.comp hE'_meas, ?_⟩
+        exact hE'_ae.fun_comp (fun a => a = v)
+      rw [Measure.map_apply_of_aemeasurable (mβ := ⊤) ham_p hs]
+      change (P.PSpace i).1.μ (E ⁻¹' ((fun a => a = v) ⁻¹' s)) = _
       rw [← Measure.map_apply_of_aemeasurable (mβ := ⊤) ham_E
             MeasurableSpace.measurableSet_top, hμ]
-      change PMF.toDiscMeasure (δ v) _ = PMF.toDiscMeasure (δ (decide True)) _
+      change PMF.toDiscMeasure (δ v) _ = PMF.toDiscMeasure (δ True) _
       simp only [PMF.dirac, PMF.toDiscMeasure, Measure.toPMF_toMeasure,
         Measure.dirac_apply', MeasurableSpace.measurableSet_top]
       classical
-      simp [Set.indicator_apply, Set.mem_preimage]
+      simp only [Set.indicator_apply, Set.mem_preimage, Pi.one_apply]
   · intro m hv h
     obtain ⟨q, ⟨P, hqP⟩, hqm⟩ := h
     subst hqP
@@ -1617,22 +1620,26 @@ theorem Sure_Dirac
     simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body
     obtain ⟨ham, hμ⟩ := body
     letI : MeasurableSpace A := ⊤
-    have bridge_dec : @Measure.map _ _ (P.ms i) ⊤ (fun x => decide (E x = v)) (P.μ i)
-        = @Measure.map _ _ (P.PSpace i).1.ms ⊤ (fun x => decide (E x = v))
+    letI : MeasurableSpace Prop := ⊤
+    have bridge_prop : @Measure.map _ _ (P.ms i) ⊤ (fun s => E s = v) (P.μ i)
+        = @Measure.map _ _ (P.PSpace i).1.ms ⊤ (fun s => E s = v)
             (P.PSpace i).1.μ :=
       ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨P.val i, P.property i⟩ _
-    rw [bridge_dec] at hμ
+    rw [bridge_prop] at hμ
     simp only [ValidIndexedPSpPm.PSpace] at hμ
     have h_null : (P.PSpace i).1.μ {s | ¬ E s = v} = 0 := by
-      have h1 := Measure.map_apply_of_aemeasurable ham (s := {false}) MeasurableSpace.measurableSet_top
+      have h1 := Measure.map_apply_of_aemeasurable ham (s := {False}) MeasurableSpace.measurableSet_top
       rw [hμ] at h1
       simp only [PMF.dirac, Measure.toPMF_toMeasure,
         MeasurableSpace.measurableSet_top, Measure.dirac_apply'] at h1
-      classical
-      simp only [Set.indicator_apply, Set.mem_singleton_iff, Pi.one_apply] at h1
+      have hTF : (True : Prop) ∉ ({False} : Set Prop) := by
+        intro h; exact (Set.mem_singleton_iff.mp h).mp trivial
+      rw [Set.indicator_of_notMem hTF] at h1
       rw [show (P.PSpace i).1.μ {s | ¬E s = v}
-          = (P.PSpace i).1.μ ((fun x => decide (E x = v)) ⁻¹' {false}) from by
-        congr 1; ext x; simp [Set.mem_preimage, decide_eq_false_iff_not]]
+          = (P.PSpace i).1.μ ((fun x => E x = v) ⁻¹' {False}) from by
+        congr 1; ext x
+        simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_setOf_eq,
+          eq_iff_iff, iff_false]]
       exact h1.symm
     have hae : E =ᵐ[_] (fun _ => v) := h_null
     simp only [ValidIndexedPSpPm.PSpace] at hae
@@ -1660,10 +1667,10 @@ theorem Sure_Dirac
 
 -- ### SURE-EQ-INJ
 
-theorem Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
+theorem Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val] [DecidableEq A]
   {E : (Var → Val) → A}
   {v v' : A} :
-  iprop((fun s => E s = v)⟨i⟩ = true) ∗ iprop((fun s => E s = v')⟨i⟩ = true)
+  iprop(almostSurely (fun s => E s = v) i) ∗ iprop(almostSurely (fun s => E s = v') i)
   ⊢ ⌜ v = v' ⌝ := by
     sorry -- TODO: Rule SURE-EQ-INJ proof
 
@@ -1672,11 +1679,9 @@ theorem Sure_Eq_Inj {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val
 theorem Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
   {μ : PMF A}
-  {f : A → B} {fInv : B → A}
-  (hfl : Function.LeftInverse f fInv)  -- f ∘ fInv = id -- TODO: do we need both?
-  (hfr : Function.RightInverse f fInv) -- fInv ∘ f = id
+  {f : A → B}
   :
-  E₁⟨i⟩ ~ μ ∗ ((fun s => E₂ s = f (E₁ s))⟨i⟩ = true) ⊢ E₂⟨i⟩ ~ (⟨μ ∘ fInv, (by sorry)⟩) -- TODO: fill sorry
+  E₁⟨i⟩ ~ μ ∗ (almostSurely (fun s => E₂ s = f (E₁ s)) i) ⊢ E₂⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, (by sorry)⟩) -- TODO: fill sorry
   := by
     sorry -- TODO: Rule SURE-SUB proof
 
@@ -1685,11 +1690,9 @@ theorem Sure_Sub {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
 theorem Dist_Fun {i : I} {Var Val A B: Type*} [DecidableEq Var] [Inhabited Val]
   {E : (Var → Val) → A}
   {μ : PMF A}
-  {f : A → B} {fInv : B → A}
-  (hfl : Function.LeftInverse f fInv)  -- f ∘ fInv = id -- TODO: do we need both?
-  (hfr : Function.RightInverse f fInv) -- fInv ∘ f = id
+  {f : A → B}
   :
-  E⟨i⟩ ~ μ ⊢ (fun s => (f ∘ E) s)⟨i⟩ ~ (⟨μ ∘ fInv, (by sorry)⟩) -- TODO: fill sorry
+  E⟨i⟩ ~ μ ⊢ (fun s => (f ∘ E) s)⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, (by sorry)⟩) -- TODO: fill sorry
   := by
     sorry -- TODO: Rule DIST-FUN proof
 
@@ -1708,7 +1711,7 @@ theorem Dist_Supp {i : I} {Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   {E : (Var → Val) → A}
   {μ : PMF A}
   :
-  E⟨i⟩ ~ μ ⊢ E⟨i⟩ ~ μ ∗ (fun s => E s ∈ μ.support)⟨i⟩ = true := by
+  E⟨i⟩ ~ μ ⊢ E⟨i⟩ ~ μ ∗ almostSurely (fun s => E s ∈ μ.support) i := by
     sorry -- TODO: Rule DIRAC-SUPP proof
 
 -- ### PROD-UNSPLIT
@@ -1734,9 +1737,9 @@ theorem Prod_Unsplit {i : I} {Var Val A B : Type*} [DecidableEq Var] [Inhabited 
 
 theorem Sure_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ : PMF A}
-  {i : I} {E : (Var → Val) → Bool}
+  {i : I} {E : (Var → Val) → Prop}
   :
-  iprop(𝒞⟨μ⟩ v; E⟨i⟩ = true) ⊢ E⟨i⟩ = true := by
+  (𝒞⟨μ⟩ v; almostSurely E i) ⊢ almostSurely E i := by
     sorry -- TODO: Rule SURE-CONVEX proof
 
 -- ### DIST-CONVEX
@@ -1745,7 +1748,7 @@ theorem Dist_Convex {I Var Val A : Type*} [DecidableEq Var] [Inhabited Val]
   [Finite Var] [Countable Val] {μ μ' : PMF A}
   {i : I} {E : (Var → Val) → A}
   :
-  iprop(𝒞⟨μ⟩ v; E⟨i⟩ ~ μ') ⊢ iprop(E⟨i⟩ ~ μ') := by
+  (𝒞⟨μ⟩ v; E⟨i⟩ ~ μ') ⊢ E⟨i⟩ ~ μ' := by
     sorry -- TODO: Rule DIST-CONVEX proof
 
 -- ### C-SURE-PROJ
@@ -1764,7 +1767,7 @@ theorem C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
   {i : I}
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
   :
-  iprop(𝒞⟨μ₁⟩ v₁; (fun s => E₁ s = v₁)⟨i⟩ = true ∗ E₂⟨i⟩ ~ μ₂)
+  iprop(𝒞⟨μ₁⟩ v₁; (almostSurely (fun s => E₁ s = v₁) i ∗ E₂⟨i⟩ ~ μ₂))
   ⊢ E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂ := by
     sorry -- TODO: Rule C-EXTRACT proof
 
@@ -1776,15 +1779,19 @@ theorem C_Extract {I Var Val A B : Type*} [DecidableEq Var] [Inhabited Val]
 
 -- TODO: Formalise relational lifting
 
-def relationLifting [Finite Var] [Countable Val] [Inhabited Val] (X : Set (I × Var)) (R : Set (X → Val)) : bProp I Var Val :=
+def relationLifting [Finite Var] [Countable Val] {X : Set (I × Var)} (R : Set (X → Val)) : bProp I Var Val :=
   iprop(∃ μ : PMF (X → Val),
       ⌜ ∑' r : R, μ r = 1 ⌝ ∗
-      𝒞⟨μ⟩ v; ∀ (xi : X), (fun (s : Var → Val) => s xi.1.2 = v xi)⟨xi.1.1⟩ = True
+      𝒞⟨μ⟩ v; ∀ (xi : X), almostSurely (fun (s : Var → Val) => s xi.1.2 = v xi) xi.1.1
     )
 
--- ### RL-CONS
+notation " ⌊ " R " ⌋ " => relationLifting R
 
--- TODO: Rule RL-CONS spec+proof
+-- ### RL-CONS ⌊⌋
+
+theorem RL_Cons [Finite Var] [Countable Val] {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
+    R₁ ⊆ R₂ → ⌊R₁⌋ ⊢ ⌊R₂⌋ := by
+  sorry
 
 -- ### RL-UNARY
 
@@ -1796,11 +1803,15 @@ def relationLifting [Finite Var] [Countable Val] [Inhabited Val] (X : Set (I × 
 
 -- ### RL-CONVEX
 
+theorem RL_Convex {α : Type} [Finite Var] [Countable Val] {X : Set (I × Var)} {μ : PMF α} {R : Set (X → Val)} :
+  (𝒞⟨μ⟩ v; ⌊R⌋) ⊢ ⌊R⌋ := sorry
+
 -- TODO: Rule RL-CONVEX spec+proof
 
 -- ### RL-MERGE
 
--- TODO: Rule RL-MERGE spec+proof
+theorem RL_Merge [Finite Var] [Countable Val] {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
+  ⌊R₁⌋ ∗ ⌊R₂⌋ ⊢ ⌊ R₁ ∩ R₂ ⌋ := sorry
 
 -- ### RL-SURE-MERGE
 
