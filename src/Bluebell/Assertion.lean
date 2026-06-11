@@ -1237,11 +1237,30 @@ theorem C_False {A : Type*} {μ : PMF A} :
 
 -- ### C-CONS
 
--- TODO: Rule C-CONS spec+proof (translate spec)
+omit [Finite Var] [Countable Val] in
+/-- The indexed probability space built from a compatible kernel at a fixed support point
+is valid: each component is `some (...)` (hence not `⊤`), and its permission component
+inherits validity from the underlying valid indexed space `m`. -/
+private lemma jointConditioning_elem_valid {A : Type*}
+    (m : ValidIndexedPSpPm I Var Val) (κ : CompatibleKernel A m) (v : A) :
+    valid (fun i => (⟨⟨some ⟨⟨m.ms i, κ.kernel i v⟩, κ.isProb i v⟩, m.perm i⟩,
+      κ.isComp i v⟩ : PSpPm Var Val)) := by
+  intro i
+  refine ⟨?_, (m.property i).2⟩
+  exact Option.some_ne_none _
 
 theorem C_Cons {α : Type} {K₁ K₂ : α → bProp I Var Val} {μ : PMF α} (h : ∀ v, K₁ v ⊢ K₂ v) :
     iprop(𝒞⟨μ⟩ v; K₁ v) ⊢ 𝒞⟨μ⟩ v; K₂ v := by
-  sorry
+  unfold jointConditioning
+  show entail _ _
+  intro r _ hP
+  obtain ⟨_, ⟨m₀, rfl⟩, h₁⟩ := hP
+  obtain ⟨_, ⟨κ, rfl⟩, h₂⟩ := h₁
+  obtain ⟨h_own, h_bind_all, h_carrier_all⟩ := h₂
+  refine ⟨_, ⟨m₀, rfl⟩, _, ⟨κ, rfl⟩, h_own, h_bind_all, ?_⟩
+  intro p ⟨v, hv⟩
+  subst hv
+  exact h v _ (jointConditioning_elem_valid m₀ κ v) (h_carrier_all _ ⟨v, rfl⟩)
 
 -- ### C-FRAME
 
@@ -1788,7 +1807,23 @@ notation " ⌊ " R " ⌋ " => relationLifting R
 
 theorem RL_Cons {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
     R₁ ⊆ R₂ → ⌊R₁⌋ ⊢ ⌊R₂⌋ := by
-  sorry
+  intro hR₁R₂ r hv h;
+  obtain ⟨μ, hμ⟩ := h;
+  obtain ⟨ ⟨ μ, rfl ⟩, hμ ⟩ := hμ;
+  obtain ⟨ b₁, b₂, hle, hpure, hcond ⟩ := hμ;
+  have h_sum_le : ∑' r : R₁, μ r ≤ ∑' r : R₂, μ r := by
+    rw [tsum_subtype, tsum_subtype]
+    exact ENNReal.tsum_le_tsum
+      (Set.indicator_le_indicator_of_subset hR₁R₂ (fun _ => zero_le _))
+  have h_sum_le_one : ∑' r : R₂, μ r ≤ 1 := by
+    have h_sum_le_one : ∑' r : R₂, μ r ≤ ∑' r : X → Val, μ r := by
+      rw [ tsum_subtype ];
+      apply ENNReal.tsum_le_tsum;
+      intro a; by_cases ha : a ∈ R₂ <;> simp +decide [ ha ] ;
+    exact h_sum_le_one.trans ( by simp +decide [ PMF.tsum_coe ] );
+  refine' ⟨ _, ⟨ μ, rfl ⟩, b₁, b₂, hle, _, hcond ⟩;
+  have h_sum_eq_one : ∑' r : R₁, μ r = 1 := hpure
+  exact le_antisymm h_sum_le_one (h_sum_eq_one ▸ h_sum_le)
 
 -- ### RL-UNARY
 
