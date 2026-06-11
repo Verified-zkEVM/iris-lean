@@ -1776,8 +1776,6 @@ theorem C_Extract {A B : Type*}
 
 -- ## Relational lifting
 
--- TODO: Formalise relational lifting
-
 def relationLifting {X : Set (I × Var)} (R : Set (X → Val)) : bProp I Var Val :=
   iprop(∃ μ : PMF (X → Val),
       ⌜ ∑' r : R, μ r = 1 ⌝ ∗
