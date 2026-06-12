@@ -674,9 +674,7 @@ notation:100 E:100 "⟨" i:100 "⟩" " ~ " p:100 => hasDistribution E i p
 def almostSurely (E : (Var → Val) → Prop) (i : I) : bProp I Var Val :=
   E⟨i⟩ ~ δ True
 
--- notation:100 E:100 "⟨" i:100 "⟩" " = " v:100 => almostSurely (E · = v) i
-
--- notation "⌈" E "[" i "]⌉" => almostSurely E i
+notation "⌈" E:105 "⟨" i "⟩⌉" => almostSurely E i
 
 def ownRV {A : Type*} (E : (Var → Val) → A) (i : I) : bProp I Var Val :=
   iprop(∃ μ : PMF A, E⟨i⟩ ~ μ)
@@ -1183,7 +1181,7 @@ theorem Dist_Inj
 theorem Sure_Merge
   {A : Type*}
   {E₁ E₂ : (Var → Val) → Prop} {i : I}
-  : (almostSurely E₁ i) ∗ (almostSurely E₂ i) ⊣⊢ (almostSurely (fun s => E₁ s ∧ E₂ s) i ) := by
+  : ⌈E₁⟨i⟩⌉ ∗ ⌈E₂⟨i⟩⌉ ⊣⊢ ⌈(fun s => E₁ s ∧ E₂ s)⟨i⟩⌉ := by
   sorry -- TODO: Rule SURE-MERGE proof
 -- ### SURE-AND-STAR
 
@@ -1191,7 +1189,7 @@ theorem Sure_And_Star {i : I} {A : Type*}
   {P : bProp I Var Val}
   {E : (Var → Val) → Prop} :
   pabs P (pvar E) →
-  iprop(almostSurely E i ∧ P) ⊢ iprop(almostSurely E i ∗ P) := by
+  iprop(⌈E⟨i⟩⌉ ∧ P) ⊢ iprop(⌈E⟨i⟩⌉ ∗ P) := by
     sorry -- TODO: Rule SURE-AND-STAR proof
 
 -- ### PROD-SPLIT
@@ -1289,7 +1287,7 @@ theorem C_Unit_L {A : Type*} [Countable A] {v₀ : A} {K : A → bProp I Var Val
 -- ### C-UNIT-R
 
 theorem C_Unit_R {A : Type*} {i : I} {μ : PMF A} {E : (Var → Val) → A} :
-  E⟨i⟩ ~ μ ⊣⊢ 𝒞⟨μ⟩ v; almostSurely (fun s ↦ E s = v) i := by
+  E⟨i⟩ ~ μ ⊣⊢ 𝒞⟨μ⟩ v; ⌈(fun s ↦ E s = v)⟨i⟩⌉ := by
     sorry -- TODO: Rule C-UNIT-L proof (spec not yet reviewed)
 
 -- ### C-ASSOC
@@ -1436,7 +1434,7 @@ theorem C_Transf {A B : Type*}
 
 theorem Sure_Str_Convex {A : Type*} {μ : PMF A}
   {K : A → bProp I Var Val} {i : I} {E : (Var → Val) → Prop} :
-    iprop(𝒞⟨μ⟩ v; K v ∗ almostSurely E i) ⊢ iprop(almostSurely E i ∗ 𝒞⟨μ⟩ v; K (v)) := by
+    iprop(𝒞⟨μ⟩ v; K v ∗ ⌈E⟨i⟩⌉) ⊢ iprop(⌈E⟨i⟩⌉ ∗ 𝒞⟨μ⟩ v; K (v)) := by
       sorry -- TODO: Rule SURE-STR-CONVEX proof
 
 -- ### C-FOR-ALL
@@ -1592,7 +1590,7 @@ theorem C_WP_Swap' {A : Type*} [Countable A]
 omit [Finite Var] [Countable Val] in
 theorem Sure_Dirac
   {A : Type*} [Countable A] [DecidableEq A] {E : (Var → Val) → A} {i : I} {v : A}
-  : E⟨i⟩ ~ δ v ⊣⊢ almostSurely (fun s ↦ E s = v) i := by
+  : E⟨i⟩ ~ δ v ⊣⊢ ⌈(fun s ↦ E s = v)⟨i⟩⌉ := by
   constructor
   · intro m hv h
     obtain ⟨q, ⟨P, hqP⟩, hqm⟩ := h
@@ -1690,7 +1688,7 @@ theorem Sure_Dirac
 theorem Sure_Eq_Inj {A : Type*} {i : I} [DecidableEq A]
   {E : (Var → Val) → A}
   {v v' : A} :
-  iprop(almostSurely (fun s => E s = v) i) ∗ iprop(almostSurely (fun s => E s = v') i)
+  ⌈(fun s => E s = v)⟨i⟩⌉ ∗ ⌈(fun s => E s = v')⟨i⟩⌉
   ⊢ ⌜ v = v' ⌝ := by
     sorry -- TODO: Rule SURE-EQ-INJ proof
 
@@ -1701,7 +1699,7 @@ theorem Sure_Sub {A B: Type*} {i : I}
   {μ : PMF A}
   {f : A → B}
   :
-  E₁⟨i⟩ ~ μ ∗ (almostSurely (fun s => E₂ s = f (E₁ s)) i) ⊢ E₂⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, (by sorry)⟩) -- TODO: fill sorry
+  E₁⟨i⟩ ~ μ ∗ ⌈(fun s => E₂ s = f (E₁ s))⟨i⟩⌉ ⊢ E₂⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, (by sorry)⟩) -- TODO: fill sorry
   := by
     sorry -- TODO: Rule SURE-SUB proof
 
@@ -1731,7 +1729,7 @@ theorem Dist_Supp {i : I} {A : Type*}
   {E : (Var → Val) → A}
   {μ : PMF A}
   :
-  E⟨i⟩ ~ μ ⊢ E⟨i⟩ ~ μ ∗ almostSurely (fun s => E s ∈ μ.support) i := by
+  E⟨i⟩ ~ μ ⊢ E⟨i⟩ ~ μ ∗ ⌈(fun s => E s ∈ μ.support)⟨i⟩⌉ := by
     sorry -- TODO: Rule DIRAC-SUPP proof
 
 -- ### PROD-UNSPLIT
@@ -1759,7 +1757,7 @@ theorem Sure_Convex {A : Type*}
   {μ : PMF A}
   {i : I} {E : (Var → Val) → Prop}
   :
-  (𝒞⟨μ⟩ v; almostSurely E i) ⊢ almostSurely E i := by
+  (𝒞⟨μ⟩ v; ⌈E⟨i⟩⌉) ⊢ ⌈E⟨i⟩⌉ := by
     sorry -- TODO: Rule SURE-CONVEX proof
 
 -- ### DIST-CONVEX
@@ -1786,7 +1784,7 @@ theorem C_Extract {A B : Type*}
   {i : I}
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
   :
-  iprop(𝒞⟨μ₁⟩ v₁; (almostSurely (fun s => E₁ s = v₁) i ∗ E₂⟨i⟩ ~ μ₂))
+  iprop(𝒞⟨μ₁⟩ v₁; (⌈(fun s => E₁ s = v₁)⟨i⟩⌉ ∗ E₂⟨i⟩ ~ μ₂))
   ⊢ E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂ := by
     sorry -- TODO: Rule C-EXTRACT proof
 
@@ -1799,7 +1797,7 @@ theorem C_Extract {A B : Type*}
 def relationLifting {X : Set (I × Var)} (R : Set (X → Val)) : bProp I Var Val :=
   iprop(∃ μ : PMF (X → Val),
       ⌜ ∑' r : R, μ r = 1 ⌝ ∗
-      𝒞⟨μ⟩ v; ∀ (xi : X), almostSurely (fun (s : Var → Val) => s xi.1.2 = v xi) xi.1.1
+      𝒞⟨μ⟩ v; ∀ (xi : X), ⌈(fun (s : Var → Val) => s xi.1.2 = v xi)⟨xi.1.1⟩⌉
     )
 
 notation " ⌊ " R " ⌋ " => relationLifting R
