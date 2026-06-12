@@ -1685,12 +1685,156 @@ theorem Sure_Dirac
 
 -- ### SURE-EQ-INJ
 
+-- #### SURE-EQ-INJ: Helper lemmas
+
+omit [Finite Var] [Countable Val] in
+/-- The measure `pp.μ` agrees with the measure of the extracted `PSpace` on every set. -/
+private lemma ValidPSpPm.mu_apply_eq_PSpace (pp : ValidPSpPm Var Val)
+    (s : Set (Var → Val)) : pp.μ s = (pp.PSpace).1.μ s := by
+  obtain ⟨⟨⟨P, perm⟩, hcomp⟩, hv⟩ := pp
+  simp only [valid] at hv
+  cases P with
+  | none => exact absurd rfl hv.1
+  | some m' => rfl
+
+omit [Finite Var] [Countable Val] in
+/-- Indexed version of `ValidPSpPm.mu_apply_eq_PSpace`. -/
+private lemma ValidIndexedPSpPm.mu_apply_eq_PSpace (m : ValidIndexedPSpPm I Var Val)
+    (i : I) (s : Set (Var → Val)) : m.μ i s = (m.PSpace i).1.μ s :=
+  ValidPSpPm.mu_apply_eq_PSpace ⟨m.val i, m.property i⟩ s
+
+omit [Finite Var] [Countable Val] in
+/-- For a valid indexed space, the underlying `PSp` at index `i` is `some` of the
+extracted `PSpace`. -/
+private lemma ValidIndexedPSpPm.val_psp_eq_some (m : ValidIndexedPSpPm I Var Val) (i : I) :
+    (m.val i).1.1 = some (m.PSpace i) := by
+  obtain ⟨mval, mprop⟩ := m
+  have hv := mprop i
+  simp only [valid] at hv
+  rcases hmi : mval i with ⟨⟨Pm, permm⟩, hcomp⟩
+  cases hPm : Pm with
+  | none =>
+    exfalso
+    apply hv.1
+    have h1 : (↑(mval i) : PSpPmProd Var Val).1 = Pm := by rw [hmi]
+    rw [h1, hPm]; rfl
+  | some m' => simp only [ValidIndexedPSpPm.PSpace, ValidPSpPm.PSpace, hmi, hPm]; rfl
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] in
+/-- From `⌈E⟨i⟩⌉` holding on a valid resource `m`, extract a validated
+probability space `P` whose space at index `i` is coarser than `m`'s, on which `E` is
+a.e.-measurable and the event `{s | E s}` has measure `1`. This packages the forward
+content of `Sure_Dirac` in a reusable form. -/
+private lemma almostSurely_elim {E : (Var → Val) → Prop} {i : I}
+    (m : ValidIndexedPSpPm I Var Val) (h : ⌈E⟨i⟩⌉ m.val) :
+    ∃ P : ValidIndexedPSpPm I Var Val,
+      P.PSpace i ≤ m.PSpace i ∧
+      almostMeasurable E (P.PSp i) ∧
+      (P.PSpace i).1.μ {s | E s} = 1 := by
+  obtain ⟨q, ⟨P, hqP⟩, hqm⟩ := h
+  subst hqP
+  obtain ⟨b₁, b₂, hle, hown, body⟩ := hqm
+  obtain ⟨p, ⟨a, rfl⟩, hsome⟩ := hown
+  obtain ⟨hown_le, hown_some⟩ := hsome
+  refine ⟨P, ?_, ?_, ?_⟩
+  · have step1 : (⟨⟨P.PSp i, a.perm i⟩, a.comp i⟩ : PSpPm Var Val) ≤ b₁ i := hown_le i
+    have step2 : b₁ i ≤ (m.val) i :=
+      le_trans (IndexedPSpPm.le_of_mul_left I Val Var i) (hle i)
+    have hPm : P.PSp i ≤ (m.val i).1.1 := le_trans step1.1 step2.1
+    have hms : (m.val i).1.1 = some (m.PSpace i) := m.val_psp_eq_some i
+    have hPs : (P.PSp i) = some (P.PSpace i) := rfl
+    rw [hPs, hms] at hPm
+    exact WithTop.coe_le_coe.mp hPm
+  · simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body ⊢
+    exact body.1
+  · simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body
+    obtain ⟨ham, hμ⟩ := body
+    have bridge : @Measure.map _ _ (P.ms i) ⊤ E (P.μ i)
+        = @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ :=
+      ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨P.val i, P.property i⟩ E
+    rw [bridge] at hμ
+    have hae : AEMeasurable E (P.PSpace i).1.μ := by
+      simpa [ValidIndexedPSpPm.PSpace] using ham
+    have key := Measure.map_apply_of_aemeasurable (mβ := ⊤) hae
+      (s := {True}) MeasurableSpace.measurableSet_top
+    rw [hμ] at key
+    simp only [PMF.dirac, Measure.toPMF_toMeasure,
+      Measure.dirac_apply', MeasurableSpace.measurableSet_top] at key
+    simp only [Set.indicator_of_mem, Set.mem_singleton_iff, Pi.one_apply] at key
+    rw [key]
+    congr 1
+    ext s
+    simp [Set.mem_setOf_eq]
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] in
+/-- If `⌈E⟨i⟩⌉` holds on a valid resource `m`, then `E` holds
+`m.PSpace i`-almost everywhere. -/
+private lemma almostSurely_ae {E : (Var → Val) → Prop} {i : I}
+    (m : ValidIndexedPSpPm I Var Val) (h : ⌈E⟨i⟩⌉ m.val) :
+    ∀ᵐ s ∂(m.PSpace i).1.μ, E s := by
+  obtain ⟨ P, hPle, ham, hP1 ⟩ := almostSurely_elim m h;
+  -- Let `μP := (P.PSpace i).1.μ`.
+  set μP := (P.PSpace i).1.μ;
+  -- Show `f ⁻¹' {True}` has measure 1 and hence `f ⁻¹' {False}` has measure 0.
+  obtain ⟨ f, hf_meas, hf_ae ⟩ := ham;
+  have h_true : μP (f ⁻¹' {True}) = 1 := by
+    rw [ ← hP1, ← MeasureTheory.measure_congr ];
+    filter_upwards [ hf_ae ] with s hs using by simpa using hs;
+  have h_false : μP (f ⁻¹' {False}) = 0 := by
+    convert MeasureTheory.measure_compl _ _ using 1;
+    convert rfl;
+    any_goals exact f ⁻¹' { True };
+    · ext; simp [Set.mem_compl_iff];
+    · rw [ h_true, ( P.PSpace i ).2.measure_univ, tsub_self ];
+    · exact hf_meas ( MeasurableSingletonClass.measurableSet_singleton _ );
+    · exact h_true.symm ▸ ENNReal.one_ne_top;
+  obtain ⟨ N2, hN2_sub, hN2_meas, hN2_null ⟩ := @exists_measurable_superset_of_null _ ( P.PSpace i ).1.ms μP _ hf_ae.symm;
+  refine' MeasureTheory.measure_mono_null _ _;
+  exact N2 ∪ f ⁻¹' { False };
+  · grind +qlia;
+  · exact MeasureOnSpace.le_preserves_measure hPle ( hN2_meas.union ( hf_meas ( MeasurableSingletonClass.measurableSet_singleton _ ) ) ) |> fun h => h.symm ▸ MeasureTheory.measure_union_null hN2_null h_false
+
+omit [Finite Var] [Countable Val] in
+/-- A valid indexed space owns its own underlying spaces. -/
+private lemma ownPSp_self (m : ValidIndexedPSpPm I Var Val) :
+    ownPSp m.PSp m.val := by
+  constructor;
+  refine' ⟨ ⟨ _, rfl ⟩, _ ⟩;
+  constructor;
+  exact fun i => m.val_psp_eq_some i ▸ ( m.val i ).2;
+  constructor;
+  · intro i;
+    constructor;
+    · exact m.val_psp_eq_some i ▸ le_rfl;
+    · exact le_rfl;
+  · exact fun i => by cases m.val i ; tauto;
+
+-- #### SURE-EQ-INJ: Spec & Proof
+
+omit [Finite Var] [Countable Val] in
 theorem Sure_Eq_Inj {A : Type*} {i : I} [DecidableEq A]
   {E : (Var → Val) → A}
   {v v' : A} :
   ⌈(fun s => E s = v)⟨i⟩⌉ ∗ ⌈(fun s => E s = v')⟨i⟩⌉
   ⊢ ⌜ v = v' ⌝ := by
-    sorry -- TODO: Rule SURE-EQ-INJ proof
+    intro m hm; simp +decide [ * ] ;
+    intro hsep
+    obtain ⟨b₁, b₂, hle, h1, h2⟩ := hsep
+    set M : ValidIndexedPSpPm I Var Val := ⟨m, hm⟩
+    set a1 : ∀ᵐ s ∂(M.PSpace i).1.μ, E s = v := by
+      apply almostSurely_ae M;
+      exact ( almostSurely _ i ).upper' ( le_trans ( IndexedPSpPm.le_of_mul_left I Val Var ) hle ) h1
+    set a2 : ∀ᵐ s ∂(M.PSpace i).1.μ, E s = v' := by
+      generalize_proofs at *;
+      apply almostSurely_ae;
+      exact ( almostSurely _ i ).upper' ( le_trans ( IndexedPSpPm.le_of_mul_right I Val Var ) hle ) h2;
+    generalize_proofs at *;
+    have hvv : ∀ᵐ s ∂(M.PSpace i).1.μ, v = v' := by
+      filter_upwards [ a1, a2 ] with s hs1 hs2 using hs1.symm.trans hs2;
+    haveI : IsProbabilityMeasure (M.PSpace i).1.μ := (M.PSpace i).2;
+    exact hvv.exists.choose_spec
 
 -- ### SURE-SUB
 
@@ -1753,12 +1897,79 @@ theorem Prod_Unsplit {A B : Type*} {i : I}
 
 -- ### SURE-CONVEX
 
+-- #### SURE-CONVEX: Helper lemmas
+
+omit [Finite Var] [Countable Val] [DecidableEq Var] [Inhabited Val] in
+/-- If an event-complement `{s | ¬ E s}` is null under every kernel in the support of a
+PMF, then it is null under the `bind`. Handles the fact that `{s | ¬ E s}` need not be
+measurable by passing to a countable intersection of measurable null supersets. -/
+private lemma bind_event_null {A : Type*}
+    {ms : MeasurableSpace (Var → Val)}
+    (μ : PMF A) (κ : A → @Measure (Var → Val) ms)
+    (E : (Var → Val) → Prop)
+    (h : ∀ a : μ.support, (κ a) {s | ¬ E s} = 0) :
+    (@Measure.bind A (Var → Val) ⊤ ms (@PMF.toMeasure A ⊤ μ) κ) {s | ¬ E s} = 0 := by
+  -- Let $N$ be the intersection of $N_v$ for all $v \in \text{supp}(\mu)$.
+  obtain ⟨N, hN_meas, hN_sub, hN_zero⟩ : ∃ N : Set (Var → Val), MeasurableSet N ∧ {s | ¬E s} ⊆ N ∧ ∀ v : μ.support, (κ v) N = 0 := by
+    revert h;
+    intro h
+    have h_countable_support : Countable μ.support := by
+      exact μ.support_countable.to_subtype;
+    have hN : ∀ v : μ.support, ∃ N_v : Set (Var → Val), MeasurableSet N_v ∧ {s | ¬E s} ⊆ N_v ∧ (κ v) N_v = 0 := by
+      intro v;
+      have := MeasureTheory.exists_measurable_superset_of_null ( h v ) ; aesop;
+    choose N hN_meas hN_sub hN_zero using hN;
+    refine' ⟨ ⋂ v : μ.support, N v, MeasurableSet.iInter hN_meas, _, _ ⟩ <;> simp_all +decide [ Set.subset_def ];
+    exact fun a ha => MeasureTheory.measure_mono_null ( Set.iInter_subset_of_subset a ( Set.iInter_subset _ ha ) ) ( hN_zero a ha );
+  refine MeasureTheory.measure_mono_null hN_sub ?_
+  rw [MeasureTheory.Measure.bind_apply hN_meas measurable_from_top.aemeasurable]
+  rw [MeasureTheory.lintegral_eq_zero_iff (by fun_prop)]
+  convert PMF.toMeasure_apply_eq_zero_iff _ _ |>.2 ?_
+  · simp +decide
+  · exact Set.disjoint_left.mpr fun x hx₁ hx₂ => hx₂ <| hN_zero ⟨x, hx₁⟩
+
+omit [Finite Var] [Countable Val] in
+/-- Converse of `almostSurely_ae`: if `E` holds `m.PSpace i`-almost everywhere, then
+`⌈E⟨⟨i⟩⌉` holds on `m`. The witness space is `m` itself. -/
+private lemma almostSurely_intro {E : (Var → Val) → Prop} {i : I}
+    (m : ValidIndexedPSpPm I Var Val) (h : ∀ᵐ s ∂(m.PSpace i).1.μ, E s) :
+    ⌈E⟨i⟩⌉ m.val := by
+  refine' ⟨ _, ⟨ m, rfl ⟩, _ ⟩;
+  refine' ⟨ m.val, 1, _ ⟩;
+  refine' ⟨ _, _, _ ⟩;
+  · exact mul_one _ |> le_of_eq;
+  · exact ownPSp_self m;
+  · refine' ⟨ _, _ ⟩;
+    · refine' ⟨ fun _ => True, measurable_const, h.mono fun s hs => by simpa using hs ⟩;
+    · have hE_true : E =ᵐ[(m.PSpace i).1.μ] (fun _ => True) := by
+        filter_upwards [ h ] with s hs using by simpa using hs;
+      convert Measure.map_congr hE_true using 1;
+      · convert ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨ m.val i, m.property i ⟩ E using 1;
+      · ext s hs; simp +decide only [PMF.dirac, Measure.toPMF_toMeasure,
+        MeasurableSpace.measurableSet_top, Measure.dirac_apply', ValidIndexedPSpPm.PSpace,
+        PSp.compatiblePerm, OrderedUnitalResourceAlgebra.instValidForall.eq_1, ValidPSpPm.PSpace,
+        ValidPSpPm, ValidPSp.PSpace, ValidPSp, Measure.map_const, PSpace.isProbability,
+        measure_univ, one_smul] ;
+
+-- #### SURE-CONVEX: Spec & Proof
+
 theorem Sure_Convex {A : Type*}
   {μ : PMF A}
   {i : I} {E : (Var → Val) → Prop}
   :
   𝒞⟨μ⟩ _v; ⌈E⟨i⟩⌉ ⊢ ⌈E⟨i⟩⌉ := by
-    sorry -- TODO: Rule SURE-CONVEX proof
+    intro r _ hP
+    obtain ⟨_, ⟨m, rfl⟩, h₁⟩ := hP
+    obtain ⟨_, ⟨κ, rfl⟩, h₂⟩ := h₁
+    obtain ⟨h_own, h_bind_all, h_carrier_all⟩ := h₂
+    apply (almostSurely E i).upper' h_own
+    apply almostSurely_intro m
+    rw [MeasureTheory.ae_iff]
+    have key := bind_event_null μ (κ.kernel i) E
+      (fun v => MeasureTheory.ae_iff.mp
+        (almostSurely_ae ⟨_, jointConditioning_elem_valid m κ v⟩ (h_carrier_all _ ⟨v, rfl⟩)))
+    rw [← ValidIndexedPSpPm.mu_apply_eq_PSpace m i, h_bind_all _ ⟨i, rfl⟩]
+    exact key
 
 -- ### DIST-CONVEX
 
