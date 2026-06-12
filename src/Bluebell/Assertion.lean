@@ -1757,7 +1757,7 @@ theorem Sure_Convex {A : Type*}
   {μ : PMF A}
   {i : I} {E : (Var → Val) → Prop}
   :
-  𝒞⟨μ⟩ v; ⌈E⟨i⟩⌉ ⊢ ⌈E⟨i⟩⌉ := by
+  𝒞⟨μ⟩ _v; ⌈E⟨i⟩⌉ ⊢ ⌈E⟨i⟩⌉ := by
     sorry -- TODO: Rule SURE-CONVEX proof
 
 -- ### DIST-CONVEX
