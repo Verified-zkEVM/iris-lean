@@ -7,6 +7,7 @@ import Mathlib.Logic.Function.Defs
 import Mathlib.Order.SetNotation
 import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.ProbabilityMassFunction.Basic
+import Mathlib.Probability.ProbabilityMassFunction.Monad
 
 open ProbabilityTheory
 open MeasureTheory (Measure IsProbabilityMeasure isProbabilityMeasure_iff measure_univ)
@@ -157,7 +158,8 @@ instance {A : Type*} : Coe (PMF A) (@Measure A ⊤) where
 theorem PMF.dirac_eq_one_iff_eq
   {A : Type*} [Countable A] {x : A} {u : Set A}
   : PMF.toDiscMeasure (PMF.dirac x) u = 1 ↔ x ∈ u := by
-  have : (toDiscMeasure (dirac x)) = @Measure.dirac A ⊤ x := by simp
+  have : (toDiscMeasure (dirac x)) = @Measure.dirac A ⊤ x := by simp only [toDiscMeasure, dirac,
+    Measure.toPMF_toMeasure]
   simp_all only [MeasurableSpace.measurableSet_top, Measure.dirac_apply']
   apply Iff.intro
   · intro a
@@ -1664,8 +1666,10 @@ theorem Sure_Dirac
       by_cases hv_s : v ∈ s
       · rw [Set.preimage_const_of_mem hv_s]
         exact ((ValidPSpPm.PSpace ⟨P.val i, P.property i⟩).2.measure_univ).trans
-          (by simp [PMF.dirac, Measure.toPMF_toMeasure,
-                Measure.dirac_apply_of_mem hv_s])
+          (by simp_all only [PSp.compatiblePerm, OrderedUnitalResourceAlgebra.instValidForall.eq_1, ValidPSpPm.PSpace,
+            ValidPSpPm, ValidPSp.PSpace, ValidPSp, PMF.dirac, Measure.toPMF_toMeasure, ValidIndexedPSpPm.ms,
+            ValidPSpPm.ms, ValidPSp.ms, ValidIndexedPSpPm.μ, ValidPSpPm.μ, ValidPSp.μ, ValidIndexedPSpPm.PSpace,
+            MeasurableSpace.measurableSet_top, Measure.dirac_apply', Set.indicator_of_mem, Pi.one_apply]) 
       · rw [Set.preimage_const_of_notMem hv_s, MeasureTheory.measure_empty]
         simp only [PMF.dirac, Measure.toPMF_toMeasure, Measure.dirac_apply', MeasurableSpace.measurableSet_top]
         exact (Set.indicator_of_notMem hv_s _).symm
