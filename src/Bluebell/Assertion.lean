@@ -1258,26 +1258,21 @@ theorem C_Cons {α : Type} {K₁ K₂ : α → bProp I Var Val} {μ : PMF α} (h
 
 -- ### C-FRAME
 
--- TODO: Rule C-FRAME spec+proof (translate spec)
-
--- theorem C_frame {P : HyperAssertion I α V} : P ∗ 𝑪_ μ K ⊢ 𝑪_ μ (fun v => sep P (K v)) := by
---   sorry
+theorem C_Frame {A : Type*} {μ : PMF A} {P : bProp I Var Val} {K : A → bProp I Var Val} :
+  (P ∗ 𝒞⟨μ⟩ v; K v) ⊢ (𝒞⟨μ⟩ v; P ∗ (K v)) := by
+    sorry -- TODO: Rule C-FRAME proof (spec not yet reviewed)
 
 -- ### C-UNIT-L
 
--- TODO: Rule C-UNIT-L spec+proof (translate spec)
-
--- theorem C_unit_left [Countable β] [MeasurableSingletonClass β] {v₀ : β} :
---     𝑪_ (Measure.dirac v₀).toPMF K ⊣⊢ K v₀ := by
---   sorry
+theorem C_Unit_L {A : Type*} [Countable A] {v₀ : A} {K : A → bProp I Var Val} :
+  iprop(𝒞⟨δ v₀⟩ _v; K v₀) ⊣⊢ K v₀ := by
+    sorry -- TODO: Rule C-UNIT-L proof (spec not yet reviewed)
 
 -- ### C-UNIT-R
 
--- TODO: Rule C-UNIT-L spec+proof (translate spec)
-
--- theorem C_unit_right [DecidableEq β] {i : I} {E : (α → V) → β} {μ : PMF β} :
---     assertSampledFrom i E μ ⊣⊢ 𝑪_ μ (fun v => assertTrue i (fun x => E x = v)) := by
---   sorry
+theorem C_Unit_R {A : Type*} {i : I} {μ : PMF A} {E : (Var → Val) → A} :
+  E⟨i⟩ ~ μ ⊣⊢ 𝒞⟨μ⟩ v; almostSurely (fun s ↦ E s = v) i := by
+    sorry -- TODO: Rule C-UNIT-L proof (spec not yet reviewed)
 
 -- ### C-ASSOC
 
@@ -1300,11 +1295,10 @@ theorem C_Cons {α : Type} {K₁ K₂ : α → bProp I Var Val} {μ : PMF α} (h
 
 -- ### C-AND
 
--- TODO: Rule C-AND spec+proof (translate spec)
-
--- theorem C_and [DecidableEq I] [Fintype I] (h : ∀ v, relevantIndices (K₁ v) ∩ relevantIndices (K₂ v) = ∅) :
---     𝑪_ μ K₁ ∧ 𝑪_ μ K₂ ⊢ 𝑪_ μ (fun v => and (K₁ v) (K₂ v)) := by
---   sorry
+theorem C_And {A : Type*} {μ : PMF A} {K₁ K₂ : A → bProp I Var Val} :
+  (∀ v, idx (K₁ v) ∩ idx (K₂ v) = ∅) →
+  (𝒞⟨μ⟩ v; (K₁ v) ∧ 𝒞⟨μ⟩ v; K₂ v) ⊢ (𝒞⟨μ⟩ v; ((K₁ v) ∧ (K₂ v))) := by
+    sorry -- TODO: Rule C-AND proof (spec not yet reviewed)
 
 -- ### C-SKOLEM
 
@@ -1434,7 +1428,15 @@ theorem Sure_Str_Convex {A : Type*} {μ : PMF A}
 
 -- ### C-FOR-ALL
 
--- TODO: Rule C-FOR-ALL spec+proof (translate spec)
+theorem C_For_All {A X : Type*} {μ : PMF A} {Q : (A × X) → bProp I Var Val} :
+  (𝒞⟨μ⟩ v; ∀ (x : X), Q (v, x)) ⊢ iprop(∀ (x : X), 𝒞⟨μ⟩ v; (Q (v, x))) := by
+    sorry -- TODO: Rule C-FOR-ALL proof (spec not yet reviewed)
+
+/- TODO: Confirm if the second `∀` should be a `iprop(∀ ...)` as it is now, or a regular `∀`.
+         In the paper it is a bold ∀ (in the Latex it's `\A` rather than `\forall`).
+         So I (Dan) think it should be `iprop(∀ ...)`.
+         But just double-checking, since in the original formalisation (below) it was a regular `∀`.
+-/
 
 -- theorem C_forall {γ : Type*} {Q : β × γ → HyperAssertion I α V} :
 --     𝑪_ μ (fun v => «forall» (fun x => Q (v, x))) ⊢ ∀ x, 𝑪_ μ (fun v => Q (v, x)) := by
@@ -1442,11 +1444,9 @@ theorem Sure_Str_Convex {A : Type*} {μ : PMF A}
 
 -- ### C-PURE
 
--- TODO: Rule C-PURE spec+proof (translate spec)
-
--- theorem C_pure {s : Set β} :
---     ⌜ ∑' x : s, μ x = 1 ⌝ ∗ 𝑪_ μ K ⊣⊢ 𝑪_ μ (fun v => sep (pure (v ∈ s)) (K v)) := by
---   sorry
+theorem C_Pure {A : Type*} {X : Set A} {μ : PMF A} {K : A → bProp I Var Val} : 
+  ⌜ ∑' x : X, μ x = 1 ⌝ ∗ (𝒞⟨μ⟩ v; K v) ⊣⊢ 𝒞⟨μ⟩ v; (⌜ v ∈ X ⌝ ∗ K v) := by
+    sorry -- TODO: Rule C-PURE proof (spec not yet reviewed)
 
 -- # The primitive WP rules of Bluebell (see Fig. 10)
 
