@@ -8,6 +8,7 @@ import Mathlib.Order.SetNotation
 import Mathlib.Probability.Independence.Conditional
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 import Mathlib.Probability.ProbabilityMassFunction.Monad
+import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 open ProbabilityTheory
 open MeasureTheory (Measure IsProbabilityMeasure isProbabilityMeasure_iff measure_univ)
