@@ -940,7 +940,8 @@ noncomputable def k {A : Type*} : CompatibleKernel A (@validOne I Var Val _ _) :
 }
 
 -- ## PMF satisfies monadic laws
-#check PMF.instLawfulMonad
+-- `PMF.instLawfulMonad` comes from `Mathlib.Probability.ProbabilityMassFunction.Constructions`
+-- #check PMF.instLawfulMonad
 
 -- ### UNIT-R
 theorem Unit_R {A : Type*} {μ : PMF A} :
