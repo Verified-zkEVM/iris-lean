@@ -941,6 +941,21 @@ noncomputable def k {A : Type*} : CompatibleKernel A (@validOne I Var Val _ _) :
     aesop
 }
 
+-- ## PMF satisfies monadic laws
+#check PMF.instLawfulMonad
+
+-- ### UNIT-R
+theorem Unit_R {A : Type*} {μ : PMF A} :
+  PMF.bind μ (λ x ↦ PMF.pure x) = μ := by simp
+
+-- ### UNIT-L
+theorem Unit_L {A B : Type*} {v : A} {κ : A → PMF B} :
+  PMF.bind (PMF.pure v) κ = κ v := by simp
+
+-- ### ASSOC
+theorem Assoc {A B C : Type*} {μ : PMF A} {κ₁ : A → PMF B} {κ₂ : B → PMF C} :
+  PMF.bind (PMF.bind μ κ₁) κ₂ = PMF.bind μ (λ x ↦ PMF.bind (κ₁ x) κ₂) := by simp
+
 -- # The primitive (non-WP) rules of Bluebell (see Fig. 9)
 
 -- ## Distribution ownership rules
