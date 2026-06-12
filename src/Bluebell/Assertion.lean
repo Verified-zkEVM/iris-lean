@@ -1278,22 +1278,17 @@ theorem C_Unit_R {A : Type*} {i : I} {μ : PMF A} {E : (Var → Val) → A} :
 
 -- ### C-ASSOC
 
--- TODO: Rule C-ASSOC spec+proof (translate spec)
-
--- theorem C_assoc {β₁ β₂ : Type _} [MeasurableSpace β₁] [MeasurableSpace β₂]
---     {μ : PMF β₁} {κ : β₁ → PMF β₂} {K : β₁ × β₂ → HyperAssertion I α V} :
---       𝑪_ μ (fun v => 𝑪_ (κ v) (fun w => K (v, w))) ⊢
---         𝑪_ (do let v ← μ; let w ← κ v; return (v, w)) K := by
---   sorry
+theorem C_Assoc {A B : Type*} {μ : PMF A} {μ₀ : PMF (A × B)} {κ : A → PMF B} {K : (A × B) → bProp I Var Val} :
+  μ₀ = (PMF.bind μ (λ v ↦ PMF.bind (κ v) (λ w ↦ PMF.pure (v, w)))) →
+  iprop(𝒞⟨μ⟩ v; (𝒞⟨κ v⟩ w; K (v, w)))
+  ⊢ 𝒞⟨μ₀⟩ (v, w); K (v, w) := by
+    sorry -- TODO: Rule C-ASSOC proof (spec not yet reviewed)
 
 -- ### C-UNASSOC
 
--- TODO: Rule C-UNASSOC spec+proof (translate spec)
-
--- theorem C_unassoc {β₁ β₂ : Type _} [MeasurableSpace β₁] [MeasurableSpace β₂]
---     {μ : PMF β₁} {κ : β₁ → PMF β₂} {K : β₂ → HyperAssertion I α V} :
---       𝑪_ (μ.bind κ) (fun w => K w) ⊢ 𝑪_ μ (fun v => 𝑪_ (κ v) (fun w => K w)) := by
---   sorry
+theorem C_Unassoc {A B : Type*} {μ : PMF A} {κ : A → PMF B} {K : B → bProp I Var Val} :
+  (𝒞⟨(PMF.bind μ κ)⟩ w; K w) ⊢ (𝒞⟨μ⟩ v; (𝒞⟨κ v⟩ w; K w)) := by
+    sorry -- TODO: Rule C-UNASSOC proof (spec not yet reviewed)
 
 -- ### C-AND
 
