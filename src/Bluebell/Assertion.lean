@@ -1542,8 +1542,8 @@ theorem C_WP_Swap' {A : Type*} [Countable A]
   {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
   {Q : A → bProp I Var Val} {i : I} {E : (Var → Val) → A}
   :
-  𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ wp t (Q v)) ⊢ wp t (𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ Q v)) := by -- TODO: Fix
-    sorry -- TODO: Rule C-WP-SWAP proof
+  𝒞⟨μ⟩ v; (⌈(fun s => E s = v)⟨i⟩⌉ ∗ wp t (Q v)) ⊢ wp t (𝒞⟨μ⟩ v; (⌈(fun s => E s = v)⟨i⟩⌉ ∗ Q v)) := by
+    sorry -- TODO: Rule C-WP-SWAP proof (spec not yet reviewed)
 
 -- ## Program WP rules
 
