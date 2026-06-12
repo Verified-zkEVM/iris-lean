@@ -697,7 +697,7 @@ def jointConditioning {A Var Val : Type*}
         ∧ (∀ (v : μ.support), ⌜(fun i => ⟨⟨some ⟨⟨m.ms i, κ.kernel i v⟩, κ.isProb i v⟩, m.perm i⟩, κ.isComp i v⟩) ∈ (K v).carrier⌝
   ))
 
-notation "𝒞" "⟨" μ "⟩" v ";" K => jointConditioning μ (fun v => iprop(K))
+notation "𝒞" "⟨" μ "⟩" v ";" K:45 => jointConditioning μ (fun v => iprop(K))
 
 def hyperTermSemantics {Var Val : Type*} [DecidableEq Var] [Inhabited Val]
       (t : I → Option ((PSpPm Var Val) → (PSpPm Var Val)))
@@ -1258,7 +1258,7 @@ private lemma jointConditioning_elem_valid {A : Type*}
   exact Option.some_ne_none _
 
 theorem C_Cons {α : Type} {K₁ K₂ : α → bProp I Var Val} {μ : PMF α} (h : ∀ v, K₁ v ⊢ K₂ v) :
-    iprop(𝒞⟨μ⟩ v; K₁ v) ⊢ 𝒞⟨μ⟩ v; K₂ v := by
+    𝒞⟨μ⟩ v; K₁ v ⊢ 𝒞⟨μ⟩ v; K₂ v := by
   unfold jointConditioning
   show entail _ _
   intro r _ hP
@@ -1275,13 +1275,13 @@ theorem C_Cons {α : Type} {K₁ K₂ : α → bProp I Var Val} {μ : PMF α} (h
 -- ### C-FRAME
 
 theorem C_Frame {A : Type*} {μ : PMF A} {P : bProp I Var Val} {K : A → bProp I Var Val} :
-  (P ∗ 𝒞⟨μ⟩ v; K v) ⊢ (𝒞⟨μ⟩ v; P ∗ (K v)) := by
+  P ∗ 𝒞⟨μ⟩ v; K v ⊢ 𝒞⟨μ⟩ v; (P ∗ (K v)) := by
     sorry -- TODO: Rule C-FRAME proof (spec not yet reviewed)
 
 -- ### C-UNIT-L
 
 theorem C_Unit_L {A : Type*} [Countable A] {v₀ : A} {K : A → bProp I Var Val} :
-  iprop(𝒞⟨δ v₀⟩ _v; K v₀) ⊣⊢ K v₀ := by
+  𝒞⟨δ v₀⟩ _v; K v₀ ⊣⊢ K v₀ := by
     sorry -- TODO: Rule C-UNIT-L proof (spec not yet reviewed)
 
 -- ### C-UNIT-R
@@ -1294,21 +1294,21 @@ theorem C_Unit_R {A : Type*} {i : I} {μ : PMF A} {E : (Var → Val) → A} :
 
 theorem C_Assoc {A B : Type*} {μ : PMF A} {μ₀ : PMF (A × B)} {κ : A → PMF B} {K : (A × B) → bProp I Var Val} :
   μ₀ = (PMF.bind μ (λ v ↦ PMF.bind (κ v) (λ w ↦ PMF.pure (v, w)))) →
-  iprop(𝒞⟨μ⟩ v; (𝒞⟨κ v⟩ w; K (v, w)))
+  𝒞⟨μ⟩ v; 𝒞⟨κ v⟩ w; K (v, w)
   ⊢ 𝒞⟨μ₀⟩ (v, w); K (v, w) := by
     sorry -- TODO: Rule C-ASSOC proof (spec not yet reviewed)
 
 -- ### C-UNASSOC
 
 theorem C_Unassoc {A B : Type*} {μ : PMF A} {κ : A → PMF B} {K : B → bProp I Var Val} :
-  (𝒞⟨(PMF.bind μ κ)⟩ w; K w) ⊢ (𝒞⟨μ⟩ v; (𝒞⟨κ v⟩ w; K w)) := by
+  𝒞⟨(PMF.bind μ κ)⟩ w; K w ⊢ 𝒞⟨μ⟩ v; 𝒞⟨κ v⟩ w; K w := by
     sorry -- TODO: Rule C-UNASSOC proof (spec not yet reviewed)
 
 -- ### C-AND
 
 theorem C_And {A : Type*} {μ : PMF A} {K₁ K₂ : A → bProp I Var Val} :
   (∀ v, idx (K₁ v) ∩ idx (K₂ v) = ∅) →
-  (𝒞⟨μ⟩ v; (K₁ v) ∧ 𝒞⟨μ⟩ v; K₂ v) ⊢ (𝒞⟨μ⟩ v; ((K₁ v) ∧ (K₂ v))) := by
+  𝒞⟨μ⟩ v; (K₁ v) ∧ 𝒞⟨μ⟩ v; K₂ v ⊢ 𝒞⟨μ⟩ v; ((K₁ v) ∧ (K₂ v)) := by
     sorry -- TODO: Rule C-AND proof (spec not yet reviewed)
 
 -- ### C-SKOLEM
@@ -1404,7 +1404,7 @@ theorem C_Transf {A B : Type*}
   {K : A → bProp I Var Val} :
   Set.BijOn f (μ' · ≠ 0) (μ · ≠ 0) →
   (∀ b : B, μ' b ≠ 0 → μ' b = μ (f b)) →
-    iprop(𝒞⟨μ⟩ a; K a) ⊢ 𝒞⟨μ'⟩ b; K (f b)
+    𝒞⟨μ⟩ a; K a ⊢ 𝒞⟨μ'⟩ b; K (f b)
 := by
   intro hbij hprob
   unfold jointConditioning
@@ -1434,13 +1434,13 @@ theorem C_Transf {A B : Type*}
 
 theorem Sure_Str_Convex {A : Type*} {μ : PMF A}
   {K : A → bProp I Var Val} {i : I} {E : (Var → Val) → Prop} :
-    iprop(𝒞⟨μ⟩ v; K v ∗ ⌈E⟨i⟩⌉) ⊢ iprop(⌈E⟨i⟩⌉ ∗ 𝒞⟨μ⟩ v; K (v)) := by
+    𝒞⟨μ⟩ v; (K v ∗ ⌈E⟨i⟩⌉) ⊢ ⌈E⟨i⟩⌉ ∗ 𝒞⟨μ⟩ v; K (v) := by
       sorry -- TODO: Rule SURE-STR-CONVEX proof
 
 -- ### C-FOR-ALL
 
 theorem C_For_All {A X : Type*} {μ : PMF A} {Q : (A × X) → bProp I Var Val} :
-  (𝒞⟨μ⟩ v; ∀ (x : X), Q (v, x)) ⊢ iprop(∀ (x : X), 𝒞⟨μ⟩ v; (Q (v, x))) := by
+  𝒞⟨μ⟩ v; (∀ (x : X), Q (v, x)) ⊢ ∀ (x : X), 𝒞⟨μ⟩ v; Q (v, x) := by
     sorry -- TODO: Rule C-FOR-ALL proof (spec not yet reviewed)
 
 /- TODO: Confirm if the second `∀` should be a `iprop(∀ ...)` as it is now, or a regular `∀`.
@@ -1456,7 +1456,7 @@ theorem C_For_All {A X : Type*} {μ : PMF A} {Q : (A × X) → bProp I Var Val} 
 -- ### C-PURE
 
 theorem C_Pure {A : Type*} {X : Set A} {μ : PMF A} {K : A → bProp I Var Val} : 
-  ⌜ ∑' x : X, μ x = 1 ⌝ ∗ (𝒞⟨μ⟩ v; K v) ⊣⊢ 𝒞⟨μ⟩ v; (⌜ v ∈ X ⌝ ∗ K v) := by
+  ⌜ ∑' x : X, μ x = 1 ⌝ ∗ 𝒞⟨μ⟩ v; K v ⊣⊢ 𝒞⟨μ⟩ v; (⌜ v ∈ X ⌝ ∗ K v) := by
     sorry -- TODO: Rule C-PURE proof (spec not yet reviewed)
 
 -- # The primitive WP rules of Bluebell (see Fig. 10)
@@ -1533,7 +1533,7 @@ theorem C_WP_Swap {A : Type*}
   {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
   {Q : A → bProp I Var Val} {i : I}
   :
-  iprop(𝒞⟨μ⟩ v; wp t (Q v) /- ∧ OWN_X -/) ⊢ iprop(wp t (𝒞⟨μ⟩ v; Q v)) := by
+  𝒞⟨μ⟩ v; wp t (Q v) /- ∧ OWN_X -/ ⊢ wp t (𝒞⟨μ⟩ v; Q v) := by
     sorry -- TODO: Rule confirm new version of C-WP-SWAP
 
 -- DRAFT of new variant of CP-WP-SWAP
@@ -1542,7 +1542,7 @@ theorem C_WP_Swap' {A : Type*} [Countable A]
   {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
   {Q : A → bProp I Var Val} {i : I} {E : (Var → Val) → A}
   :
-  iprop(𝒞⟨μ⟩ v; (E⟨i⟩ ~ δ v) ∗ wp t (Q v)) ⊢ iprop(wp t (𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ Q v))) := by
+  𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ wp t (Q v)) ⊢ wp t (𝒞⟨μ⟩ v; ((E⟨i⟩ ~ δ v) ∗ Q v)) := by -- TODO: Fix
     sorry -- TODO: Rule C-WP-SWAP proof
 
 -- ## Program WP rules
@@ -1757,7 +1757,7 @@ theorem Sure_Convex {A : Type*}
   {μ : PMF A}
   {i : I} {E : (Var → Val) → Prop}
   :
-  (𝒞⟨μ⟩ v; ⌈E⟨i⟩⌉) ⊢ ⌈E⟨i⟩⌉ := by
+  𝒞⟨μ⟩ v; ⌈E⟨i⟩⌉ ⊢ ⌈E⟨i⟩⌉ := by
     sorry -- TODO: Rule SURE-CONVEX proof
 
 -- ### DIST-CONVEX
@@ -1766,7 +1766,7 @@ theorem Dist_Convex {A : Type*}
   {μ μ' : PMF A}
   {i : I} {E : (Var → Val) → A}
   :
-  (𝒞⟨μ⟩ v; E⟨i⟩ ~ μ') ⊢ E⟨i⟩ ~ μ' := by
+  𝒞⟨μ⟩ v; E⟨i⟩ ~ μ' ⊢ E⟨i⟩ ~ μ' := by
     sorry -- TODO: Rule DIST-CONVEX proof
 
 -- ### C-SURE-PROJ
@@ -1784,7 +1784,7 @@ theorem C_Extract {A B : Type*}
   {i : I}
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
   :
-  iprop(𝒞⟨μ₁⟩ v₁; (⌈(fun s => E₁ s = v₁)⟨i⟩⌉ ∗ E₂⟨i⟩ ~ μ₂))
+  𝒞⟨μ₁⟩ v₁; (⌈(fun s => E₁ s = v₁)⟨i⟩⌉ ∗ E₂⟨i⟩ ~ μ₂)
   ⊢ E₁⟨i⟩ ~ μ₁ ∗ E₂⟨i⟩ ~ μ₂ := by
     sorry -- TODO: Rule C-EXTRACT proof
 
@@ -1837,7 +1837,7 @@ theorem RL_Cons {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
 -- ### RL-CONVEX
 
 theorem RL_Convex {α : Type} {X : Set (I × Var)} {μ : PMF α} {R : Set (X → Val)} :
-  (𝒞⟨μ⟩ v; ⌊R⌋) ⊢ ⌊R⌋ := by
+  𝒞⟨μ⟩ v; ⌊R⌋ ⊢ ⌊R⌋ := by
     sorry -- TODO: Rule RL-CONVEX proof
 
 -- ### RL-MERGE
