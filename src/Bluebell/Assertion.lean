@@ -2043,7 +2043,7 @@ theorem C_Extract {A B : Type*}
 def relationLifting {X : Set (I × Var)} (R : Set (X → Val)) : bProp I Var Val :=
   iprop(∃ μ : PMF (X → Val),
       ⌜ ∑' r : R, μ r = 1 ⌝ ∗
-      𝒞⟨μ⟩ v; ∀ (xi : X), ⌈(fun (s : Var → Val) => s xi.1.2 = v xi)⟨xi.1.1⟩⌉
+      𝒞⟨μ⟩ v; ∀ (ix : X), ⌈(fun (s : Var → Val) => s ix.1.2 = v ix)⟨ix.1.1⟩⌉
     )
 
 notation " ⌊ " R " ⌋ " => relationLifting R
