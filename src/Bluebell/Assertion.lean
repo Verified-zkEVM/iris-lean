@@ -1511,10 +1511,19 @@ theorem WP_Conj
     (h_ts_agree : ∀ i : I, i ∈ dom t₁ ∩ dom t₂ → t₁ i = t₂ i)
      :
     let t₁_plus_t₂ : I → Option (PSpPm Var Val → PSpPm Var Val) := (fun i : I =>
-      match t₁ i with
+      match h_t₁ : t₁ i with
       | .some t₁_i =>
-        match t₂ i with
-        | .some t₂_i => if t₁_i = t₂_i then t₁_i else sorry -- Perhaps: .none
+        match h_t₂ : t₂ i with
+        | .some t₂_i =>
+          if h_eq : t₁_i = t₂_i 
+            then t₁_i 
+            else (
+              by 
+                exfalso -- This case is unreachable due to `h_ts_agree`. So we first replace the goal with `False`, then show the contradiction. This avoids having to use a "dummy" value here (such as `.none`).
+                unfold dom hyperTermReferences at *
+                have := h_ts_agree i
+                aesop
+              )
         | .none => .some t₁_i
       |.none =>
         match t₂ i with
