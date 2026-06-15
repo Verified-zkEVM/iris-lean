@@ -1508,23 +1508,22 @@ theorem WP_Nest
   {Q : bProp I Var Val}
   (h_no_overlap : (dom t₁) ∩ (dom t₂) = ∅) :
   let t₁_dot_t₂ : I → Option (PSpPm Var Val → PSpPm Var Val) := (fun i : I =>
-      match h_t₁ : t₁ i with
-      | .some t₁_i =>
-        match h_t₂ : t₂ i with
-        | .some t₂_i => (
-          by
-            exfalso -- This case is unreachable due to `h_no_overlap`. So we first replace the goal with `False`, then show the contradiction. This avoids having to use a "dummy" value here (such as `.none`).
-            unfold dom hyperTermReferences at h_no_overlap
-            have : i ∈ {x | (t₁ x).isSome = true} ∩ {x | (t₂ x).isSome = true} := by
-              simp only [Set.mem_inter_iff, Set.mem_setOf_eq]
-              aesop
+    if h_t₁ : (t₁ i).isSome
+    then
+      if h_t₂ : (t₂ i).isSome
+      then
+        (by
+          exfalso -- This case is unreachable due to `h_no_overlap`. So we first replace the goal with `False`, then show the contradiction. This avoids having to use a "dummy" value here (such as `.none`).
+          unfold dom hyperTermReferences at h_no_overlap
+          have : i ∈ {x | (t₁ x).isSome = true} ∩ {x | (t₂ x).isSome = true} := by
+            simp only [Set.mem_inter_iff, Set.mem_setOf_eq]
             aesop
-          )
-        | .none => .some t₁_i
-      |.none =>
-        match t₂ i with
-        | .some t₂_i => .some t₂_i
-        | .none => .none)
+          aesop
+        )
+      else t₁ i
+    else
+      t₂ i
+  )
   wp t₁ (wp t₂ Q) ⊣⊢ wp (t₁_dot_t₂) Q := by
     sorry -- TODO: Rule WP-NEST proof (spec not yet reviewed)
 
