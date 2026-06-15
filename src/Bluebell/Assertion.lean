@@ -1928,7 +1928,11 @@ theorem Prod_Unsplit {A B : Type*} {i : I}
 
 -- ### C-SWAP
 
--- TODO: Rule C-SWAP spec+proof
+
+theorem C_Swap {A B : Type*} {μ₁ : PMF A} {μ₂ : PMF B} (K : (A × B) → bProp I Var Val) :
+  𝒞⟨μ₁⟩ v₁; 𝒞⟨μ₂⟩ v₂; K (v₁, v₂) ⊢ 𝒞⟨μ₂⟩ v₂; 𝒞⟨μ₁⟩ v₁; K (v₁, v₂) := by
+    sorry -- TODO: Rule C-SWAP proof (spec not yet reviewed)
+
 
 -- ### SURE-CONVEX
 
@@ -2078,7 +2082,12 @@ theorem RL_Cons {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
 
 -- ### RL-EQ-DIST
 
--- TODO: Rule RL-EQ-DIST spec+proof
+theorem RL_Eq_Dist {A : Type*} [Inhabited A] [Inhabited X] {X : Set (I × Var)} {μ : PMF A} {ix jy : X} :
+  ix.1.1 ≠ jy.1.1 →
+  ⌊{v : (X → Val) | v ix = v jy}⌋
+  ⊢ iprop(∃ μ, ((fun _ ↦ ix.1.2))⟨ix.1.1⟩ ~ μ ∗ ((fun _ => jy.1.2))⟨jy.1.1⟩ ~ μ) := by
+    sorry -- TODO: Rule RL-EQ-DIST proof (spec not yet reviewed)
+    
 
 -- ### RL-CONVEX
 
