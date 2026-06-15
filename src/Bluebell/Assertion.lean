@@ -1314,7 +1314,9 @@ theorem C_And {A : Type*} {μ : PMF A} {K₁ K₂ : A → bProp I Var Val} :
 
 -- ### C-SKOLEM
 
--- TODO: Rule C-SKOLEM spec+proof
+theorem C_Skolem {A X : Type*} {μ : PMF A} {Q : (A × X) → bProp I Var Val } :
+  𝒞⟨μ⟩ v; (∃ x : X, Q (v, x)) ⊢ ∃ (f : A → X), 𝒞⟨μ⟩ v; Q (v, f v) := by
+    sorry -- TODO: Rule C-SKOLEM proof (spec not yet reviewed)
 
 -- ### C-TRANSF
 
