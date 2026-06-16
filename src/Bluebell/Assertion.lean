@@ -2030,7 +2030,10 @@ theorem Dist_Convex {A : Type*}
 
 -- ### C-SURE-PROJ
 
--- TODO: Rule C-SURE-PROJ spec+proof
+theorem C_Sure_Proj {A B : Type*} {i : I} {μ : PMF (A × B)} {E : A → (Var → Val) → Prop}
+  :
+  𝒞⟨μ⟩ (v, _); ⌈(E v)⟨i⟩⌉ ⊣⊢ 𝒞⟨⟨(fun a ↦ ∑' b, (μ (a, b))), (by sorry)⟩⟩ v; (⌈(E v)⟨i⟩⌉) := by
+    sorry -- TODO: Rule C-SURE-PROJ part-of-spec+proof (spec not reviewed yet)
 
 -- ### C-SURE-PROJ-MANY
 
