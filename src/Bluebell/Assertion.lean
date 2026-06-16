@@ -1924,7 +1924,12 @@ theorem Prod_Unsplit {A B : Type*} {i : I}
 
 -- ### C-FUSE
 
--- TODO: Rule C-FUSE spec+proof
+def fusion {A B : Type*} (μ : PMF A) (κ : A → PMF B) : PMF (A × B) := 
+  ⟨fun (v, w) => (μ v) * ((κ v) w), (by sorry)⟩
+
+theorem C_Fuse {A B : Type*} {μ : PMF A} {κ : A → PMF B} {K : (A × B) → bProp I Var Val} : 
+  𝒞⟨μ⟩ v; 𝒞⟨κ v⟩ w; (K (v, w)) ⊣⊢ 𝒞⟨fusion μ κ⟩ (v, w); K (v, w) := by
+    sorry -- TODO: Rule C-FUSE proof (spec not yet reviewed)
 
 -- ### C-SWAP
 
