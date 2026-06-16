@@ -2034,7 +2034,7 @@ theorem C_Sure_Proj {A B : Type*} {i : I} {μ : PMF (A × B)} {E : A → (Var �
   :
   let prf : HasSum (fun a => ∑' (b : B), μ (a, b)) 1 := (by rw [ENNReal.summable.hasSum_iff, ← ENNReal.tsum_prod]; exact μ.2.tsum_eq)
   𝒞⟨μ⟩ (v, _); ⌈(E v)⟨i⟩⌉ ⊣⊢ 𝒞⟨⟨(fun a ↦ ∑' b, (μ (a, b))), prf⟩⟩ v; (⌈(E v)⟨i⟩⌉) := by
-    sorry -- TODO: Rule C-SURE-PROJ part-of-spec+proof (spec not reviewed yet)
+    sorry -- TODO: Rule C-SURE-PROJ proof (spec not reviewed yet)
 
 -- ### C-SURE-PROJ-MANY
 
