@@ -1925,7 +1925,11 @@ theorem Prod_Unsplit {A B : Type*} {i : I}
 -- ### C-FUSE
 
 def fusion {A B : Type*} (μ : PMF A) (κ : A → PMF B) : PMF (A × B) := 
-  ⟨fun (v, w) => (μ v) * ((κ v) w), (by sorry)⟩
+  ⟨fun (v, w) => (μ v) * ((κ v) w), (by
+      have h : ∑' (p : A × B), μ p.1 * (κ p.1) p.2 = 1 := by
+        simp_rw [ENNReal.tsum_prod', ENNReal.tsum_mul_left, PMF.tsum_coe, mul_one,
+          PMF.tsum_coe]
+      convert h ▸ ENNReal.summable.hasSum)⟩
 
 theorem C_Fuse {A B : Type*} {μ : PMF A} {κ : A → PMF B} {K : (A × B) → bProp I Var Val} : 
   𝒞⟨μ⟩ v; 𝒞⟨κ v⟩ w; (K (v, w)) ⊣⊢ 𝒞⟨fusion μ κ⟩ (v, w); K (v, w) := by
