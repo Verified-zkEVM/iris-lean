@@ -1873,12 +1873,34 @@ theorem Sure_Eq_Inj {A : Type*} {i : I} [DecidableEq A]
 
 -- ### SURE-SUB
 
+-- #### SURE-SUB: Helper lemmas
+
+/-- The function `b ↦ ∑' a ∈ f⁻¹'{b}, μ a` is a `PMF`, i.e. it sums to `1`.
+This is precisely the pushforward distribution `μ.map f`. -/
+private lemma pmf_pushforward_hasSum {A B : Type*} (μ : PMF A) (f : A → B) :
+    HasSum (fun b => ∑' a : f ⁻¹' {b}, μ a) 1 := by
+  classical
+  have heq : (fun b => ∑' a : f ⁻¹' {b}, μ a) = (μ.map f) := by
+    ext b
+    rw [PMF.map_apply, tsum_subtype]
+    congr 1; ext a
+    simp only [Set.indicator, Set.mem_preimage, Set.mem_singleton_iff]
+    by_cases h : f a = b
+    · simp [h]
+    · rw [if_neg h, if_neg (fun hh => h hh.symm)]
+  rw [heq]
+  exact (μ.map f).2
+
+-- #### SURE-SUB: Spec & Proof
+
 theorem Sure_Sub {A B: Type*} {i : I}
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
   {μ : PMF A}
   {f : A → B}
   :
-  E₁⟨i⟩ ~ μ ∗ ⌈(fun s => E₂ s = f (E₁ s))⟨i⟩⌉ ⊢ E₂⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, (by sorry)⟩) -- TODO: fill sorry
+  let prf : HasSum (fun b => ∑' (a : ↑(f ⁻¹' {b})), μ ↑a) 1 := (by exact pmf_pushforward_hasSum μ f)
+  E₁⟨i⟩ ~ μ ∗ ⌈(fun s => E₂ s = f (E₁ s))⟨i⟩⌉
+  ⊢ E₂⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, prf⟩)
   := by
     sorry -- TODO: Rule SURE-SUB proof
 
@@ -1889,7 +1911,8 @@ theorem Dist_Fun {i : I} {A B: Type*}
   {μ : PMF A}
   {f : A → B}
   :
-  E⟨i⟩ ~ μ ⊢ (fun s => (f ∘ E) s)⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, (by sorry)⟩) -- TODO: fill sorry
+  let prf : HasSum (fun b => ∑' (a : ↑(f ⁻¹' {b})), μ ↑a) 1 := (by exact pmf_pushforward_hasSum μ f)
+  E⟨i⟩ ~ μ ⊢ (fun s => (f ∘ E) s)⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, prf⟩)
   := by
     sorry -- TODO: Rule DIST-FUN proof
 
