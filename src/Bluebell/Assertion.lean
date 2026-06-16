@@ -143,13 +143,12 @@ def PMF.toDiscMeasure_is_probability {A : Type*} (μ : PMF A)
   simp_all only [toDiscMeasure, measure_univ]
 
 def product {A B : Type*} (μ₁ : PMF A) (μ₂ : PMF B) : PMF (A × B) :=
-  ⟨fun ((a, b) : (A × B)) => μ₁ a * μ₂ b,
-    (by
+  let prf : HasSum (fun (a, b) => μ₁ a * μ₂ b) 1 := (by
       have h : ∑' (p : A × B), μ₁ p.1 * μ₂ p.2 = 1 := by
         simp_rw [ENNReal.tsum_prod', ENNReal.tsum_mul_left, ENNReal.tsum_mul_right,
           PMF.tsum_coe, mul_one]
       convert h ▸ ENNReal.summable.hasSum)
-  ⟩
+  ⟨fun ((a, b) : (A × B)) => μ₁ a * μ₂ b, prf⟩
 
 notation μ₁ "⊗" μ₂ => product μ₁ μ₂
 
@@ -1948,11 +1947,12 @@ theorem Prod_Unsplit {A B : Type*} {i : I}
 -- ### C-FUSE
 
 def fusion {A B : Type*} (μ : PMF A) (κ : A → PMF B) : PMF (A × B) := 
-  ⟨fun (v, w) => (μ v) * ((κ v) w), (by
-      have h : ∑' (p : A × B), μ p.1 * (κ p.1) p.2 = 1 := by
-        simp_rw [ENNReal.tsum_prod', ENNReal.tsum_mul_left, PMF.tsum_coe, mul_one,
-          PMF.tsum_coe]
-      convert h ▸ ENNReal.summable.hasSum)⟩
+  let prf : HasSum (fun (v, w) => μ v * (κ v) w) 1 := (by
+    have h : ∑' (p : A × B), μ p.1 * (κ p.1) p.2 = 1 := by
+      simp_rw [ENNReal.tsum_prod', ENNReal.tsum_mul_left, PMF.tsum_coe, mul_one,
+        PMF.tsum_coe]
+    convert h ▸ ENNReal.summable.hasSum)
+  (⟨fun (v, w) => (μ v) * ((κ v) w), prf⟩)
 
 theorem C_Fuse {A B : Type*} {μ : PMF A} {κ : A → PMF B} {K : (A × B) → bProp I Var Val} : 
   𝒞⟨μ⟩ v; 𝒞⟨κ v⟩ w; (K (v, w)) ⊣⊢ 𝒞⟨fusion μ κ⟩ (v, w); K (v, w) := by
