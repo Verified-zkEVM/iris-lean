@@ -1270,8 +1270,6 @@ theorem C_Cons {α : Type} {K₁ K₂ : α → bProp I Var Val} {μ : PMF α} (h
   subst hv
   exact h v _ (jointConditioning_elem_valid m₀ κ v) (h_carrier_all _ ⟨v, rfl⟩)
 
--- DONE: Rule C-CONS
-
 -- ### C-FRAME
 
 theorem C_Frame {A : Type*} {μ : PMF A} {P : bProp I Var Val} {K : A → bProp I Var Val} :
@@ -2109,8 +2107,6 @@ theorem RL_Cons {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
   refine' ⟨ _, ⟨ μ, rfl ⟩, b₁, b₂, hle, _, hcond ⟩;
   have h_sum_eq_one : ∑' r : R₁, μ r = 1 := hpure
   exact le_antisymm h_sum_le_one (h_sum_eq_one ▸ h_sum_le)
-
--- DONE: Rule RL-CONS
 
 -- ### RL-UNARY
 
