@@ -2078,7 +2078,16 @@ theorem C_Extract {A B : Type*}
 
 -- ### C-DIST-PROJ
 
--- TODO: Rule C-DIST-PROJ spec+proof
+/--
+The Bluebell paper has a typo in C-DIST-PROJ.
+In the paper's rendition of the rule, the `μ` in the modality and the one in the assertion are meant to be different variables.
+In other words, in the paper, both occurences of `μ(x)` should not be the same `μ` as the two subscript `μ`s following `𝒞`.
+This is why we have `μ₁` and `μ₂` here.
+-/
+theorem C_Dist_Proj {A B C : Type*} {μ₁ : PMF (A × B)} {μ₂ : A → (PMF C)} {i : I} {E : A → (Var → Val) → C} :
+  let prf : HasSum (fun a => ∑' (b : B), μ₁ (a, b)) 1 := (by rw [ENNReal.summable.hasSum_iff, ← ENNReal.tsum_prod]; exact μ₁.2.tsum_eq)
+  𝒞⟨μ₁⟩ (x, y); (E x)⟨i⟩ ~ μ₂ x ⊢ 𝒞⟨⟨(fun a ↦ ∑' b, (μ₁ (a, b))), prf⟩⟩ x; (E x)⟨i⟩ ~ (μ₂ x) := by
+    sorry -- TODO: Rule C-DIST-PROJ proof (spec not yet reviewed)
 
 -- ## Relational lifting
 
