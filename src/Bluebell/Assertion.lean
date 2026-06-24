@@ -916,7 +916,61 @@ def pvar (E : (Var → Val) → Prop) : Set Var :=
   {x : Var | ∃ (σ : Var → Val) (v : Val), E σ ≠ E (Function.update σ x v)}
 
 -- For SURE-AND-STAR
-def pabs (P : bProp I Var Val) (X : Set Var) : Prop := sorry -- TODO: Formalise pabs
+-- The `PSpace.compatiblePerm` predicate only constrains a permission's behaviour on its
+-- zero-valued (`Irr`) variables, so swapping the value at a single variable for any nonzero
+-- value preserves compatibility.
+omit [Finite Var] [Countable Val] [Inhabited Val] in
+private lemma compatiblePerm_update_update_of_ne_zero [DecidableEq I]
+    {P : PSpace (Var → Val)} {p : I → Permission Var} {v : I × Var}
+    {a b : ℚ≥0} (hb : b ≠ 0) {i : I}
+    (h : PSpace.compatiblePerm P
+          (Function.update p v.1 (Function.update (p v.1) v.2 a) i)) :
+    PSpace.compatiblePerm P
+      (Function.update p v.1 (Function.update (p v.1) v.2 b) i) := by
+  intro u hu s hs x hx v_val
+  apply h u hu s hs x ?_ v_val
+  simp only [Irr, Set.mem_setOf_eq] at hx ⊢
+  by_cases hi : i = v.1
+  · subst hi
+    rw [Function.update_self] at hx ⊢
+    by_cases hxv : x = v.2
+    · subst hxv
+      rw [Function.update_self] at hx
+      exact absurd hx hb
+    · rw [Function.update_of_ne hxv] at hx ⊢
+      exact hx
+  · rw [Function.update_of_ne hi] at hx ⊢
+    exact hx
+
+-- For SURE-AND-STAR
+def pabs [DecidableEq I] (P : bProp I Var Val) (X : Set (I × Var)) : Prop :=
+  ∀ v ∈ X,
+  ∀ ℱ : I → MeasurableSpace (Var → Val),
+  ∀ μ : (i : I) → @Measure (Var → Val) (ℱ i),
+  ∀ mu_compat : (i : I) → IsProbabilityMeasure (μ i),
+  ∀ p : I → Permission Var,
+  ∀ q n : ℕ+,
+  ∀ p_compat : (i : I) → PSpace.compatiblePerm
+      ⟨{ ms := ℱ i, μ := μ i }, mu_compat i⟩
+      (Function.update p v.1 (Function.update (p v.1) v.2 q.1) i),
+  (fun i ↦
+    ⟨⟨.some ⟨⟨ℱ i, μ i⟩, mu_compat i⟩,
+        Function.update p v.1 (Function.update (p v.1) v.2 q.1) i⟩,
+      by simp only [PSp.compatiblePerm]; exact p_compat i⟩) ∈ P →
+  (fun i ↦
+    ⟨⟨.some ⟨⟨ℱ i, μ i⟩, mu_compat i⟩,
+        Function.update p v.1 (Function.update (p v.1) v.2
+          ⟨mkRat q.1 n.1, Rat.mkRat_nonneg (Int.natCast_nonneg ↑q) ↑n⟩) i⟩,
+      by
+        simp only [PSp.compatiblePerm]
+        refine compatiblePerm_update_update_of_ne_zero ?_ (p_compat i)
+        intro h
+        have hval : mkRat (q.1 : ℤ) n.1 = (0 : ℚ) := by
+          have h' := congrArg Subtype.val h
+          simpa using h'
+        rw [Rat.mkRat_eq_zero n.2.ne'] at hval
+        exact q.2.ne' (by exact_mod_cast hval)⟩) ∈ P
+
 
 -- For C-TRUE
 noncomputable instance : OfNat (ValidIndexedPSpPm I Var Val) 1 where
@@ -1185,10 +1239,10 @@ theorem Sure_Merge
   sorry -- TODO: Rule SURE-MERGE proof
 -- ### SURE-AND-STAR
 
-theorem Sure_And_Star {i : I} {A : Type*}
+theorem Sure_And_Star [DecidableEq I] {i : I} {A : Type*}
   {P : bProp I Var Val}
   {E : (Var → Val) → Prop} :
-  pabs P (pvar E) →
+  pabs P (fun e ↦ e.1 = i ∧ e.2 ∈ pvar E) →
   iprop(⌈E⟨i⟩⌉ ∧ P) ⊢ iprop(⌈E⟨i⟩⌉ ∗ P) := by
     sorry -- TODO: Rule SURE-AND-STAR proof
 
@@ -1455,7 +1509,7 @@ theorem C_For_All {A X : Type*} {μ : PMF A} {Q : (A × X) → bProp I Var Val} 
 
 -- ### C-PURE
 
-theorem C_Pure {A : Type*} {X : Set A} {μ : PMF A} {K : A → bProp I Var Val} : 
+theorem C_Pure {A : Type*} {X : Set A} {μ : PMF A} {K : A → bProp I Var Val} :
   ⌜ ∑' x : X, μ x = 1 ⌝ ∗ 𝒞⟨μ⟩ v; K v ⊣⊢ 𝒞⟨μ⟩ v; (⌜ v ∈ X ⌝ ∗ K v) := by
     sorry -- TODO: Rule C-PURE proof (spec not yet reviewed)
 
@@ -1537,10 +1591,10 @@ theorem WP_Conj
       | .some t₁_i =>
         match h_t₂ : t₂ i with
         | .some t₂_i =>
-          if h_eq : t₁_i = t₂_i 
-            then t₁_i 
+          if h_eq : t₁_i = t₂_i
+            then t₁_i
             else (
-              by 
+              by
                 exfalso -- This case is unreachable due to `h_ts_agree`. So we first replace the goal with `False`, then show the contradiction. This avoids having to use a "dummy" value here (such as `.none`).
                 unfold dom hyperTermReferences at *
                 have := h_ts_agree i
@@ -1710,7 +1764,7 @@ theorem Sure_Dirac
           (by simp_all only [PSp.compatiblePerm, OrderedUnitalResourceAlgebra.instValidForall.eq_1, ValidPSpPm.PSpace,
             ValidPSpPm, ValidPSp.PSpace, ValidPSp, PMF.dirac, Measure.toPMF_toMeasure, ValidIndexedPSpPm.ms,
             ValidPSpPm.ms, ValidPSp.ms, ValidIndexedPSpPm.μ, ValidPSpPm.μ, ValidPSp.μ, ValidIndexedPSpPm.PSpace,
-            MeasurableSpace.measurableSet_top, Measure.dirac_apply', Set.indicator_of_mem, Pi.one_apply]) 
+            MeasurableSpace.measurableSet_top, Measure.dirac_apply', Set.indicator_of_mem, Pi.one_apply])
       · rw [Set.preimage_const_of_notMem hv_s, MeasureTheory.measure_empty]
         simp only [PMF.dirac, Measure.toPMF_toMeasure, Measure.dirac_apply', MeasurableSpace.measurableSet_top]
         exact (Set.indicator_of_notMem hv_s _).symm
@@ -1944,7 +1998,7 @@ theorem Prod_Unsplit {A B : Type*} {i : I}
 
 -- ### C-FUSE
 
-def fusion {A B : Type*} (μ : PMF A) (κ : A → PMF B) : PMF (A × B) := 
+def fusion {A B : Type*} (μ : PMF A) (κ : A → PMF B) : PMF (A × B) :=
   let prf : HasSum (fun (v, w) => μ v * (κ v) w) 1 := (by
     have h : ∑' (p : A × B), μ p.1 * (κ p.1) p.2 = 1 := by
       simp_rw [ENNReal.tsum_prod', ENNReal.tsum_mul_left, PMF.tsum_coe, mul_one,
@@ -1952,7 +2006,7 @@ def fusion {A B : Type*} (μ : PMF A) (κ : A → PMF B) : PMF (A × B) :=
     convert h ▸ ENNReal.summable.hasSum)
   (⟨fun (v, w) => (μ v) * ((κ v) w), prf⟩)
 
-theorem C_Fuse {A B : Type*} {μ : PMF A} {κ : A → PMF B} {K : (A × B) → bProp I Var Val} : 
+theorem C_Fuse {A B : Type*} {μ : PMF A} {κ : A → PMF B} {K : (A × B) → bProp I Var Val} :
   𝒞⟨μ⟩ v; 𝒞⟨κ v⟩ w; (K (v, w)) ⊣⊢ 𝒞⟨fusion μ κ⟩ (v, w); K (v, w) := by
     sorry -- TODO: Rule C-FUSE proof (spec not yet reviewed)
 
@@ -2132,7 +2186,7 @@ theorem RL_Eq_Dist {A : Type*} [Inhabited A] [Inhabited X] {X : Set (I × Var)} 
   ⌊{v : (X → Val) | v ix = v jy}⌋
   ⊢ iprop(∃ μ, ((fun _ ↦ ix.1.2))⟨ix.1.1⟩ ~ μ ∗ ((fun _ => jy.1.2))⟨jy.1.1⟩ ~ μ) := by
     sorry -- TODO: Rule RL-EQ-DIST proof (spec not yet reviewed)
-    
+
 
 -- ### RL-CONVEX
 
