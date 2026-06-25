@@ -2178,6 +2178,18 @@ theorem RL_Cons {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
 -- ### RL-UNARY
 
 -- TODO: Rule RL-UNARY spec+proof
+open Classical in
+theorem RL_Unary {X : Set Var} [Finite X] {R : Set (X → Val)}
+  {i : I}
+  :
+  let X' : Set (I × Var)  := X.image (i,·)
+  let R' : Set (X' → Val) :=
+    R.image
+      (fun s x ↦ s ⟨x.1.2, by aesop⟩)
+  ⌊R'⌋ ⊢ ⌈(fun σ ↦ ∃ σ' ∈ R, ∀ v : X, σ v.1 = σ' v)⟨i⟩⌉ := by
+  simp only [relationLifting]
+
+  sorry
 
 -- ### RL-EQ-DIST
 
@@ -2204,21 +2216,30 @@ theorem RL_Merge {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
 
 -- TODO: Rule RL-SURE-MERGE spec+proof
 
--- WIP on RL-SURE-MERGE
 open Classical in
-theorem RL_Sure_Merge {X : Set (I × Var)} {R : Set (X → Val)} {e : I → (Var → Val) → Val}
+theorem RL_Sure_Merge {X : Set (I × Var)} {R : Set (X → Val)} {e : (Var → Val) → Val}
   {i : I} {x : Var}
   :
-  pvar (e i) ⊆ {var : Var | (i, var) ∈ X}
-  → ⌊R⌋ ∗ ⌈(fun s => s x = e i s)⟨i⟩⌉ ⊢ ⌊{v : (X → Val) | v ∈ R ∧ 
-    -- let s : Var → Option Val := fun x' => if h : (i, x') ∈ X then .some (v ⟨(i, x'), h⟩) else .none
-    let s : Var → Val := fun x' => if h : (i, x') ∈ X then v ⟨(i, x'), h⟩ else default
-    s x = e i s
-  }⌋ := by sorry
+  pvar e ⊆ {var : Var | (i, var) ∈ X}
+  → ⌊R⌋ ∗ ⌈(fun s => s x = e s)⟨i⟩⌉ ⊢
+  ⌊R ∩ {v |
+      let s : Var → Val :=
+        fun x' => if h : (i, x') ∈ X then v ⟨(i, x'), h⟩ else default
+      s x = e s
+    }⌋ := by sorry
 
 -- ### COUPLING
 
 -- TODO: Rule COUPLING spec+proof
+open Classical in
+theorem Coupling
+    {i₁ i₂ : I} {x₁ x₂ : Var} {R : Set (({(i₁, x₁), (i₂, x₂)} : Set (I × Var)) → Val)}
+    {μ₁ μ₂ : PMF Val} {μ : PMF (({(i₁, x₁), (i₂, x₂)} : Set (I × Var)) → Val)}
+    (h : i₁ ≠ i₂)
+    (h₁ : (fun v ↦ ∑' σ : {σ : (({(i₁, x₁), (i₂, x₂)} : Set (I × Var)) → Val) | σ ⟨(i₁, x₁), by simp⟩ = v}, μ σ) = μ₁)
+    (h₂ : (fun v ↦ ∑' σ : {σ : (({(i₁, x₁), (i₂, x₂)} : Set (I × Var)) → Val) | σ ⟨(i₂, x₂), by simp⟩ = v}, μ σ) = μ₂)
+    (hR : ∑' σ : R, μ σ.1 = 1)
+  : (fun s ↦ s x₁)⟨i₁⟩ ~ μ₁ ∗ (fun s ↦ s x₂)⟨i₂⟩ ~ μ₂ ⊢ ⌊ R ⌋ := sorry
 
 -- # Derived WP rules (see Fig. 12)
 
