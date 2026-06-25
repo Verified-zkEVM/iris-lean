@@ -911,8 +911,8 @@ def idx
   (P : bProp I Var Val) : Set I :=
     ⋂₀ {J : Set I | irrelevant {i:I | i ∉ J} P} -- Intersection of all sets satisfying a property is the smallest subset satisfying it.
 
--- For SURE-AND-STAR
-def pvar (E : (Var → Val) → Prop) : Set Var :=
+-- For SURE-AND-STAR and RL-SURE-MERGE
+def pvar {A : Type*} (E : (Var → Val) → A) : Set Var :=
   {x : Var | ∃ (σ : Var → Val) (v : Val), E σ ≠ E (Function.update σ x v)}
 
 -- For SURE-AND-STAR
@@ -2203,6 +2203,18 @@ theorem RL_Merge {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
 -- ### RL-SURE-MERGE
 
 -- TODO: Rule RL-SURE-MERGE spec+proof
+
+-- WIP on RL-SURE-MERGE
+open Classical in
+theorem RL_Sure_Merge {X : Set (I × Var)} {R : Set (X → Val)} {e : I → (Var → Val) → Val}
+  {i : I} {x : Var}
+  :
+  pvar (e i) ⊆ {var : Var | (i, var) ∈ X}
+  → ⌊R⌋ ∗ ⌈(fun s => s x = e i s)⟨i⟩⌉ ⊢ ⌊{v : (X → Val) | v ∈ R ∧ 
+    -- let s : Var → Option Val := fun x' => if h : (i, x') ∈ X then .some (v ⟨(i, x'), h⟩) else .none
+    let s : Var → Val := fun x' => if h : (i, x') ∈ X then v ⟨(i, x'), h⟩ else default
+    s x = e i s
+  }⌋ := by sorry
 
 -- ### COUPLING
 
