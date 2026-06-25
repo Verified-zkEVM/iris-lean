@@ -2109,7 +2109,7 @@ theorem C_Sure_Proj {A B : Type*} {i : I} {μ : PMF (A × B)} {E : A → (Var �
   :
   let prf : HasSum (fun a => ∑' (b : B), μ (a, b)) 1 := (by rw [ENNReal.summable.hasSum_iff, ← ENNReal.tsum_prod]; exact μ.2.tsum_eq)
   𝒞⟨μ⟩ (v, _); ⌈(E v)⟨i⟩⌉ ⊣⊢ 𝒞⟨⟨(fun a ↦ ∑' b, (μ (a, b))), prf⟩⟩ v; (⌈(E v)⟨i⟩⌉) := by
-    sorry -- TODO: Rule C-SURE-PROJ proof (spec not reviewed yet)
+    sorry -- TODO: Rule C-SURE-PROJ proof (spec not yet reviewed)
 
 -- ### C-SURE-PROJ-MANY
 
@@ -2117,7 +2117,7 @@ theorem C_Sure_Proj_Many {A B : Type*} {i : I} {X : Set (I × Var)} {μ : PMF ((
   let prf : HasSum (fun a => ∑' (b : B), μ (a, b)) 1 := (by rw [ENNReal.summable.hasSum_iff, ← ENNReal.tsum_prod]; exact μ.2.tsum_eq)
   𝒞⟨μ⟩ (v, w); (∀ (ix : X), ⌈(fun (s : Var → Val) => s ix.1.2 = v ix)⟨ix.1.1⟩⌉)
   ⊣⊢ 𝒞⟨⟨(fun a ↦ ∑' b, (μ (a, b))), prf⟩⟩ v; (∀ (ix : X), ⌈(fun (s : Var → Val) => s ix.1.2 = v ix)⟨ix.1.1⟩⌉) := by
-    sorry -- TODO: Rule C-SURE-PROJ-MANY proof (spec not reviewed yet)
+    sorry -- TODO: Rule C-SURE-PROJ-MANY proof (spec not yet reviewed)
 
 -- ### C-EXTRACT
 
