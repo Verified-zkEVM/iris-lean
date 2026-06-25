@@ -1511,7 +1511,7 @@ theorem C_For_All {A X : Type*} {μ : PMF A} {Q : (A × X) → bProp I Var Val} 
 
 theorem C_Pure {A : Type*} {X : Set A} {μ : PMF A} {K : A → bProp I Var Val} :
   ⌜ ∑' x : X, μ x = 1 ⌝ ∗ 𝒞⟨μ⟩ v; K v ⊣⊢ 𝒞⟨μ⟩ v; (⌜ v ∈ X ⌝ ∗ K v) := by
-    sorry -- TODO: Rule C-PURE proof (spec not yet reviewed)
+    sorry -- TODO: Rule C-PURE proof
 
 -- # The primitive WP rules of Bluebell (see Fig. 10)
 
@@ -2177,7 +2177,6 @@ theorem RL_Cons {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
 
 -- ### RL-UNARY
 
--- TODO: Rule RL-UNARY spec+proof
 open Classical in
 theorem RL_Unary {X : Set Var} [Finite X] {R : Set (X → Val)}
   {i : I}
@@ -2189,7 +2188,7 @@ theorem RL_Unary {X : Set Var} [Finite X] {R : Set (X → Val)}
   ⌊R'⌋ ⊢ ⌈(fun σ ↦ ∃ σ' ∈ R, ∀ v : X, σ v.1 = σ' v)⟨i⟩⌉ := by
   simp only [relationLifting]
 
-  sorry
+  sorry -- TODO: Rule RL-UNARY proof
 
 -- ### RL-EQ-DIST
 
@@ -2214,8 +2213,6 @@ theorem RL_Merge {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
 
 -- ### RL-SURE-MERGE
 
--- TODO: Rule RL-SURE-MERGE spec+proof
-
 open Classical in
 theorem RL_Sure_Merge {X : Set (I × Var)} {R : Set (X → Val)} {e : (Var → Val) → Val}
   {i : I} {x : Var}
@@ -2226,11 +2223,11 @@ theorem RL_Sure_Merge {X : Set (I × Var)} {R : Set (X → Val)} {e : (Var → V
       let s : Var → Val :=
         fun x' => if h : (i, x') ∈ X then v ⟨(i, x'), h⟩ else default
       s x = e s
-    }⌋ := by sorry
+    }⌋ := by
+      sorry -- TODO: Rule RL-SURE-MERGE proof
 
 -- ### COUPLING
 
--- TODO: Rule COUPLING spec+proof
 open Classical in
 theorem Coupling
     {i₁ i₂ : I} {x₁ x₂ : Var} {R : Set (({(i₁, x₁), (i₂, x₂)} : Set (I × Var)) → Val)}
@@ -2239,7 +2236,8 @@ theorem Coupling
     (h₁ : (fun v ↦ ∑' σ : {σ : (({(i₁, x₁), (i₂, x₂)} : Set (I × Var)) → Val) | σ ⟨(i₁, x₁), by simp⟩ = v}, μ σ) = μ₁)
     (h₂ : (fun v ↦ ∑' σ : {σ : (({(i₁, x₁), (i₂, x₂)} : Set (I × Var)) → Val) | σ ⟨(i₂, x₂), by simp⟩ = v}, μ σ) = μ₂)
     (hR : ∑' σ : R, μ σ.1 = 1)
-  : (fun s ↦ s x₁)⟨i₁⟩ ~ μ₁ ∗ (fun s ↦ s x₂)⟨i₂⟩ ~ μ₂ ⊢ ⌊ R ⌋ := sorry
+  : (fun s ↦ s x₁)⟨i₁⟩ ~ μ₁ ∗ (fun s ↦ s x₂)⟨i₂⟩ ~ μ₂ ⊢ ⌊ R ⌋ := by
+    sorry -- TODO: Rule COUPLING proof
 
 -- # Derived WP rules (see Fig. 12)
 
