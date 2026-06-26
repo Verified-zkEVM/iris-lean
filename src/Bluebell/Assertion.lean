@@ -1237,13 +1237,14 @@ theorem Sure_Merge
   {E₁ E₂ : (Var → Val) → Prop} {i : I}
   : ⌈E₁⟨i⟩⌉ ∗ ⌈E₂⟨i⟩⌉ ⊣⊢ ⌈(fun s => E₁ s ∧ E₂ s)⟨i⟩⌉ := by
   sorry -- TODO: Rule SURE-MERGE proof
+
 -- ### SURE-AND-STAR
 
 theorem Sure_And_Star [DecidableEq I] {i : I} {A : Type*}
   {P : bProp I Var Val}
   {E : (Var → Val) → Prop} :
   pabs P (fun e ↦ e.1 = i ∧ e.2 ∈ pvar E) →
-  iprop(⌈E⟨i⟩⌉ ∧ P) ⊢ iprop(⌈E⟨i⟩⌉ ∗ P) := by
+  ⌈E⟨i⟩⌉ ∧ P ⊢ ⌈E⟨i⟩⌉ ∗ P := by
     sorry -- TODO: Rule SURE-AND-STAR proof
 
 -- ### PROD-SPLIT
@@ -1299,6 +1300,8 @@ theorem C_False {A : Type*} {μ : PMF A} :
 
 -- ### C-CONS
 
+-- #### C-CONS: Helper lemmas
+
 omit [Finite Var] [Countable Val] in
 /-- The indexed probability space built from a compatible kernel at a fixed support point
 is valid: each component is `some (...)` (hence not `⊤`), and its permission component
@@ -1310,6 +1313,8 @@ private lemma jointConditioning_elem_valid {A : Type*}
   intro i
   refine ⟨?_, (m.property i).2⟩
   exact Option.some_ne_none _
+
+-- #### C-CONS: Spec & Proof
 
 theorem C_Cons {α : Type} {K₁ K₂ : α → bProp I Var Val} {μ : PMF α} (h : ∀ v, K₁ v ⊢ K₂ v) :
     𝒞⟨μ⟩ v; K₁ v ⊢ 𝒞⟨μ⟩ v; K₂ v := by
@@ -1558,6 +1563,7 @@ theorem WP_Nest
   {t₁ t₂ : I → Option (PSpPm Var Val → PSpPm Var Val)}
   {Q : bProp I Var Val}
   (h_no_overlap : (dom t₁) ∩ (dom t₂) = ∅) :
+  -- The dot notation between hyper-terms t₁ and t₂, takes its definition from section 2.2 of the LHC (OOPSLA22) paper, https://doi.org/10.1145/3563298 (page 5).
   let t₁_dot_t₂ : I → Option (PSpPm Var Val → PSpPm Var Val) := (fun i : I =>
     if h_t₁ : (t₁ i).isSome
     then
@@ -1586,6 +1592,7 @@ theorem WP_Conj
     {Q₁ Q₂ : bProp I Var Val}
     (h_ts_agree : ∀ i : I, i ∈ dom t₁ ∩ dom t₂ → t₁ i = t₂ i)
      :
+    -- The plus notation between hyper-terms t₁ and t₂, takes its definition from section 2.2 of the LHC (OOPSLA22) paper, https://doi.org/10.1145/3563298 (page 5).
     let t₁_plus_t₂ : I → Option (PSpPm Var Val → PSpPm Var Val) := (fun i : I =>
       match h_t₁ : t₁ i with
       | .some t₁_i =>
@@ -1612,18 +1619,8 @@ theorem WP_Conj
 
 -- ### C-WP-SWAP
 
--- DRAFT of C-WP-SWAP
--- Needs definition of OWN_X
-theorem C_WP_Swap {A : Type*}
-  {μ : PMF A}
-  {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
-  {Q : A → bProp I Var Val} {i : I}
-  :
-  𝒞⟨μ⟩ v; wp t (Q v) /- ∧ OWN_X -/ ⊢ wp t (𝒞⟨μ⟩ v; Q v) := by
-    sorry -- TODO: Rule confirm new version of C-WP-SWAP
-
--- DRAFT of new variant of CP-WP-SWAP
-theorem C_WP_Swap' {A : Type*} [Countable A]
+-- New variant of CP-WP-SWAP
+theorem C_WP_Swap {A : Type*} [Countable A]
   {μ : PMF A}
   {t : I → Option (PSpPm Var Val → PSpPm Var Val)}
   {Q : A → bProp I Var Val} {i : I} {E : (Var → Val) → A}
@@ -1998,6 +1995,8 @@ theorem Prod_Unsplit {A B : Type*} {i : I}
 
 -- ### C-FUSE
 
+-- #### C-FUSE: Helper definition
+
 def fusion {A B : Type*} (μ : PMF A) (κ : A → PMF B) : PMF (A × B) :=
   let prf : HasSum (fun (v, w) => μ v * (κ v) w) 1 := (by
     have h : ∑' (p : A × B), μ p.1 * (κ p.1) p.2 = 1 := by
@@ -2006,12 +2005,13 @@ def fusion {A B : Type*} (μ : PMF A) (κ : A → PMF B) : PMF (A × B) :=
     convert h ▸ ENNReal.summable.hasSum)
   (⟨fun (v, w) => (μ v) * ((κ v) w), prf⟩)
 
+-- #### C-FUSE: Spec & Proof
+
 theorem C_Fuse {A B : Type*} {μ : PMF A} {κ : A → PMF B} {K : (A × B) → bProp I Var Val} :
   𝒞⟨μ⟩ v; 𝒞⟨κ v⟩ w; (K (v, w)) ⊣⊢ 𝒞⟨fusion μ κ⟩ (v, w); K (v, w) := by
     sorry -- TODO: Rule C-FUSE proof (spec not yet reviewed)
 
 -- ### C-SWAP
-
 
 theorem C_Swap {A B : Type*} {μ₁ : PMF A} {μ₂ : PMF B} (K : (A × B) → bProp I Var Val) :
   𝒞⟨μ₁⟩ v₁; 𝒞⟨μ₂⟩ v₂; K (v₁, v₂) ⊢ 𝒞⟨μ₂⟩ v₂; 𝒞⟨μ₁⟩ v₁; K (v₁, v₂) := by
@@ -2145,13 +2145,15 @@ theorem C_Dist_Proj {A B C : Type*} {μ₁ : PMF (A × B)} {μ₂ : A → (PMF C
 
 -- ## Relational lifting
 
-def relationLifting {X : Set (I × Var)} (R : Set (X → Val)) : bProp I Var Val :=
+-- ### Helper definition
+
+def relationalLifting {X : Set (I × Var)} (R : Set (X → Val)) : bProp I Var Val :=
   iprop(∃ μ : PMF (X → Val),
       ⌜ ∑' r : R, μ r = 1 ⌝ ∗
       𝒞⟨μ⟩ v; ∀ (ix : X), ⌈(fun (s : Var → Val) => s ix.1.2 = v ix)⟨ix.1.1⟩⌉
     )
 
-notation " ⌊ " R " ⌋ " => relationLifting R
+notation " ⌊ " R " ⌋ " => relationalLifting R
 
 -- ### RL-CONS
 
@@ -2186,9 +2188,8 @@ theorem RL_Unary {X : Set Var} [Finite X] {R : Set (X → Val)}
     R.image
       (fun s x ↦ s ⟨x.1.2, by aesop⟩)
   ⌊R'⌋ ⊢ ⌈(fun σ ↦ ∃ σ' ∈ R, ∀ v : X, σ v.1 = σ' v)⟨i⟩⌉ := by
-  simp only [relationLifting]
-
-  sorry -- TODO: Rule RL-UNARY proof
+    simp only [relationalLifting]
+    sorry -- TODO: Rule RL-UNARY proof
 
 -- ### RL-EQ-DIST
 
