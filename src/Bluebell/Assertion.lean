@@ -1903,7 +1903,7 @@ theorem Sure_Merge
   : ⌈E₁⟨i⟩⌉ ∗ ⌈E₂⟨i⟩⌉ ⊣⊢ ⌈(fun s => E₁ s ∧ E₂ s)⟨i⟩⌉ := by
     constructor
     · exact Sure_Merge_fwd
-    · sorry
+    · sorry -- TODO: Rule SURE-MERGE proof (backwards direction)
 
 -- ### SURE-AND-STAR
 
