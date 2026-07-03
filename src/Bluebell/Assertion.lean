@@ -897,6 +897,17 @@ section BluebellRules
 
 variable [Finite Var] [Countable Val]
 
+/-
+🤖: The product distribution `μ₁ ⊗ μ₂` is the iterated `bind`.
+-/
+private lemma product_eq_bind {A B : Type*} (μ₁ : PMF A) (μ₂ : PMF B) :
+    (μ₁ ⊗ μ₂) = PMF.bind μ₁ (fun a => PMF.bind μ₂ (fun b => PMF.pure (a, b))) := by
+  ext ⟨a, b⟩; simp [PMF.bind_apply, PMF.pure_apply];
+  erw [ tsum_eq_single a ];
+  · rw [ tsum_eq_single b ] ; aesop;
+    grind;
+  · aesop
+
 /-- `irrel` from p17 of the Bluebell paper -/
 def irrelevant
   (J : Set I) (P : bProp I Var Val) :=
@@ -1007,6 +1018,647 @@ theorem Unit_L {A B : Type*} {v : A} {κ : A → PMF B} :
 -- ### ASSOC
 theorem Assoc {A B C : Type*} {μ : PMF A} {κ₁ : A → PMF B} {κ₂ : B → PMF C} :
   PMF.bind (PMF.bind μ κ₁) κ₂ = PMF.bind μ (λ x ↦ PMF.bind (κ₁ x) κ₂) := by simp
+
+-- ## 🤖: Helper infrastructure for joint-conditioning rules
+
+open MeasureTheory in
+/-- 🤖: A `bind` of a probability measure on the top σ-algebra with a family of probability
+measures is again a probability measure (the source space being `⊤`, every function is
+measurable). -/
+private lemma isProbabilityMeasure_bind_top {A β : Type*} {mβ : MeasurableSpace β}
+    (μ : @Measure A ⊤) [IsProbabilityMeasure μ]
+    (f : A → @Measure β mβ) (hf : ∀ a, IsProbabilityMeasure (f a)) :
+    IsProbabilityMeasure (@Measure.bind A β ⊤ mβ μ f) := by
+  constructor
+  have hmeas : @Measurable A _ ⊤ _ f := fun s _ => trivial
+  rw [Measure.bind_apply MeasurableSet.univ hmeas.aemeasurable]
+  simp [measure_univ]
+
+open MeasureTheory in
+/-- 🤖: The `PMF`-`bind`/`toMeasure` commutation: the measure of a bound PMF is the measure
+bind of the component measures (all on the top σ-algebra). -/
+private lemma PMF_toMeasure_bind {A B : Type*} (μ : PMF A) (κ : A → PMF B) :
+    @PMF.toMeasure B ⊤ (μ.bind κ)
+    = @Measure.bind A B ⊤ ⊤ (@PMF.toMeasure A ⊤ μ) (fun a => @PMF.toMeasure B ⊤ (κ a)) := by
+  letI : MeasurableSpace A := ⊤
+  letI : MeasurableSpace B := ⊤
+  haveI : MeasurableSingletonClass A := ⟨fun _ => trivial⟩
+  haveI : MeasurableSingletonClass B := ⟨fun _ => trivial⟩
+  have hmeas : @Measurable A (Measure B) ⊤ _ (fun a => @PMF.toMeasure B ⊤ (κ a)) :=
+    fun s _ => trivial
+  ext s hs
+  rw [PMF.toMeasure_bind_apply (s := s) μ κ hs, Measure.bind_apply hs hmeas.aemeasurable]
+  have hsum : (@PMF.toMeasure A ⊤ μ)
+      = Measure.sum (fun a => (μ a : ENNReal) • Measure.dirac a) := by
+    ext t ht
+    rw [PMF.toMeasure_apply μ ht, Measure.sum_apply _ ht]
+    congr 1; ext a
+    simp only [Measure.smul_apply, smul_eq_mul, Measure.dirac_apply' a ht, Set.indicator]
+    split_ifs <;> simp
+  rw [hsum, lintegral_sum_measure]
+  congr 1; ext a
+  rw [lintegral_smul_measure, lintegral_dirac, smul_eq_mul]
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: `PSpace.compatiblePerm` depends only on the underlying measurable space and the
+permission, not on the measure. Hence any probability measure on `m₀.ms i` is compatible
+with `m₀.perm i`, just like `m₀`'s own measure is. -/
+private lemma compat_of_ms (m₀ : ValidIndexedPSpPm I Var Val) (i : I)
+    (ν : @Measure (Var → Val) (m₀.ms i)) (hν : IsProbabilityMeasure ν) :
+    PSpace.compatiblePerm (⟨⟨m₀.ms i, ν⟩, hν⟩ : PSpace (Var → Val)) (m₀.perm i) := by
+  obtain ⟨ m₁, h₁ ⟩ := m₀;
+  rcases h : m₁ i with ⟨ ⟨ Pm, permm ⟩, hcomp ⟩;
+  cases Pm <;> simp_all +decide [ ValidIndexedPSpPm.ms, ValidIndexedPSpPm.perm ];
+  · grind;
+  · unfold PSp.compatiblePerm at *;
+    unfold PSpace.compatiblePerm at *;
+    grind +qlia
+
+open MeasureTheory in
+/-- 🤖: Compose a `CompatibleKernel B m₀` with a `PMF`-indexed family `κ : A → PMF B`,
+giving a `CompatibleKernel A m₀` whose kernel at `(i, a)` is
+`bind (κ a) (κ₀.kernel i)`. -/
+private def CompatibleKernel.pmfBind {A B : Type*} {m₀ : ValidIndexedPSpPm I Var Val}
+    (κ₀ : CompatibleKernel B m₀) (κ : A → PMF B) : CompatibleKernel A m₀ where
+  kernel i a := @Measure.bind B (Var → Val) ⊤ (m₀.ms i) (@PMF.toMeasure B ⊤ (κ a)) (κ₀.kernel i)
+  isProb i a := by
+    letI : MeasurableSpace B := ⊤
+    haveI : MeasurableSingletonClass B := ⟨fun _ => trivial⟩
+    haveI : IsProbabilityMeasure (@PMF.toMeasure B ⊤ (κ a)) := inferInstance
+    exact isProbabilityMeasure_bind_top (@PMF.toMeasure B ⊤ (κ a)) (κ₀.kernel i) (κ₀.isProb i)
+  isComp i a := by
+    letI : MeasurableSpace B := ⊤
+    haveI : MeasurableSingletonClass B := ⟨fun _ => trivial⟩
+    haveI : IsProbabilityMeasure (@PMF.toMeasure B ⊤ (κ a)) := inferInstance
+    exact compat_of_ms m₀ i _
+      (isProbabilityMeasure_bind_top (@PMF.toMeasure B ⊤ (κ a)) (κ₀.kernel i) (κ₀.isProb i))
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] in
+/-- 🤖: The outer-bind identity used by `C-UNASSOC`: binding the measure of `μ.bind κ` with a
+kernel `κ₀` equals binding the measure of `μ` with the composed kernel `κ₀.pmfBind κ`. -/
+private lemma pmfBind_kernel_bind {A B : Type*} {m₀ : ValidIndexedPSpPm I Var Val}
+    (κ₀ : CompatibleKernel B m₀) (μ : PMF A) (κ : A → PMF B) (i : I) :
+    @Measure.bind B (Var → Val) ⊤ (m₀.ms i) (@PMF.toMeasure B ⊤ (μ.bind κ)) (κ₀.kernel i)
+    = @Measure.bind A (Var → Val) ⊤ (m₀.ms i) (@PMF.toMeasure A ⊤ μ)
+        ((κ₀.pmfBind κ).kernel i) := by
+  letI : MeasurableSpace A := ⊤
+  letI : MeasurableSpace B := ⊤
+  rw [PMF_toMeasure_bind μ κ]
+  exact @Measure.bind_bind A B ⊤ ⊤ (Var → Val) (m₀.ms i) (@PMF.toMeasure A ⊤ μ)
+    (fun a => @PMF.toMeasure B ⊤ (κ a)) (κ₀.kernel i)
+    measurable_from_top.aemeasurable measurable_from_top.aemeasurable
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: The measure `pp.μ` agrees with the measure of the extracted `PSpace` on every set. -/
+private lemma ValidPSpPm.mu_apply_eq_PSpace (pp : ValidPSpPm Var Val)
+    (s : Set (Var → Val)) : pp.μ s = (pp.PSpace).1.μ s := by
+  obtain ⟨⟨⟨P, perm⟩, hcomp⟩, hv⟩ := pp
+  simp only [valid] at hv
+  cases P with
+  | none => exact absurd rfl hv.1
+  | some m' => rfl
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: Indexed version of `ValidPSpPm.mu_apply_eq_PSpace`. -/
+private lemma ValidIndexedPSpPm.mu_apply_eq_PSpace (m : ValidIndexedPSpPm I Var Val)
+    (i : I) (s : Set (Var → Val)) : m.μ i s = (m.PSpace i).1.μ s :=
+  ValidPSpPm.mu_apply_eq_PSpace ⟨m.val i, m.property i⟩ s
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: For a valid indexed space, the underlying `PSp` at index `i` is `some` of the
+extracted `PSpace`. -/
+private lemma ValidIndexedPSpPm.val_psp_eq_some (m : ValidIndexedPSpPm I Var Val) (i : I) :
+    (m.val i).1.1 = some (m.PSpace i) := by
+  obtain ⟨mval, mprop⟩ := m
+  have hv := mprop i
+  simp only [valid] at hv
+  rcases hmi : mval i with ⟨⟨Pm, permm⟩, hcomp⟩
+  cases hPm : Pm with
+  | none =>
+    exfalso
+    apply hv.1
+    have h1 : (↑(mval i) : PSpPmProd Var Val).1 = Pm := by rw [hmi]
+    rw [h1, hPm]; rfl
+  | some m' => simp only [ValidIndexedPSpPm.PSpace, ValidPSpPm.PSpace, hmi, hPm]; rfl
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: Each component measure `m.μ i` of a valid indexed space is a probability measure. -/
+private lemma mu_isProb (m : ValidIndexedPSpPm I Var Val) (i : I) :
+    IsProbabilityMeasure (m.μ i) := by
+  constructor
+  rw [ValidIndexedPSpPm.mu_apply_eq_PSpace m i Set.univ]
+  exact (m.PSpace i).2.measure_univ
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: The extracted `PSpace` of a valid indexed space is the measure space built from its
+measurable space and measure at that index. -/
+private lemma ValidPSpPm.PSpace_eq (pp : ValidPSpPm Var Val) :
+    (pp.PSpace).1 = ⟨pp.ms, pp.μ⟩ := by
+  obtain ⟨⟨⟨P, perm⟩, hcomp⟩, hv⟩ := pp
+  cases P with
+  | none => simp only [valid] at hv; exact absurd rfl hv.1
+  | some m' => rfl
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: Indexed version of `ValidPSpPm.PSpace_eq`. -/
+private lemma PSpace_eq (m : ValidIndexedPSpPm I Var Val) (i : I) :
+    (m.PSpace i).1 = ⟨m.ms i, m.μ i⟩ :=
+  ValidPSpPm.PSpace_eq ⟨m.val i, m.property i⟩
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: Reconstruction: a valid indexed space equals the indexed space built from its own
+measurable spaces, measures, and permissions. Useful to identify the `point space` of a
+dirac/self kernel with `m.val`. -/
+private lemma val_eq_point (m : ValidIndexedPSpPm I Var Val) :
+    (fun i => (⟨⟨some ⟨⟨m.ms i, m.μ i⟩, mu_isProb m i⟩, m.perm i⟩,
+      compat_of_ms m i (m.μ i) (mu_isProb m i)⟩ : PSpPm Var Val)) = m.val := by
+  funext i
+  apply Subtype.ext
+  apply Prod.ext
+  · show some _ = (m.val i).1.1
+    rw [m.val_psp_eq_some i]
+    congr 1
+    exact Subtype.ext (PSpace_eq m i).symm
+  · rfl
+
+/-- 🤖: The constant kernel sending every value to `m`'s own measure at each index. -/
+private def CompatibleKernel.constSelf {A : Type*} (m : ValidIndexedPSpPm I Var Val) :
+    CompatibleKernel A m where
+  kernel i _ := m.μ i
+  isProb i _ := mu_isProb m i
+  isComp i _ := compat_of_ms m i (m.μ i) (mu_isProb m i)
+
+open MeasureTheory in
+/-- 🤖: Binding the dirac PMF's measure with a kernel evaluates the kernel at the point. -/
+private lemma dirac_bind_top {A β : Type*} [Countable A] {mβ : MeasurableSpace β}
+    (v₀ : A) (k : A → @Measure β mβ) :
+    @Measure.bind A β ⊤ mβ (@PMF.toMeasure A ⊤ (δ v₀)) k = k v₀ := by
+  letI : MeasurableSpace A := ⊤
+  simp only [PMF.dirac]
+  rw [Measure.toPMF_toMeasure, Measure.dirac_bind measurable_from_top]
+
+open MeasureTheory in
+/-- 🤖: Binding a probability measure with a constant kernel returns that constant. -/
+private lemma const_bind_top {A β : Type*} {mβ : MeasurableSpace β}
+    (μ : PMF A) (ν : @Measure β mβ) :
+    @Measure.bind A β ⊤ mβ (@PMF.toMeasure A ⊤ μ) (fun _ => ν) = ν := by
+  letI : MeasurableSpace A := ⊤
+  haveI : MeasurableSingletonClass A := ⟨fun _ => trivial⟩
+  rw [Measure.bind_const]
+  simp [measure_univ]
+
+-- ## Other helper lemmas
+
+omit [Finite Var] [Countable Val] [DecidableEq Var] [Inhabited Val] in
+/-- 🤖: If every `F`-measurable set has measure `0` or `1` under `ps`, then `ps` is the
+independent product of its restriction to the sub-σ-algebra `F` and itself.
+(Events of measure `0`/`1` are independent of every measurable set.) -/
+private lemma psp_trim_indep {ps : PSpace (Var → Val)} {F : MeasurableSpace (Var → Val)}
+    (hF : F ≤ ps.1.ms)
+    (hbin : ∀ u, @MeasurableSet (Var → Val) F u → ps.1.μ u = 0 ∨ ps.1.μ u = 1) :
+    PSpace.isIndependentProduct ps (PSpace.trim (p := ps) (h := hF)) ps := by
+  unfold PSpace.isIndependentProduct;
+  simp +decide [ PSpace.trim ];
+  constructor;
+  · refine' le_antisymm _ _;
+    · exact fun s hs => MeasurableSpace.measurableSet_generateFrom ( Set.mem_union_right _ hs );
+    · exact MeasurableSpace.generateFrom_le fun s hs => by aesop;
+  · intro E hE F hF';
+    cases hbin E hE <;> simp_all +decide [ MeasureTheory.Measure.trim ];
+    · exact MeasureTheory.measure_mono_null ( Set.inter_subset_left ) ‹_›;
+    · have h_compl : (ps.1.μ (F \ E)) = 0 := by
+        have h_compl : (ps.1.μ (Set.univ \ E)) = 0 := by
+          rw [ MeasureTheory.measure_diff ] <;> norm_num [ * ];
+          exact MeasurableSet.nullMeasurableSet (hF E hE);
+        exact MeasureTheory.measure_mono_null ( fun x => by aesop ) h_compl;
+      have h_eq : (ps.1.μ (E ∩ F)) = (ps.1.μ F) - (ps.1.μ (F \ E)) := by
+        rw [ ← MeasureTheory.measure_diff ];
+        · simp +decide [ Set.inter_comm ];
+        · exact Set.diff_subset;
+        · exact MeasureTheory.NullMeasurableSet.of_null h_compl;
+        · aesop;
+      aesop
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] in
+/-- 🤖: From `⌈E⟨i⟩⌉` holding on a valid resource `m`, extract a validated
+probability space `P` whose space at index `i` is coarser than `m`'s, on which `E` is
+a.e.-measurable and the event `{s | E s}` has measure `1`. This packages the forward
+content of `Sure_Dirac` in a reusable form. -/
+private lemma almostSurely_elim {E : (Var → Val) → Prop} {i : I}
+    (m : ValidIndexedPSpPm I Var Val) (h : ⌈E⟨i⟩⌉ m.val) :
+    ∃ P : ValidIndexedPSpPm I Var Val,
+      P.PSpace i ≤ m.PSpace i ∧
+      almostMeasurable E (P.PSp i) ∧
+      (P.PSpace i).1.μ {s | E s} = 1 := by
+  obtain ⟨q, ⟨P, hqP⟩, hqm⟩ := h
+  subst hqP
+  obtain ⟨b₁, b₂, hle, hown, body⟩ := hqm
+  obtain ⟨p, ⟨a, rfl⟩, hsome⟩ := hown
+  obtain ⟨hown_le, hown_some⟩ := hsome
+  refine ⟨P, ?_, ?_, ?_⟩
+  · have step1 : (⟨⟨P.PSp i, a.perm i⟩, a.comp i⟩ : PSpPm Var Val) ≤ b₁ i := hown_le i
+    have step2 : b₁ i ≤ (m.val) i :=
+      le_trans (IndexedPSpPm.le_of_mul_left I Val Var i) (hle i)
+    have hPm : P.PSp i ≤ (m.val i).1.1 := le_trans step1.1 step2.1
+    have hms : (m.val i).1.1 = some (m.PSpace i) := m.val_psp_eq_some i
+    have hPs : (P.PSp i) = some (P.PSpace i) := rfl
+    rw [hPs, hms] at hPm
+    exact WithTop.coe_le_coe.mp hPm
+  · simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body ⊢
+    exact body.1
+  · simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body
+    obtain ⟨ham, hμ⟩ := body
+    have bridge : @Measure.map _ _ (P.ms i) ⊤ E (P.μ i)
+        = @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ :=
+      ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨P.val i, P.property i⟩ E
+    rw [bridge] at hμ
+    have hae : AEMeasurable E (P.PSpace i).1.μ := by
+      simpa [ValidIndexedPSpPm.PSpace] using ham
+    have key := Measure.map_apply_of_aemeasurable (mβ := ⊤) hae
+      (s := {True}) MeasurableSpace.measurableSet_top
+    rw [hμ] at key
+    simp only [PMF.dirac, Measure.toPMF_toMeasure,
+      Measure.dirac_apply', MeasurableSpace.measurableSet_top] at key
+    simp only [Set.indicator_of_mem, Set.mem_singleton_iff, Pi.one_apply] at key
+    rw [key]
+    congr 1
+    ext s
+    simp [Set.mem_setOf_eq]
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] in
+/-- 🤖: If `⌈E⟨i⟩⌉` holds on a valid resource `m`, then `E` holds
+`m.PSpace i`-almost everywhere. -/
+private lemma almostSurely_ae {E : (Var → Val) → Prop} {i : I}
+    (m : ValidIndexedPSpPm I Var Val) (h : ⌈E⟨i⟩⌉ m.val) :
+    ∀ᵐ s ∂(m.PSpace i).1.μ, E s := by
+  obtain ⟨ P, hPle, ham, hP1 ⟩ := almostSurely_elim m h;
+  -- Let `μP := (P.PSpace i).1.μ`.
+  set μP := (P.PSpace i).1.μ;
+  -- Show `f ⁻¹' {True}` has measure 1 and hence `f ⁻¹' {False}` has measure 0.
+  obtain ⟨ f, hf_meas, hf_ae ⟩ := ham;
+  have h_true : μP (f ⁻¹' {True}) = 1 := by
+    rw [ ← hP1, ← MeasureTheory.measure_congr ];
+    filter_upwards [ hf_ae ] with s hs using by simpa using hs;
+  have h_false : μP (f ⁻¹' {False}) = 0 := by
+    convert MeasureTheory.measure_compl _ _ using 1;
+    convert rfl;
+    any_goals exact f ⁻¹' { True };
+    · ext; simp [Set.mem_compl_iff];
+    · rw [ h_true, ( P.PSpace i ).2.measure_univ, tsub_self ];
+    · exact hf_meas ( MeasurableSingletonClass.measurableSet_singleton _ );
+    · exact h_true.symm ▸ ENNReal.one_ne_top;
+  obtain ⟨ N2, hN2_sub, hN2_meas, hN2_null ⟩ := @exists_measurable_superset_of_null _ ( P.PSpace i ).1.ms μP _ hf_ae.symm;
+  refine' MeasureTheory.measure_mono_null _ _;
+  exact N2 ∪ f ⁻¹' { False };
+  · grind +qlia;
+  · exact MeasureOnSpace.le_preserves_measure hPle ( hN2_meas.union ( hf_meas ( MeasurableSingletonClass.measurableSet_singleton _ ) ) ) |> fun h => h.symm ▸ MeasureTheory.measure_union_null hN2_null h_false
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: A valid indexed space owns its own underlying spaces. -/
+private lemma ownPSp_self (m : ValidIndexedPSpPm I Var Val) :
+    ownPSp m.PSp m.val := by
+  constructor;
+  refine' ⟨ ⟨ _, rfl ⟩, _ ⟩;
+  constructor;
+  exact fun i => m.val_psp_eq_some i ▸ ( m.val i ).2;
+  constructor;
+  · intro i;
+    constructor;
+    · exact m.val_psp_eq_some i ▸ le_rfl;
+    · exact le_rfl;
+  · exact fun i => by cases m.val i ; tauto;
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: Converse of `almostSurely_ae`: if `E` holds `m.PSpace i`-almost everywhere, then
+`⌈E⟨⟨i⟩⌉` holds on `m`. The witness space is `m` itself. -/
+private lemma almostSurely_intro {E : (Var → Val) → Prop} {i : I}
+    (m : ValidIndexedPSpPm I Var Val) (h : ∀ᵐ s ∂(m.PSpace i).1.μ, E s) :
+    ⌈E⟨i⟩⌉ m.val := by
+  refine' ⟨ _, ⟨ m, rfl ⟩, _ ⟩;
+  refine' ⟨ m.val, 1, _ ⟩;
+  refine' ⟨ _, _, _ ⟩;
+  · exact mul_one _ |> le_of_eq;
+  · exact ownPSp_self m;
+  · refine' ⟨ _, _ ⟩;
+    · refine' ⟨ fun _ => True, measurable_const, h.mono fun s hs => by simpa using hs ⟩;
+    · have hE_true : E =ᵐ[(m.PSpace i).1.μ] (fun _ => True) := by
+        filter_upwards [ h ] with s hs using by simpa using hs;
+      convert Measure.map_congr hE_true using 1;
+      · convert ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨ m.val i, m.property i ⟩ E using 1;
+      · ext s hs; simp +decide only [PMF.dirac, Measure.toPMF_toMeasure,
+        MeasurableSpace.measurableSet_top, Measure.dirac_apply', ValidIndexedPSpPm.PSpace,
+        PSp.compatiblePerm, OrderedUnitalResourceAlgebra.instValidForall.eq_1, ValidPSpPm.PSpace,
+        ValidPSpPm, ValidPSp.PSpace, ValidPSp, Measure.map_const, PSpace.isProbability,
+        measure_univ, one_smul] ;
+
+omit [Finite Var] [Countable Val] in 
+/-- 🤖: Forward direction of SURE-MERGE. Mirrors the proof of `Sure_Eq_Inj`: from
+`b₁ * b₂ ≤ m` both sure assertions transfer to a.e. statements under the *same*
+measure `(⟨m,hm⟩.PSpace i).1.μ` (via `almostSurely_ae` together with
+`IndexedPSpPm.le_of_mul_left`/`le_of_mul_right`), their conjunction holds a.e.,
+and `almostSurely_intro` concludes the merged sure assertion. -/
+private lemma Sure_Merge_fwd {E₁ E₂ : (Var → Val) → Prop} {i : I}
+  : ⌈E₁⟨i⟩⌉ ∗ ⌈E₂⟨i⟩⌉ ⊢ ⌈(fun s => E₁ s ∧ E₂ s)⟨i⟩⌉ := by
+  intro m hm hsep
+  obtain ⟨b₁, b₂, hle, h1, h2⟩ := hsep
+  set M : ValidIndexedPSpPm I Var Val := ⟨m, hm⟩ with hM
+  have a1 : ∀ᵐ s ∂(M.PSpace i).1.μ, E₁ s := by
+    apply almostSurely_ae M
+    exact (almostSurely E₁ i).upper'
+      (le_trans (IndexedPSpPm.le_of_mul_left I Val Var) hle) h1
+  have a2 : ∀ᵐ s ∂(M.PSpace i).1.μ, E₂ s := by
+    apply almostSurely_ae M
+    exact (almostSurely E₂ i).upper'
+      (le_trans (IndexedPSpPm.le_of_mul_right I Val Var) hle) h2
+  have a3 : ∀ᵐ s ∂(M.PSpace i).1.μ, E₁ s ∧ E₂ s := by
+    filter_upwards [a1, a2] with s hs1 hs2 using ⟨hs1, hs2⟩
+  exact almostSurely_intro M a3
+
+open MeasureTheory in
+private lemma pmf_tsum_subtype_eq_one_iff {A : Type*} {X : Set A} {μ : PMF A} :
+    (∑' x : X, μ x = 1) ↔ (∀ v, v ∈ μ.support → v ∈ X) := by
+  letI : MeasurableSpace A := ⊤
+  haveI : MeasurableSingletonClass A := ⟨fun _ => trivial⟩
+  have hX : ∑' x : X, (μ x) = μ.toMeasure X := by
+    rw [tsum_subtype]; exact (PMF.toMeasure_apply μ (by trivial : MeasurableSet X)).symm
+  have hcompl : μ.toMeasure Xᶜ = 1 - μ.toMeasure X := by
+    rw [measure_compl (by trivial) (measure_ne_top _ _)]; simp
+  rw [hX]
+  rw [show (μ.toMeasure X = 1) ↔ (μ.toMeasure Xᶜ = 0) from by
+    rw [hcompl]
+    constructor
+    · intro h; rw [h, tsub_self]
+    · intro h
+      have hle : μ.toMeasure X ≤ 1 := prob_le_one
+      rw [tsub_eq_zero_iff_le] at h
+      exact le_antisymm hle h]
+  rw [PMF.toMeasure_apply_eq_zero_iff μ (by trivial : MeasurableSet Xᶜ)]
+  constructor
+  · intro hdis v hv
+    by_contra hvX
+    exact (Set.disjoint_left.mp hdis hv) hvX
+  · intro h
+    rw [Set.disjoint_left]
+    intro v hv hvc
+    exact hvc (h v hv)
+
+
+/-- 🤖: The function `b ↦ ∑' a ∈ f⁻¹'{b}, μ a` is a `PMF`, i.e. it sums to `1`.
+This is precisely the pushforward distribution `μ.map f`. -/
+private lemma pmf_pushforward_hasSum {A B : Type*} (μ : PMF A) (f : A → B) :
+    HasSum (fun b => ∑' a : f ⁻¹' {b}, μ a) 1 := by
+  classical
+  have heq : (fun b => ∑' a : f ⁻¹' {b}, μ a) = (μ.map f) := by
+    ext b
+    rw [PMF.map_apply, tsum_subtype]
+    congr 1; ext a
+    simp only [Set.indicator, Set.mem_preimage, Set.mem_singleton_iff]
+    by_cases h : f a = b
+    · simp [h]
+    · rw [if_neg h, if_neg (fun hh => h hh.symm)]
+  rw [heq]
+  exact (μ.map f).2
+
+private lemma pushforward_eq_map {A B : Type*} (μ : PMF A) (f : A → B) :
+    (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, pmf_pushforward_hasSum μ f⟩ : PMF B) = μ.map f := by
+  classical
+  apply PMF.ext
+  intro b
+  show ∑' a : f ⁻¹' {b}, μ a = _
+  rw [PMF.map_apply, tsum_subtype]
+  congr 1; ext a
+  simp only [Set.indicator, Set.mem_preimage, Set.mem_singleton_iff]
+  by_cases hh : f a = b
+  · simp [hh]
+  · rw [if_neg hh, if_neg (fun hx => hh hx.symm)]
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: Indexed version of `ValidPSpPm.map_μ_eq_map_PSpace_μ`: pushing `E` forward along the
+indexed measure `m.μ i` agrees with pushing it along the extracted `PSpace` measure. -/
+private lemma ValidIndexedPSpPm.map_μ_eq_map_PSpace_μ {A : Type*}
+    (m : ValidIndexedPSpPm I Var Val) (i : I) (E : (Var → Val) → A) :
+    @Measure.map _ _ (m.ms i) ⊤ E (m.μ i)
+    = @Measure.map _ _ (m.PSpace i).1.ms ⊤ E (m.PSpace i).1.μ :=
+  ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨m.val i, m.property i⟩ E
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] [DecidableEq Var] [Inhabited Val] in
+/-- 🤖: The `bind` of a `PMF`'s measure with a measure kernel equals the countable
+`Measure.sum`, over the (countable) support of `μ`, of the scaled kernels `(μ a) • κ a`.
+The terms off the support vanish since `μ a = 0` there. -/
+private lemma pmf_bind_eq_sum_support {A : Type*}
+    {ms : MeasurableSpace (Var → Val)}
+    (μ : PMF A) (κ : A → @Measure (Var → Val) ms) :
+    @Measure.bind A (Var → Val) ⊤ ms (@PMF.toMeasure A ⊤ μ) κ
+    = @Measure.sum (Var → Val) μ.support ms (fun a => (μ ↑a) • κ ↑a) := by
+  ext s hs
+  simp [Measure.bind, Measure.sum] at *;
+  unfold Measure.join; simp +decide [ hs, measurable_from_top ] ;
+  rw [ Measure.ofMeasurable_apply ] ; simp +decide [ PMF.map ] ; (
+  -- 🤖: Apply the definition of the integral with respect to a discrete measure.
+  have h_integral : ∫⁻ (μ : Measure (Var → Val)), μ s ∂(μ.bind (PMF.pure ∘ κ)).toMeasure = ∑' (a : A), μ a * (κ a) s := by
+    have h_discrete : (μ.bind (PMF.pure ∘ κ)).toMeasure = Measure.sum (fun a => (μ a) • Measure.dirac (κ a)) := by
+      ext s hs; simp +decide [ hs ] ;
+      simp +decide [ Set.indicator ]
+    rw [ h_discrete, MeasureTheory.lintegral_sum_measure ] ; simp +decide [ MeasureTheory.lintegral_smul_measure ] ;
+    congr! 2;
+    rw [ MeasureTheory.lintegral_dirac' ];
+    exact Measure.measurable_coe hs;
+  convert h_integral using 1;
+  rw [ tsum_eq_tsum_of_ne_zero_bij ];
+  use fun x => ⟨ x, by
+    exact fun h => x.2 <| by simp +decide [ h ] ; ⟩
+  all_goals generalize_proofs at *;
+  · exact fun x y h => Subtype.ext <| by simpa using congr_arg Subtype.val h;
+  · exact fun x hx => ⟨ ⟨ x, by aesop ⟩, rfl ⟩;
+  · grobner);
+  grind
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] [DecidableEq Var] [Inhabited Val] in
+/-- 🤖: `E` is a.e.-measurable under the `bind` of a `PMF` with a measure kernel whenever it is
+a.e.-measurable under every kernel in the support. The `bind` is a countable `Measure.sum`
+of scaled kernels, and a.e.-measurability is preserved by countable sums of measures. -/
+private lemma aemeasurable_pmf_bind {A B : Type*} {mB : MeasurableSpace B}
+    {ms : MeasurableSpace (Var → Val)}
+    (μ : PMF A) (κ : A → @Measure (Var → Val) ms) (E : (Var → Val) → B)
+    (h : ∀ a : μ.support, @AEMeasurable _ _ mB ms E (κ a)) :
+    @AEMeasurable _ _ mB ms E
+      (@Measure.bind A (Var → Val) ⊤ ms (@PMF.toMeasure A ⊤ μ) κ) := by
+  haveI : Countable μ.support := μ.support_countable.to_subtype
+  rw [pmf_bind_eq_sum_support μ κ]
+  exact AEMeasurable.sum_measure (fun a => (h a).smul_measure _)
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] [DecidableEq Var] [Inhabited Val] in
+/-- 🤖: If, for every point in the support of `μ`, pushing `E` forward along the kernel `κ`
+gives the same measure `ν`, then pushing `E` forward along the `bind` also gives `ν`
+(the total mass of `μ` being `1`). -/
+private lemma map_pmf_bind_const {A B : Type*} {mB : MeasurableSpace B}
+    {ms : MeasurableSpace (Var → Val)}
+    (μ : PMF A) (κ : A → @Measure (Var → Val) ms) (E : (Var → Val) → B) (ν : @Measure B mB)
+    (hae : ∀ a : μ.support, @AEMeasurable _ _ mB ms E (κ a))
+    (hmap : ∀ a : μ.support, @Measure.map _ _ ms mB E (κ a) = ν) :
+    @Measure.map _ _ ms mB E
+      (@Measure.bind A (Var → Val) ⊤ ms (@PMF.toMeasure A ⊤ μ) κ) = ν := by
+  convert Measure.ext _;
+  intro s hs; rw [pmf_bind_eq_sum_support μ κ]; simp_all +decide [ Measure.map_sum, Measure.smul_apply ] ;
+  convert congr_arg ( fun x : ENNReal => x * ν s ) ( show ∑' ( i : μ.support ), μ ↑i = 1 from ?_ ) using 1;
+  · rw [ ← ENNReal.tsum_mul_right ] ; congr ; ext a ; aesop;
+  · rw [ one_mul ];
+  · exact pmf_tsum_subtype_eq_one_iff.mpr fun v a => a
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] [DecidableEq Var] [Inhabited Val] in
+/-- 🤖: Measure-level core: if `μq` extends `μp` along `msp ≤ msq` (they agree on `msp`-measurable
+sets) and `E` is `μp`-a.e.-measurable, then `E` is `μq`-a.e.-measurable and
+`map E μq = map E μp`. -/
+private lemma map_eq_map_of_measure_le {A : Type*}
+    {msp msq : MeasurableSpace (Var → Val)}
+    (μp : @Measure (Var → Val) msp) (μq : @Measure (Var → Val) msq)
+    (hms : msp ≤ msq)
+    (hrestrict : ∀ u, MeasurableSet[msp] u → μp u = μq u)
+    {E : (Var → Val) → A}
+    (hae : @AEMeasurable _ _ ⊤ msp E μp) :
+    @AEMeasurable _ _ ⊤ msq E μq ∧
+    @Measure.map _ _ msq ⊤ E μq = @Measure.map _ _ msp ⊤ E μp := by
+  obtain ⟨g, hg₁, hg₂⟩ := hae
+  have hnull : μp {x | E x ≠ g x} = 0 :=
+    MeasureTheory.measure_mono_null (fun x hx => by aesop) hg₂
+  obtain ⟨N, hNsub, hNmeas, hNzero⟩ :=
+    @MeasureTheory.exists_measurable_superset_of_null (Var → Val) msp μp {x | E x ≠ g x} hnull
+  have hNzero_q : μq N = 0 := by rw [← hrestrict N hNmeas]; exact hNzero
+  have hg₂q : E =ᵐ[μq] g :=
+    MeasureTheory.measure_mono_null (fun x hx => hNsub hx) hNzero_q
+  have haeq : @AEMeasurable _ _ ⊤ msq E μq := ⟨g, hg₁.mono hms le_rfl, hg₂q⟩
+  refine ⟨haeq, ?_⟩
+  refine @MeasureTheory.Measure.ext A ⊤ _ _ (fun s hs => ?_)
+  rw [Measure.map_apply_of_aemeasurable haeq hs,
+      Measure.map_apply_of_aemeasurable (⟨g, hg₁, hg₂⟩ : @AEMeasurable _ _ ⊤ msp E μp) hs]
+  have hcongr_q : μq (E ⁻¹' s) = μq (g ⁻¹' s) :=
+    MeasureTheory.measure_congr (hg₂q.fun_comp (· ∈ s))
+  have hcongr_p : μp (E ⁻¹' s) = μp (g ⁻¹' s) :=
+    MeasureTheory.measure_congr (hg₂.fun_comp (· ∈ s))
+  rw [hcongr_q, hcongr_p]
+  exact (hrestrict (g ⁻¹' s) (hg₁ hs)).symm
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] [DecidableEq Var] [Inhabited Val] in
+/-- 🤖: If `p ≤ q` as probability spaces (so `q` extends `p`'s σ-algebra and restricts to `p`'s
+measure) and `E` is `p`-a.e.-measurable, then `E` is also `q`-a.e.-measurable and its
+pushforward is unchanged: `map E q.μ = map E p.μ`. -/
+private lemma map_eq_map_of_pspace_le {A : Type*} {p q : PSpace (Var → Val)}
+    (hpq : p ≤ q) {E : (Var → Val) → A}
+    (hae : @AEMeasurable _ _ ⊤ p.1.ms E p.1.μ) :
+    @AEMeasurable _ _ ⊤ q.1.ms E q.1.μ ∧
+    @Measure.map _ _ q.1.ms ⊤ E q.1.μ = @Measure.map _ _ p.1.ms ⊤ E p.1.μ :=
+  map_eq_map_of_measure_le p.1.μ q.1.μ hpq.1
+    (fun _ hu => MeasureOnSpace.le_preserves_measure hpq hu) hae
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] in
+/-- 🤖: Witness-extraction form of distribution ownership: `E⟨i⟩ ~ ν` on `m` yields a coarser
+validated space `P` (with `P.PSpace i ≤ m.PSpace i`) on which `E` is a.e.-measurable and
+pushes forward to `ν`. This repackages the destructuring at the start of `almostSurely_elim`
+for an arbitrary `ν`. -/
+private lemma hasDistribution_witness {A : Type*} {E : (Var → Val) → A} {i : I} {ν : PMF A}
+    (m : ValidIndexedPSpPm I Var Val) (h : (E⟨i⟩ ~ ν) m.val) :
+    ∃ P : ValidIndexedPSpPm I Var Val, P.PSpace i ≤ m.PSpace i ∧
+      @AEMeasurable _ _ ⊤ (P.PSpace i).1.ms E (P.PSpace i).1.μ ∧
+      @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ = @PMF.toMeasure A ⊤ ν := by
+  obtain ⟨q, ⟨P, rfl⟩, hqm⟩ := h
+  obtain ⟨b₁, b₂, hle, hown, body⟩ := hqm
+  obtain ⟨p, ⟨a, rfl⟩, hsome⟩ := hown
+  obtain ⟨hown_le, hown_some⟩ := hsome
+  refine ⟨P, ?_, ?_, ?_⟩
+  · have step1 : (⟨⟨P.PSp i, a.perm i⟩, a.comp i⟩ : PSpPm Var Val) ≤ b₁ i := hown_le i
+    have step2 : b₁ i ≤ (m.val) i :=
+      le_trans (IndexedPSpPm.le_of_mul_left I Val Var i) (hle i)
+    have hPm : P.PSp i ≤ (m.val i).1.1 := le_trans step1.1 step2.1
+    have hms : (m.val i).1.1 = some (m.PSpace i) := m.val_psp_eq_some i
+    have hPs : (P.PSp i) = some (P.PSpace i) := rfl
+    rw [hPs, hms] at hPm
+    exact WithTop.coe_le_coe.mp hPm
+  · simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body ⊢
+    exact body.1
+  · obtain ⟨ham, hμ⟩ := body
+    have bridge : @Measure.map _ _ (P.ms i) ⊤ E (P.μ i)
+        = @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ :=
+      ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨P.val i, P.property i⟩ E
+    rw [bridge] at hμ
+    exact hμ
+
+open MeasureTheory in
+omit [Finite Var] [Countable Val] in
+/-- 🤖: Elimination form of distribution ownership: if `E⟨i⟩ ~ ν` holds on a valid resource `m`,
+then `E` is a.e.-measurable under `m.μ i` and pushing `E` forward along `m.μ i` yields `ν`.
+Generalizes the sure-assertion `almostSurely_elim`/`almostSurely_ae` to an arbitrary `ν`.
+The witness space `P` for the distribution assertion is coarser than `m`, but `E`'s
+pushforward transfers to `m` because `P.PSpace i ≤ m.PSpace i` and `E` is `P`-a.e.-measurable. -/
+private lemma hasDistribution_elim {A : Type*} {E : (Var → Val) → A} {i : I} {ν : PMF A}
+    (m : ValidIndexedPSpPm I Var Val) (h : (E⟨i⟩ ~ ν) m.val) :
+    @AEMeasurable _ _ ⊤ (m.PSpace i).1.ms E (m.PSpace i).1.μ
+    ∧ @Measure.map _ _ (m.ms i) ⊤ E (m.μ i) = @PMF.toMeasure A ⊤ ν := by
+  obtain ⟨P, hPle, hae, hmap⟩ := hasDistribution_witness m h
+  obtain ⟨hae_m, hmap_m⟩ := map_eq_map_of_pspace_le hPle hae
+  have hbridge_m : @Measure.map _ _ (m.ms i) ⊤ E (m.μ i)
+      = @Measure.map _ _ (m.PSpace i).1.ms ⊤ E (m.PSpace i).1.μ :=
+    ValidIndexedPSpPm.map_μ_eq_map_PSpace_μ m i E
+  exact ⟨hae_m, by rw [hbridge_m, hmap_m, hmap]⟩
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: The `PSpace`-form and `m.μ i`-form of a.e.-measurability of `E` at index `i` coincide
+(the extracted `PSpace` measure/σ-algebra are definitionally `m`'s at a valid index). -/
+private lemma ValidPSpPm.aemeasurable_PSpace_iff_μ {A : Type*} (pp : ValidPSpPm Var Val)
+    {E : (Var → Val) → A} :
+    @AEMeasurable _ _ ⊤ pp.PSpace.1.ms E pp.PSpace.1.μ ↔ @AEMeasurable _ _ ⊤ pp.ms E pp.μ := by
+  obtain ⟨⟨⟨P, perm⟩, hcomp⟩, hv⟩ := pp
+  simp only [valid] at hv
+  cases P with
+  | none => exact absurd rfl hv.1
+  | some m' => exact Iff.rfl
+
+omit [Finite Var] [Countable Val] in
+private lemma ValidIndexedPSpPm.aemeasurable_PSpace_iff_μ {A : Type*}
+    (m : ValidIndexedPSpPm I Var Val) (i : I) {E : (Var → Val) → A} :
+    @AEMeasurable _ _ ⊤ (m.PSpace i).1.ms E (m.PSpace i).1.μ
+      ↔ @AEMeasurable _ _ ⊤ (m.ms i) E (m.μ i) :=
+  ValidPSpPm.aemeasurable_PSpace_iff_μ ⟨m.val i, m.property i⟩
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: The extracted `PSpace` measure and `m.μ i` induce the same almost-everywhere filter. -/
+private lemma ValidPSpPm.ae_PSpace_iff_μ (pp : ValidPSpPm Var Val)
+    {P : (Var → Val) → Prop} :
+    (∀ᵐ s ∂pp.PSpace.1.μ, P s) ↔ (∀ᵐ s ∂pp.μ, P s) := by
+  obtain ⟨⟨⟨Q, perm⟩, hcomp⟩, hv⟩ := pp
+  simp only [valid] at hv
+  cases Q with
+  | none => exact absurd rfl hv.1
+  | some m' => exact Iff.rfl
+
+omit [Finite Var] [Countable Val] in
+private lemma ValidIndexedPSpPm.ae_PSpace_iff_μ (m : ValidIndexedPSpPm I Var Val) (i : I)
+    {P : (Var → Val) → Prop} :
+    (∀ᵐ s ∂(m.PSpace i).1.μ, P s) ↔ (∀ᵐ s ∂(m.μ i), P s) :=
+  ValidPSpPm.ae_PSpace_iff_μ ⟨m.val i, m.property i⟩
+
+omit [Finite Var] [Countable Val] in
+/-- 🤖: Introduction form of distribution ownership: if `E` is a.e.-measurable under `m.μ i` and
+pushes forward to `μ`, then `E⟨i⟩ ~ μ` holds on `m.val` (witnessed by `m` itself). Dual to
+`hasDistribution_elim`; generalizes `almostSurely_intro`. -/
+private lemma hasDistribution_intro {A : Type*} {E : (Var → Val) → A} {i : I} {μ : PMF A}
+    (m : ValidIndexedPSpPm I Var Val)
+    (hae : @AEMeasurable _ _ ⊤ (m.ms i) E (m.μ i))
+    (hmap : @Measure.map _ _ (m.ms i) ⊤ E (m.μ i) = @PMF.toMeasure A ⊤ μ) :
+    (E⟨i⟩ ~ μ) m.val := by
+  refine ⟨_, ⟨m, rfl⟩, m.val, 1, (mul_one _).le, ownPSp_self m, ?_, ?_⟩
+  · show almostMeasurable E (m.PSp i)
+    rw [show m.PSp i = some (m.PSpace i) from rfl]
+    exact (ValidIndexedPSpPm.aemeasurable_PSpace_iff_μ m i).2 hae
+  · exact hmap
 
 -- # The primitive (non-WP) rules of Bluebell (see Fig. 9)
 
@@ -1236,7 +1888,9 @@ theorem Sure_Merge
   {A : Type*}
   {E₁ E₂ : (Var → Val) → Prop} {i : I}
   : ⌈E₁⟨i⟩⌉ ∗ ⌈E₂⟨i⟩⌉ ⊣⊢ ⌈(fun s => E₁ s ∧ E₂ s)⟨i⟩⌉ := by
-  sorry -- TODO: Rule SURE-MERGE proof
+    constructor
+    · exact Sure_Merge_fwd
+    · sorry
 
 -- ### SURE-AND-STAR
 
@@ -1337,9 +1991,40 @@ theorem C_Frame {A : Type*} {μ : PMF A} {P : bProp I Var Val} {K : A → bProp 
 
 -- ### C-UNIT-L
 
+-- TODO: Rule C-UNIT-L (spec not yet reviewed)
 theorem C_Unit_L {A : Type*} [Countable A] {v₀ : A} {K : A → bProp I Var Val} :
   𝒞⟨δ v₀⟩ _v; K v₀ ⊣⊢ K v₀ := by
-    sorry -- TODO: Rule C-UNIT-L proof (spec not yet reviewed)
+    constructor
+    · intro r _ hP
+      obtain ⟨_, ⟨m₀, rfl⟩, h₁⟩ := hP
+      obtain ⟨_, ⟨κ, rfl⟩, h₂⟩ := h₁
+      obtain ⟨h_own, h_bind, h_carrier⟩ := h₂
+      have hkey : ∀ i, κ.kernel i v₀ = m₀.μ i := by
+        intro i
+        have hb : m₀.μ i = @Measure.bind A (Var → Val) ⊤ (m₀.ms i)
+            (@PMF.toMeasure A ⊤ (δ v₀)) (κ.kernel i) := h_bind _ ⟨i, rfl⟩
+        rw [dirac_bind_top] at hb
+        exact hb.symm
+      have hpt : K v₀ (fun i => (⟨⟨some ⟨⟨m₀.ms i, κ.kernel i v₀⟩, κ.isProb i v₀⟩,
+          m₀.perm i⟩, κ.isComp i v₀⟩ : PSpPm Var Val)) :=
+        h_carrier _ ⟨⟨v₀, by simp⟩, rfl⟩
+      have hval : (fun i => (⟨⟨some ⟨⟨m₀.ms i, κ.kernel i v₀⟩, κ.isProb i v₀⟩,
+          m₀.perm i⟩, κ.isComp i v₀⟩ : PSpPm Var Val)) = m₀.val := by
+        rw [← val_eq_point m₀]
+        funext i
+        simp only [hkey i]
+      rw [hval] at hpt
+      exact (K v₀).upper' h_own hpt
+    · intro r hr hK
+      refine ⟨_, ⟨⟨r, hr⟩, rfl⟩, _, ⟨CompatibleKernel.constSelf ⟨r, hr⟩, rfl⟩, ?_, ?_, ?_⟩
+      · change (_ : IndexedPSpPm I Var Val) ≤ _; exact le_refl _
+      · intro p hp; obtain ⟨i, rfl⟩ := hp
+        exact (dirac_bind_top v₀ ((CompatibleKernel.constSelf (⟨r, hr⟩ :
+          ValidIndexedPSpPm I Var Val)).kernel i)).symm
+      · intro p hp; obtain ⟨⟨v, hv⟩, rfl⟩ := hp
+        have hKr : K v₀ ((⟨r, hr⟩ : ValidIndexedPSpPm I Var Val).val) := hK
+        rw [← val_eq_point (⟨r, hr⟩ : ValidIndexedPSpPm I Var Val)] at hKr
+        exact hKr
 
 -- ### C-UNIT-R
 
@@ -1357,9 +2042,26 @@ theorem C_Assoc {A B : Type*} {μ : PMF A} {μ₀ : PMF (A × B)} {κ : A → PM
 
 -- ### C-UNASSOC
 
+-- TODO: Rule C-UNASSOC (spec not yet reviewed)
 theorem C_Unassoc {A B : Type*} {μ : PMF A} {κ : A → PMF B} {K : B → bProp I Var Val} :
   𝒞⟨(PMF.bind μ κ)⟩ w; K w ⊢ 𝒞⟨μ⟩ v; 𝒞⟨κ v⟩ w; K w := by
-    sorry -- TODO: Rule C-UNASSOC proof (spec not yet reviewed)
+    intro r _ hP
+    obtain ⟨_, ⟨m₀, rfl⟩, h₁⟩ := hP
+    obtain ⟨_, ⟨κ₀, rfl⟩, h₂⟩ := h₁
+    obtain ⟨h_own, h_bind, h_carrier⟩ := h₂
+    refine ⟨_, ⟨m₀, rfl⟩, _, ⟨κ₀.pmfBind κ, rfl⟩, h_own, ?_, ?_⟩
+    · intro p hp; obtain ⟨i, rfl⟩ := hp
+      show m₀.μ i = _
+      rw [h_bind _ ⟨i, rfl⟩]
+      exact pmfBind_kernel_bind κ₀ μ κ i
+    · intro p hp; obtain ⟨⟨v, hv⟩, rfl⟩ := hp
+      refine ⟨_, ⟨⟨_, jointConditioning_elem_valid m₀ (κ₀.pmfBind κ) v⟩, rfl⟩, _,
+        ⟨⟨fun i w => κ₀.kernel i w, fun i w => κ₀.isProb i w, fun i w => κ₀.isComp i w⟩, rfl⟩,
+        ?_, ?_, ?_⟩
+      · change (_ : IndexedPSpPm I Var Val) ≤ _; exact le_refl _
+      · intro p hp; obtain ⟨i, rfl⟩ := hp; rfl
+      · intro p hp; obtain ⟨⟨w, hw⟩, rfl⟩ := hp
+        exact h_carrier _ ⟨⟨w, by rw [PMF.mem_support_bind_iff]; exact ⟨v, hv, hw⟩⟩, rfl⟩
 
 -- ### C-AND
 
@@ -1370,9 +2072,31 @@ theorem C_And {A : Type*} {μ : PMF A} {K₁ K₂ : A → bProp I Var Val} :
 
 -- ### C-SKOLEM
 
+-- TODO: Rule C-SKOLEM (spec not yet reviewed)
 theorem C_Skolem {A X : Type*} {μ : PMF A} {Q : (A × X) → bProp I Var Val } :
   𝒞⟨μ⟩ v; (∃ x : X, Q (v, x)) ⊢ ∃ (f : A → X), 𝒞⟨μ⟩ v; Q (v, f v) := by
-    sorry -- TODO: Rule C-SKOLEM proof (spec not yet reviewed)
+    intro r _ hP;
+    obtain ⟨ _, ⟨ m0, rfl ⟩, h1 ⟩ := hP
+    obtain ⟨ _, ⟨ κ, rfl ⟩, h2 ⟩ := h1
+    obtain ⟨ h3, h4, h5 ⟩ := h2;
+    obtain ⟨f, hf⟩ : ∃ f : A → X, ∀ v : A, v ∈ μ.support → Q (v, f v) (fun i => (⟨⟨some ⟨⟨m0.ms i, κ.kernel i v⟩, κ.isProb i v⟩, m0.perm i⟩, κ.isComp i v⟩ : PSpPm Var Val)) := by
+      have h_exists_f : ∀ v ∈ μ.support, ∃ x : X, Q (v, x) (fun i => (⟨⟨some ⟨⟨m0.ms i, κ.kernel i v⟩, κ.isProb i v⟩, m0.perm i⟩, κ.isComp i v⟩ : PSpPm Var Val)) := by
+        intro v hv;
+        convert h5 _ ⟨ ⟨ v, hv ⟩, rfl ⟩ using 1;
+        constructor <;> intro h;
+        · exact h5 _ ⟨ ⟨ v, hv ⟩, rfl ⟩;
+        · obtain ⟨ _, ⟨ x, rfl ⟩, hx ⟩ := h;
+          exact ⟨ x, hx ⟩;
+      by_cases hX : Nonempty X;
+      · choose! f hf using h_exists_f;
+        exact ⟨ f, hf ⟩;
+      · obtain ⟨v, hv⟩ : ∃ v : A, v ∈ μ.support := by
+          exact PMF.support_nonempty μ;
+        exact False.elim ( hX <| by obtain ⟨ x, hx ⟩ := h_exists_f v hv; exact ⟨ x ⟩ );
+    refine' ⟨ _, ⟨ f, rfl ⟩, _, ⟨ m0, rfl ⟩, _, ⟨ κ, rfl ⟩, h3, h4, _ ⟩;
+    intro v;
+    rintro ⟨ ⟨ v, hv ⟩, rfl ⟩;
+    exact ( Q ( v, f v ) ).upper' ( le_rfl ) ( hf v hv )
 
 -- ### C-TRANSF
 
@@ -1498,9 +2222,21 @@ theorem Sure_Str_Convex {A : Type*} {μ : PMF A}
 
 -- ### C-FOR-ALL
 
+-- TODO: Rule C-FOR-ALL (spec not yet reviewed)
 theorem C_For_All {A X : Type*} {μ : PMF A} {Q : (A × X) → bProp I Var Val} :
   𝒞⟨μ⟩ v; (∀ (x : X), Q (v, x)) ⊢ ∀ (x : X), 𝒞⟨μ⟩ v; Q (v, x) := by
-    sorry -- TODO: Rule C-FOR-ALL proof (spec not yet reviewed)
+    refine' fun m hv h => _;
+    obtain ⟨ _, ⟨ m0, rfl ⟩, h1 ⟩ := h;
+    obtain ⟨ _, ⟨ κ, rfl ⟩, h2 ⟩ := h1;
+    obtain ⟨ h3, h4, h5 ⟩ := h2;
+    intro x;
+    rintro ⟨ a, rfl ⟩;
+    refine' ⟨ _, ⟨ m0, rfl ⟩, _, ⟨ κ, rfl ⟩, h3, _, _ ⟩;
+    · exact h4;
+    · intro v;
+      rintro ⟨ v, rfl ⟩;
+      obtain ⟨ v, hv ⟩ := v;
+      exact h5 _ ⟨ ⟨ v, hv ⟩, rfl ⟩ (Q (v, a)) ⟨ a, rfl ⟩
 
 /- TODO: Confirm if the second `∀` should be a `iprop(∀ ...)` as it is now, or a regular `∀`.
          In the paper it is a bold ∀ (in the Latex it's `\A` rather than `\forall`).
@@ -1516,7 +2252,35 @@ theorem C_For_All {A X : Type*} {μ : PMF A} {Q : (A × X) → bProp I Var Val} 
 
 theorem C_Pure {A : Type*} {X : Set A} {μ : PMF A} {K : A → bProp I Var Val} :
   ⌜ ∑' x : X, μ x = 1 ⌝ ∗ 𝒞⟨μ⟩ v; K v ⊣⊢ 𝒞⟨μ⟩ v; (⌜ v ∈ X ⌝ ∗ K v) := by
-    sorry -- TODO: Rule C-PURE proof
+  constructor
+  · intro r _ hsep
+    obtain ⟨b₁, b₂, hle, hpure, hcond⟩ := hsep
+    rw [pmf_tsum_subtype_eq_one_iff] at hpure
+    obtain ⟨_, ⟨m, rfl⟩, h₂⟩ := hcond
+    obtain ⟨_, ⟨κ, rfl⟩, h₃⟩ := h₂
+    obtain ⟨h_own, h_bind, h_carrier⟩ := h₃
+    refine ⟨_, ⟨m, rfl⟩, _, ⟨κ, rfl⟩, ?_, ?_, ?_⟩
+    · show m.val ≤ r
+      exact le_trans h_own (le_trans (IndexedPSpPm.le_of_mul_right I Val Var) hle)
+    · intro p hp; obtain ⟨i, rfl⟩ := hp; exact h_bind _ ⟨i, rfl⟩
+    · intro p hp; obtain ⟨v, rfl⟩ := hp
+      exact ⟨1, _, (one_mul _).le, hpure v v.2, h_carrier _ ⟨v, rfl⟩⟩
+  · intro r hr hcond
+    obtain ⟨_, ⟨m, rfl⟩, h₂⟩ := hcond
+    obtain ⟨_, ⟨κ, rfl⟩, h₃⟩ := h₂
+    obtain ⟨h_own, h_bind, h_carrier⟩ := h₃
+    have hsupp : ∀ v, v ∈ μ.support → v ∈ X := by
+      intro v hv
+      obtain ⟨c₁, c₂, hcle, hc1, hc2⟩ := h_carrier _ ⟨⟨v, hv⟩, rfl⟩
+      exact hc1
+    refine ⟨1, r, (one_mul r).le, ?_, ?_⟩
+    · show ∑' x : X, μ x = 1
+      rw [pmf_tsum_subtype_eq_one_iff]; exact hsupp
+    · refine ⟨_, ⟨m, rfl⟩, _, ⟨κ, rfl⟩, h_own, ?_, ?_⟩
+      · intro p hp; obtain ⟨i, rfl⟩ := hp; exact h_bind _ ⟨i, rfl⟩
+      intro p hp; obtain ⟨v, rfl⟩ := hp
+      obtain ⟨c₁, c₂, hcle, hc1, hc2⟩ := h_carrier _ ⟨v, rfl⟩
+      exact (K v).upper' (le_trans (IndexedPSpPm.le_of_mul_right I Val Var) hcle) hc2
 
 -- # The primitive WP rules of Bluebell (see Fig. 10)
 
@@ -1768,134 +2532,6 @@ theorem Sure_Dirac
 
 -- ### SURE-EQ-INJ
 
--- #### SURE-EQ-INJ: Helper lemmas
-
-omit [Finite Var] [Countable Val] in
-/-- The measure `pp.μ` agrees with the measure of the extracted `PSpace` on every set. -/
-private lemma ValidPSpPm.mu_apply_eq_PSpace (pp : ValidPSpPm Var Val)
-    (s : Set (Var → Val)) : pp.μ s = (pp.PSpace).1.μ s := by
-  obtain ⟨⟨⟨P, perm⟩, hcomp⟩, hv⟩ := pp
-  simp only [valid] at hv
-  cases P with
-  | none => exact absurd rfl hv.1
-  | some m' => rfl
-
-omit [Finite Var] [Countable Val] in
-/-- Indexed version of `ValidPSpPm.mu_apply_eq_PSpace`. -/
-private lemma ValidIndexedPSpPm.mu_apply_eq_PSpace (m : ValidIndexedPSpPm I Var Val)
-    (i : I) (s : Set (Var → Val)) : m.μ i s = (m.PSpace i).1.μ s :=
-  ValidPSpPm.mu_apply_eq_PSpace ⟨m.val i, m.property i⟩ s
-
-omit [Finite Var] [Countable Val] in
-/-- For a valid indexed space, the underlying `PSp` at index `i` is `some` of the
-extracted `PSpace`. -/
-private lemma ValidIndexedPSpPm.val_psp_eq_some (m : ValidIndexedPSpPm I Var Val) (i : I) :
-    (m.val i).1.1 = some (m.PSpace i) := by
-  obtain ⟨mval, mprop⟩ := m
-  have hv := mprop i
-  simp only [valid] at hv
-  rcases hmi : mval i with ⟨⟨Pm, permm⟩, hcomp⟩
-  cases hPm : Pm with
-  | none =>
-    exfalso
-    apply hv.1
-    have h1 : (↑(mval i) : PSpPmProd Var Val).1 = Pm := by rw [hmi]
-    rw [h1, hPm]; rfl
-  | some m' => simp only [ValidIndexedPSpPm.PSpace, ValidPSpPm.PSpace, hmi, hPm]; rfl
-
-open MeasureTheory in
-omit [Finite Var] [Countable Val] in
-/-- From `⌈E⟨i⟩⌉` holding on a valid resource `m`, extract a validated
-probability space `P` whose space at index `i` is coarser than `m`'s, on which `E` is
-a.e.-measurable and the event `{s | E s}` has measure `1`. This packages the forward
-content of `Sure_Dirac` in a reusable form. -/
-private lemma almostSurely_elim {E : (Var → Val) → Prop} {i : I}
-    (m : ValidIndexedPSpPm I Var Val) (h : ⌈E⟨i⟩⌉ m.val) :
-    ∃ P : ValidIndexedPSpPm I Var Val,
-      P.PSpace i ≤ m.PSpace i ∧
-      almostMeasurable E (P.PSp i) ∧
-      (P.PSpace i).1.μ {s | E s} = 1 := by
-  obtain ⟨q, ⟨P, hqP⟩, hqm⟩ := h
-  subst hqP
-  obtain ⟨b₁, b₂, hle, hown, body⟩ := hqm
-  obtain ⟨p, ⟨a, rfl⟩, hsome⟩ := hown
-  obtain ⟨hown_le, hown_some⟩ := hsome
-  refine ⟨P, ?_, ?_, ?_⟩
-  · have step1 : (⟨⟨P.PSp i, a.perm i⟩, a.comp i⟩ : PSpPm Var Val) ≤ b₁ i := hown_le i
-    have step2 : b₁ i ≤ (m.val) i :=
-      le_trans (IndexedPSpPm.le_of_mul_left I Val Var i) (hle i)
-    have hPm : P.PSp i ≤ (m.val i).1.1 := le_trans step1.1 step2.1
-    have hms : (m.val i).1.1 = some (m.PSpace i) := m.val_psp_eq_some i
-    have hPs : (P.PSp i) = some (P.PSpace i) := rfl
-    rw [hPs, hms] at hPm
-    exact WithTop.coe_le_coe.mp hPm
-  · simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body ⊢
-    exact body.1
-  · simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body
-    obtain ⟨ham, hμ⟩ := body
-    have bridge : @Measure.map _ _ (P.ms i) ⊤ E (P.μ i)
-        = @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ :=
-      ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨P.val i, P.property i⟩ E
-    rw [bridge] at hμ
-    have hae : AEMeasurable E (P.PSpace i).1.μ := by
-      simpa [ValidIndexedPSpPm.PSpace] using ham
-    have key := Measure.map_apply_of_aemeasurable (mβ := ⊤) hae
-      (s := {True}) MeasurableSpace.measurableSet_top
-    rw [hμ] at key
-    simp only [PMF.dirac, Measure.toPMF_toMeasure,
-      Measure.dirac_apply', MeasurableSpace.measurableSet_top] at key
-    simp only [Set.indicator_of_mem, Set.mem_singleton_iff, Pi.one_apply] at key
-    rw [key]
-    congr 1
-    ext s
-    simp [Set.mem_setOf_eq]
-
-open MeasureTheory in
-omit [Finite Var] [Countable Val] in
-/-- If `⌈E⟨i⟩⌉` holds on a valid resource `m`, then `E` holds
-`m.PSpace i`-almost everywhere. -/
-private lemma almostSurely_ae {E : (Var → Val) → Prop} {i : I}
-    (m : ValidIndexedPSpPm I Var Val) (h : ⌈E⟨i⟩⌉ m.val) :
-    ∀ᵐ s ∂(m.PSpace i).1.μ, E s := by
-  obtain ⟨ P, hPle, ham, hP1 ⟩ := almostSurely_elim m h;
-  -- Let `μP := (P.PSpace i).1.μ`.
-  set μP := (P.PSpace i).1.μ;
-  -- Show `f ⁻¹' {True}` has measure 1 and hence `f ⁻¹' {False}` has measure 0.
-  obtain ⟨ f, hf_meas, hf_ae ⟩ := ham;
-  have h_true : μP (f ⁻¹' {True}) = 1 := by
-    rw [ ← hP1, ← MeasureTheory.measure_congr ];
-    filter_upwards [ hf_ae ] with s hs using by simpa using hs;
-  have h_false : μP (f ⁻¹' {False}) = 0 := by
-    convert MeasureTheory.measure_compl _ _ using 1;
-    convert rfl;
-    any_goals exact f ⁻¹' { True };
-    · ext; simp [Set.mem_compl_iff];
-    · rw [ h_true, ( P.PSpace i ).2.measure_univ, tsub_self ];
-    · exact hf_meas ( MeasurableSingletonClass.measurableSet_singleton _ );
-    · exact h_true.symm ▸ ENNReal.one_ne_top;
-  obtain ⟨ N2, hN2_sub, hN2_meas, hN2_null ⟩ := @exists_measurable_superset_of_null _ ( P.PSpace i ).1.ms μP _ hf_ae.symm;
-  refine' MeasureTheory.measure_mono_null _ _;
-  exact N2 ∪ f ⁻¹' { False };
-  · grind +qlia;
-  · exact MeasureOnSpace.le_preserves_measure hPle ( hN2_meas.union ( hf_meas ( MeasurableSingletonClass.measurableSet_singleton _ ) ) ) |> fun h => h.symm ▸ MeasureTheory.measure_union_null hN2_null h_false
-
-omit [Finite Var] [Countable Val] in
-/-- A valid indexed space owns its own underlying spaces. -/
-private lemma ownPSp_self (m : ValidIndexedPSpPm I Var Val) :
-    ownPSp m.PSp m.val := by
-  constructor;
-  refine' ⟨ ⟨ _, rfl ⟩, _ ⟩;
-  constructor;
-  exact fun i => m.val_psp_eq_some i ▸ ( m.val i ).2;
-  constructor;
-  · intro i;
-    constructor;
-    · exact m.val_psp_eq_some i ▸ le_rfl;
-    · exact le_rfl;
-  · exact fun i => by cases m.val i ; tauto;
-
--- #### SURE-EQ-INJ: Spec & Proof
-
 omit [Finite Var] [Countable Val] in
 theorem Sure_Eq_Inj {A : Type*} {i : I} [DecidableEq A]
   {E : (Var → Val) → A}
@@ -1921,26 +2557,7 @@ theorem Sure_Eq_Inj {A : Type*} {i : I} [DecidableEq A]
 
 -- ### SURE-SUB
 
--- #### SURE-SUB: Helper lemmas
-
-/-- The function `b ↦ ∑' a ∈ f⁻¹'{b}, μ a` is a `PMF`, i.e. it sums to `1`.
-This is precisely the pushforward distribution `μ.map f`. -/
-private lemma pmf_pushforward_hasSum {A B : Type*} (μ : PMF A) (f : A → B) :
-    HasSum (fun b => ∑' a : f ⁻¹' {b}, μ a) 1 := by
-  classical
-  have heq : (fun b => ∑' a : f ⁻¹' {b}, μ a) = (μ.map f) := by
-    ext b
-    rw [PMF.map_apply, tsum_subtype]
-    congr 1; ext a
-    simp only [Set.indicator, Set.mem_preimage, Set.mem_singleton_iff]
-    by_cases h : f a = b
-    · simp [h]
-    · rw [if_neg h, if_neg (fun hh => h hh.symm)]
-  rw [heq]
-  exact (μ.map f).2
-
--- #### SURE-SUB: Spec & Proof
-
+omit [Finite Var] [Countable Val] in
 theorem Sure_Sub {A B: Type*} {i : I}
   {E₁ : (Var → Val) → A} {E₂ : (Var → Val) → B}
   {μ : PMF A}
@@ -1950,10 +2567,36 @@ theorem Sure_Sub {A B: Type*} {i : I}
   E₁⟨i⟩ ~ μ ∗ ⌈(fun s => E₂ s = f (E₁ s))⟨i⟩⌉
   ⊢ E₂⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, prf⟩)
   := by
-    sorry -- TODO: Rule SURE-SUB proof
+    intro prf
+    show E₁⟨i⟩ ~ μ ∗ ⌈(fun s => E₂ s = f (E₁ s))⟨i⟩⌉
+      ⊢ E₂⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, pmf_pushforward_hasSum μ f⟩)
+    letI : MeasurableSpace A := ⊤
+    letI : MeasurableSpace B := ⊤
+    intro m hm hsep
+    obtain ⟨b₁, b₂, hle, hE₁, hsure⟩ := hsep
+    set M : ValidIndexedPSpPm I Var Val := ⟨m, hm⟩ with hM
+    have hE₁m : (E₁⟨i⟩ ~ μ) m :=
+      (hasDistribution E₁ i μ).upper'
+        (le_trans (IndexedPSpPm.le_of_mul_left I Val Var) hle) hE₁
+    have hsurem : (⌈(fun s => E₂ s = f (E₁ s))⟨i⟩⌉) m :=
+      (almostSurely (fun s => E₂ s = f (E₁ s)) i).upper'
+        (le_trans (IndexedPSpPm.le_of_mul_right I Val Var) hle) hsure
+    obtain ⟨hae₁P, hmap₁⟩ := hasDistribution_elim M hE₁m
+    have hae₁ : @AEMeasurable _ _ ⊤ (M.ms i) E₁ (M.μ i) :=
+      (ValidIndexedPSpPm.aemeasurable_PSpace_iff_μ M i).1 hae₁P
+    have hae_eq' : E₂ =ᵐ[M.μ i] (fun s => f (E₁ s)) :=
+      (ValidIndexedPSpPm.ae_PSpace_iff_μ M i).1 (almostSurely_ae M hsurem)
+    apply hasDistribution_intro M
+    · exact (measurable_from_top.comp_aemeasurable hae₁).congr hae_eq'.symm
+    · have hmm : @Measure.map _ _ (M.ms i) ⊤ (fun s => f (E₁ s)) (M.μ i)
+          = @Measure.map A B ⊤ ⊤ f (@Measure.map (Var → Val) A (M.ms i) ⊤ E₁ (M.μ i)) :=
+        (AEMeasurable.map_map_of_aemeasurable measurable_from_top.aemeasurable hae₁).symm
+      rw [pushforward_eq_map, ← PMF.toMeasure_map f μ measurable_from_top,
+        Measure.map_congr hae_eq', hmm, hmap₁]
 
 -- ### DIST-FUN
 
+omit [Finite Var] [Countable Val] in
 theorem Dist_Fun {i : I} {A B: Type*}
   {E : (Var → Val) → A}
   {μ : PMF A}
@@ -1962,7 +2605,22 @@ theorem Dist_Fun {i : I} {A B: Type*}
   let prf : HasSum (fun b => ∑' (a : ↑(f ⁻¹' {b})), μ ↑a) 1 := (by exact pmf_pushforward_hasSum μ f)
   E⟨i⟩ ~ μ ⊢ (fun s => (f ∘ E) s)⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, prf⟩)
   := by
-    sorry -- TODO: Rule DIST-FUN proof
+    intro prf
+    show E⟨i⟩ ~ μ ⊢ (fun s => (f ∘ E) s)⟨i⟩ ~ (⟨fun b ↦ ∑' a : f ⁻¹' {b}, μ a, pmf_pushforward_hasSum μ f⟩)
+    intro m hm h
+    obtain ⟨q, ⟨P, rfl⟩, hpm⟩ := h
+    obtain ⟨b₁, b₂, hle, hown, hbody⟩ := hpm
+    obtain ⟨p, ⟨a, rfl⟩, hsome⟩ := hown
+    obtain ⟨ham, hμ⟩ := hbody
+    letI : MeasurableSpace A := ⊤
+    letI : MeasurableSpace B := ⊤
+    refine ⟨_, ⟨P, rfl⟩, b₁, b₂, hle, ⟨_, ⟨a, rfl⟩, hsome⟩, ?_, ?_⟩
+    · exact Measurable.comp_aemeasurable measurable_from_top ham
+    · rw [pushforward_eq_map, ← PMF.toMeasure_map f μ measurable_from_top, ← hμ,
+        ValidIndexedPSpPm.map_μ_eq_map_PSpace_μ P i (fun s => (f ∘ E) s),
+        ValidIndexedPSpPm.map_μ_eq_map_PSpace_μ P i E]
+      exact (AEMeasurable.map_map_of_aemeasurable (g := f) (f := E)
+        measurable_from_top.aemeasurable ham).symm
 
 -- ### DIRAC-DUP
 
@@ -1971,7 +2629,23 @@ theorem Dirac_Dup
   {E : (Var → Val) → A} (i : I) (v : A)
   :   E⟨i⟩ ~ δ v
     ⊢ E⟨i⟩ ~ δ v ∗ E⟨i⟩ ~ δ v := by
-  sorry -- TODO: Rule DIRAC-DUP proof
+  classical
+  intro m hv h
+  -- 🤖: Convert the dirac distribution to a sure assertion.
+  have h1 : (⌈(fun s => E s = v)⟨i⟩⌉) m := Sure_Dirac.mp m hv h
+  -- 🤖: Duplicate the sure assertion via `Sure_Merge` (backward), using that the
+  --     self-conjunction predicate `E s = v ∧ E s = v` is just `E s = v`.
+  have hpred : (fun s => E s = v ∧ E s = v) = (fun s => E s = v) := by
+    funext s; simp
+  have h2 := (Sure_Merge (A := Unit) (E₁ := fun s => E s = v)
+      (E₂ := fun s => E s = v) (i := i)).mpr m hv (by rw [hpred]; exact h1)
+  obtain ⟨b₁, b₂, hle, hb₁, hb₂⟩ := h2
+  have hvb₁ : valid b₁ :=
+    valid_mono (le_trans (IndexedPSpPm.le_of_mul_left I Val Var) hle) hv
+  have hvb₂ : valid b₂ :=
+    valid_mono (le_trans (IndexedPSpPm.le_of_mul_right I Val Var) hle) hv
+  exact ⟨b₁, b₂, hle, Sure_Dirac.mpr b₁ hvb₁ hb₁, Sure_Dirac.mpr b₂ hvb₂ hb₂⟩
+
 
 -- ### DIST-SUPP
 
@@ -2051,29 +2725,6 @@ private lemma bind_event_null {A : Type*}
   · simp +decide
   · exact Set.disjoint_left.mpr fun x hx₁ hx₂ => hx₂ <| hN_zero ⟨x, hx₁⟩
 
-omit [Finite Var] [Countable Val] in
-/-- Converse of `almostSurely_ae`: if `E` holds `m.PSpace i`-almost everywhere, then
-`⌈E⟨⟨i⟩⌉` holds on `m`. The witness space is `m` itself. -/
-private lemma almostSurely_intro {E : (Var → Val) → Prop} {i : I}
-    (m : ValidIndexedPSpPm I Var Val) (h : ∀ᵐ s ∂(m.PSpace i).1.μ, E s) :
-    ⌈E⟨i⟩⌉ m.val := by
-  refine' ⟨ _, ⟨ m, rfl ⟩, _ ⟩;
-  refine' ⟨ m.val, 1, _ ⟩;
-  refine' ⟨ _, _, _ ⟩;
-  · exact mul_one _ |> le_of_eq;
-  · exact ownPSp_self m;
-  · refine' ⟨ _, _ ⟩;
-    · refine' ⟨ fun _ => True, measurable_const, h.mono fun s hs => by simpa using hs ⟩;
-    · have hE_true : E =ᵐ[(m.PSpace i).1.μ] (fun _ => True) := by
-        filter_upwards [ h ] with s hs using by simpa using hs;
-      convert Measure.map_congr hE_true using 1;
-      · convert ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨ m.val i, m.property i ⟩ E using 1;
-      · ext s hs; simp +decide only [PMF.dirac, Measure.toPMF_toMeasure,
-        MeasurableSpace.measurableSet_top, Measure.dirac_apply', ValidIndexedPSpPm.PSpace,
-        PSp.compatiblePerm, OrderedUnitalResourceAlgebra.instValidForall.eq_1, ValidPSpPm.PSpace,
-        ValidPSpPm, ValidPSp.PSpace, ValidPSp, Measure.map_const, PSpace.isProbability,
-        measure_univ, one_smul] ;
-
 -- #### SURE-CONVEX: Spec & Proof
 
 theorem Sure_Convex {A : Type*}
@@ -2101,7 +2752,31 @@ theorem Dist_Convex {A : Type*}
   {i : I} {E : (Var → Val) → A}
   :
   𝒞⟨μ⟩ v; E⟨i⟩ ~ μ' ⊢ E⟨i⟩ ~ μ' := by
-    sorry -- TODO: Rule DIST-CONVEX proof
+    intro r _ hP
+    obtain ⟨_, ⟨m, rfl⟩, h₁⟩ := hP
+    obtain ⟨_, ⟨κ, rfl⟩, h₂⟩ := h₁
+    obtain ⟨h_own, h_bind_all, h_carrier_all⟩ := h₂
+    apply (hasDistribution E i μ').upper' h_own
+    have hae : ∀ v : μ.support, @AEMeasurable _ _ ⊤ (m.ms i) E (κ.kernel i v) := by
+      intro v
+      have := (hasDistribution_elim (⟨_, jointConditioning_elem_valid m κ v⟩)
+        (h_carrier_all _ ⟨v, rfl⟩)).1
+      exact (ValidIndexedPSpPm.aemeasurable_PSpace_iff_μ
+        (⟨_, jointConditioning_elem_valid m κ v⟩) i).1 this
+    have hmap : ∀ v : μ.support,
+        @Measure.map _ _ (m.ms i) ⊤ E (κ.kernel i v) = @PMF.toMeasure A ⊤ μ' := by
+      intro v
+      exact (hasDistribution_elim (⟨_, jointConditioning_elem_valid m κ v⟩)
+        (h_carrier_all _ ⟨v, rfl⟩)).2
+    refine ⟨_, ⟨m, rfl⟩, m.val, 1, (mul_one _).le, ownPSp_self m, ?_, ?_⟩
+    · show almostMeasurable E (m.PSp i)
+      rw [show m.PSp i = some (m.PSpace i) from rfl]
+      show @AEMeasurable _ _ ⊤ (m.PSpace i).1.ms E (m.PSpace i).1.μ
+      rw [ValidIndexedPSpPm.aemeasurable_PSpace_iff_μ m i, h_bind_all _ ⟨i, rfl⟩]
+      exact aemeasurable_pmf_bind μ (κ.kernel i) E hae
+    · show @Measure.map _ _ (m.ms i) ⊤ E (m.μ i) = @PMF.toMeasure A ⊤ μ'
+      rw [h_bind_all _ ⟨i, rfl⟩]
+      exact map_pmf_bind_const μ (κ.kernel i) E _ hae hmap
 
 -- ### C-SURE-PROJ
 
