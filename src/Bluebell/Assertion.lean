@@ -899,7 +899,7 @@ Note on use of generative AI in the `BluebellRules` section:
 - Generative AI tools have been used to complete some proofs.
 - Some helper lemmas were generated using generative AI tools.
 - Some comments were also generated using generative AI tools,
-    in most cases these are indicated by "🤖:" preceding the comment.
+    these are indicated by "🤖:" preceding the comment.
 - The git history indictes most cases where generative AI has been used,
     primarily by `Assisted-by: ...` trailers in commit messages.
 - Most AI-generated lemmas are made `private`.
@@ -940,7 +940,7 @@ def pvar {A : Type*} (E : (Var → Val) → A) : Set Var :=
   {x : Var | ∃ (σ : Var → Val) (v : Val), E σ ≠ E (Function.update σ x v)}
 
 -- For SURE-AND-STAR
--- The `PSpace.compatiblePerm` predicate only constrains a permission's behaviour on its
+-- 🤖: The `PSpace.compatiblePerm` predicate only constrains a permission's behaviour on its
 -- zero-valued (`Irr`) variables, so swapping the value at a single variable for any nonzero
 -- value preserves compatibility.
 omit [Finite Var] [Countable Val] [Inhabited Val] in
@@ -1308,9 +1308,9 @@ private lemma almostSurely_ae {E : (Var → Val) → Prop} {i : I}
     (m : ValidIndexedPSpPm I Var Val) (h : ⌈E⟨i⟩⌉ m.val) :
     ∀ᵐ s ∂(m.PSpace i).1.μ, E s := by
   obtain ⟨ P, hPle, ham, hP1 ⟩ := almostSurely_elim m h;
-  -- Let `μP := (P.PSpace i).1.μ`.
+  -- 🤖: Let `μP := (P.PSpace i).1.μ`.
   set μP := (P.PSpace i).1.μ;
-  -- Show `f ⁻¹' {True}` has measure 1 and hence `f ⁻¹' {False}` has measure 0.
+  -- 🤖: Show `f ⁻¹' {True}` has measure 1 and hence `f ⁻¹' {False}` has measure 0.
   obtain ⟨ f, hf_meas, hf_ae ⟩ := ham;
   have h_true : μP (f ⁻¹' {True}) = 1 := by
     rw [ ← hP1, ← MeasureTheory.measure_congr ];
@@ -1683,7 +1683,7 @@ private lemma hasDistribution_intro {A : Type*} {E : (Var → Val) → A} {i : I
 
 open Classical in
 omit [Finite Var] [Countable Val] in
-/-- Auxiliary: for a valid element `a` and a valid witness `a'` agreeing with `a` on
+/-- 🤖: Auxiliary: for a valid element `a` and a valid witness `a'` agreeing with `a` on
 `J₁ ∩ J₂` (where both `J₁, J₂` are in the idx-family), `P a` holds.
 The key idea is to construct a valid intermediate element that agrees with `a'` on `J₂`
 and with `a` on `J₁`, using the validity of both `a` and `a'`. -/
@@ -1693,30 +1693,30 @@ private lemma irrelevant_binary_inter
   {a a' : IndexedPSpPm I Var Val}
   (hva : valid a) (hva' : valid a')
   (hagree : ∀ i, i ∈ J₁ ∩ J₂ → a i = a' i) (hPa' : P a') : P a := by
-  -- Define intermediate: a on J₁, a' on J₁ᶜ
+  -- 🤖: Define intermediate: a on J₁, a' on J₁ᶜ
   set a₁ : IndexedPSpPm I Var Val := fun i => if i ∈ J₁ then a i else a' i
-  -- a₁ is valid
+  -- 🤖: a₁ is valid
   have hva₁ : valid a₁ := by
     intro i; dsimp [a₁]
     split <;> [exact hva i; exact hva' i]
-  -- a₁ agrees with a' on J₂
+  -- 🤖: a₁ agrees with a' on J₂
   have h₂ : ∀ i, i ∈ J₂ → a₁ i = a' i := by
     intro i hi₂; dsimp [a₁]
     split
     · rename_i hi₁; exact hagree i ⟨hi₁, hi₂⟩
     · rfl
-  -- P a₁ by irrelevant J₂ᶜ
+  -- 🤖: P a₁ by irrelevant J₂ᶜ
   have hPa₁ : P a₁ := by
     apply hJ₂; exact ⟨a', hva', fun i hi => h₂ i (by rwa [Set.mem_setOf_eq, not_not] at hi), hPa'⟩
-  -- a agrees with a₁ on J₁
+  -- 🤖: a agrees with a₁ on J₁
   have h₁ : ∀ i, i ∈ J₁ → a i = a₁ i := by
     intro i hi; dsimp [a₁]; rw [if_pos hi]
-  -- P a by irrelevant J₁ᶜ
+  -- 🤖: P a by irrelevant J₁ᶜ
   exact hJ₁ a ⟨a₁, hva₁, fun i hi => h₁ i (by rwa [Set.mem_setOf_eq, not_not] at hi), hPa₁⟩
 
 open Classical in
 omit [Finite Var] [Countable Val] in
-/-- For a finite family of sets satisfying irrelevance, the intersection also satisfies
+/-- 🤖: For a finite family of sets satisfying irrelevance, the intersection also satisfies
 irrelevance when both elements are valid. Proved by finite induction on the family. -/
 private lemma irrelevant_sInter_valid [Inhabited Var] [Finite I]
   {P : bProp I Var Val} {S : Set (Set I)} (hS : ∀ J ∈ S, irrelevant {i | i ∉ J} P)
@@ -1730,7 +1730,7 @@ private lemma irrelevant_sInter_valid [Inhabited Var] [Finite I]
     induction' S using Finset.induction with J S hS ih generalizing a a';
     · convert hPa' using 1;
       exact funext fun i => hagree i ( by simp +decide ) ▸ rfl;
-    · -- Define intermediate c : IndexedPSpPm I Var Val as c i = a i if i ∈ J, a' i if i ∉ J.
+    · -- 🤖: Define intermediate c : IndexedPSpPm I Var Val as c i = a i if i ∈ J, a' i if i ∉ J.
       set c : IndexedPSpPm I Var Val := fun i => if i ∈ J then a i else a' i;
       have hc_valid : valid c := by
         exact fun i => by unfold c; split_ifs <;> [ exact hva i; exact hva' i ] ;
@@ -1745,7 +1745,7 @@ private lemma irrelevant_sInter_valid [Inhabited Var] [Finite I]
 
 open Classical in
 omit [Finite Var] [Countable Val] in
-/-- The key locality property: `P` is irrelevant to indices outside `idx P`.
+/-- 🤖: The key locality property: `P` is irrelevant to indices outside `idx P`.
 This is stated in the Bluebell paper (p.17) as a property of the `idx` definition.
 When `I` is finite, the family `{J | irrelevant {i | i ∉ J} P}` is finite, so the
 arbitrary intersection `idx P` inherits the irrelevance property via
@@ -1755,13 +1755,13 @@ private lemma irrelevant_idx_compl [Inhabited Var] [Finite I]
   intro a ha;
   obtain ⟨a', ha', hagree', hPa'⟩ := ha
   set a₀ : IndexedPSpPm I Var Val := fun i => if i ∈ idx P then a' i else 1;
-  -- By definition of $a₀$, we know that $a₀$ is valid.
+  -- 🤖: By definition of $a₀$, we know that $a₀$ is valid.
   have ha₀_valid : valid a₀ := by
     aesop;
-  -- By definition of $a₀$, we know that $a₀$ and $a'$ agree on $\text{idx } P$.
+  -- 🤖: By definition of $a₀$, we know that $a₀$ and $a'$ agree on $\text{idx } P$.
   have ha₀_a'_agree : ∀ i ∈ idx P, a₀ i = a' i := by
     aesop;
-  -- By definition of $a₀$, we know that $P a₀$.
+  -- 🤖: By definition of $a₀$, we know that $P a₀$.
   have ha₀_P : P a₀ := by
     apply_rules [ irrelevant_sInter_valid ];
     exact fun J hJ => hJ;
@@ -1779,10 +1779,10 @@ theorem And_To_Star [Inhabited Var] [Finite I]
       idx P ∩ idx Q = ∅
     → P ∧ Q ⊢ P ∗ Q := by
   intro hdisj m hv ⟨hPm, hQm⟩
-  -- Construct b₁ = m on idx P, 1 elsewhere; b₂ = m on (idx P)ᶜ, 1 on idx P
+  -- 🤖: Construct b₁ = m on idx P, 1 elsewhere; b₂ = m on (idx P)ᶜ, 1 on idx P
   refine ⟨fun i => if i ∈ idx P then m i else 1,
           fun i => if i ∈ idx P then 1 else m i, ?_, ?_, ?_⟩
-  · -- b₁ * b₂ ≤ m
+  · -- 🤖: b₁ * b₂ ≤ m
     intro i
     simp only [Pi.mul_apply]
     by_cases hi : i ∈ idx P
@@ -1970,7 +1970,7 @@ theorem C_False {A : Type*} {μ : PMF A} :
 -- #### C-CONS: Helper lemmas
 
 omit [Finite Var] [Countable Val] in
-/-- The indexed probability space built from a compatible kernel at a fixed support point
+/-- 🤖: The indexed probability space built from a compatible kernel at a fixed support point
 is valid: each component is `some (...)` (hence not `⊤`), and its permission component
 inherits validity from the underlying valid indexed space `m`. -/
 private lemma jointConditioning_elem_valid {A : Type*}
@@ -2115,7 +2115,7 @@ theorem C_Skolem {A X : Type*} {μ : PMF A} {Q : (A × X) → bProp I Var Val } 
 
 -- #### C-TRANSF: Helper lemmas and helper definition
 
-/-- Compose a CompatibleKernel with a function f : B → A -/
+/-- 🤖: Compose a CompatibleKernel with a function f : B → A -/
 private def CompatibleKernel.comp {A B : Type*}
     {m₀ : ValidIndexedPSpPm I Var Val}
     (κ : CompatibleKernel A m₀) (f : B → A) : CompatibleKernel B m₀ where
@@ -2124,7 +2124,7 @@ private def CompatibleKernel.comp {A B : Type*}
   isComp i b := κ.isComp i (f b)
 
 /-
-Tsum over a PMF is invariant under a support-preserving bijection.
+🤖: Tsum over a PMF is invariant under a support-preserving bijection.
 -/
 private lemma PMF_tsum_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
     {f : B → A}
@@ -2141,7 +2141,7 @@ private lemma PMF_tsum_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
     rw [hprob]
     aesop
 
-/-- The key measure-theoretic lemma: PMF.toMeasure.bind is invariant under
+/-- 🤖: The key measure-theoretic lemma: PMF.toMeasure.bind is invariant under
     a support-preserving bijection with matching probabilities. -/
 private lemma PMF_bind_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
     {f : B → A}
@@ -2155,7 +2155,7 @@ private lemma PMF_bind_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
   letI instB : MeasurableSpace B := ⊤
   haveI : MeasurableSingletonClass A := ⟨fun _ => MeasurableSpace.measurableSet_top⟩
   haveI : MeasurableSingletonClass B := ⟨fun _ => MeasurableSpace.measurableSet_top⟩
-  -- PMF.toMeasure = sum of weighted Diracs
+  -- 🤖: PMF.toMeasure = sum of weighted Diracs
   have pmf_sum_A : PMF.toMeasure μ =
       Measure.sum (fun a => (μ a : ENNReal) • Measure.dirac a) := by
     ext s hs
@@ -2170,7 +2170,7 @@ private lemma PMF_bind_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
     congr 1; ext b
     simp only [Measure.smul_apply, smul_eq_mul, Measure.dirac_apply' b hs, Set.indicator]
     split_ifs <;> simp
-  -- lintegral against PMF.toMeasure
+  -- 🤖: lintegral against PMF.toMeasure
   have pmf_lint_A : ∀ (g : A → ENNReal),
       ∫⁻ a, g a ∂(PMF.toMeasure μ) = ∑' a, μ a * g a := by
     intro g; rw [pmf_sum_A, MeasureTheory.lintegral_sum_measure]
@@ -2181,7 +2181,7 @@ private lemma PMF_bind_comp_of_bijOn {A B : Type*} {μ : PMF A} {μ' : PMF B}
     intro g; rw [pmf_sum_B, MeasureTheory.lintegral_sum_measure]
     congr 1; ext b; rw [MeasureTheory.lintegral_smul_measure]; congr 1
     exact MeasureTheory.lintegral_dirac b g
-  -- Main proof
+  -- 🤖: Main proof
   ext s hs
   have haemA : AEMeasurable k (PMF.toMeasure μ) :=
     ⟨k, fun _ _ => MeasurableSpace.measurableSet_top, MeasureTheory.ae_eq_refl k⟩
@@ -2710,7 +2710,7 @@ theorem C_Swap {A B : Type*} {μ₁ : PMF A} {μ₂ : PMF B} (K : (A × B) → b
 -- #### SURE-CONVEX: Helper lemmas
 
 omit [Finite Var] [Countable Val] [DecidableEq Var] [Inhabited Val] in
-/-- If an event-complement `{s | ¬ E s}` is null under every kernel in the support of a
+/-- 🤖: If an event-complement `{s | ¬ E s}` is null under every kernel in the support of a
 PMF, then it is null under the `bind`. Handles the fact that `{s | ¬ E s}` need not be
 measurable by passing to a countable intersection of measurable null supersets. -/
 private lemma bind_event_null {A : Type*}
@@ -2719,7 +2719,7 @@ private lemma bind_event_null {A : Type*}
     (E : (Var → Val) → Prop)
     (h : ∀ a : μ.support, (κ a) {s | ¬ E s} = 0) :
     (@Measure.bind A (Var → Val) ⊤ ms (@PMF.toMeasure A ⊤ μ) κ) {s | ¬ E s} = 0 := by
-  -- Let $N$ be the intersection of $N_v$ for all $v \in \text{supp}(\mu)$.
+  -- 🤖: Let $N$ be the intersection of $N_v$ for all $v \in \text{supp}(\mu)$.
   obtain ⟨N, hN_meas, hN_sub, hN_zero⟩ : ∃ N : Set (Var → Val), MeasurableSet N ∧ {s | ¬E s} ⊆ N ∧ ∀ v : μ.support, (κ v) N = 0 := by
     revert h;
     intro h
