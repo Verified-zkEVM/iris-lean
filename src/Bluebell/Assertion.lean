@@ -893,6 +893,19 @@ end Properties
 
 section BluebellRules
 
+/-
+Note on use of generative AI in the `BluebellRules` section:
+- The translation of specifications corresponding to the rules in the paper was done manually (by humans).
+- Generative AI tools have been used to complete some proofs.
+- Some helper lemmas were generated using generative AI tools.
+- Some comments were also generated using generative AI tools,
+    in most cases these are indicated by "🤖:" preceding the comment.
+- The git history indictes most cases where generative AI has been used,
+    primarily by `Assisted-by: ...` trailers in commit messages.
+- Most AI-generated lemmas are made `private`.
+
+-/
+
 -- # Additional definitions used in Bluebell rules
 
 variable [Finite Var] [Countable Val]
