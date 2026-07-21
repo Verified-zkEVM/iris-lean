@@ -2043,7 +2043,7 @@ theorem C_Unit_L {A : Type*} [Countable A] {v₀ : A} {K : A → bProp I Var Val
 
 theorem C_Unit_R {A : Type*} {i : I} {μ : PMF A} {E : (Var → Val) → A} :
   E⟨i⟩ ~ μ ⊣⊢ 𝒞⟨μ⟩ v; ⌈(fun s ↦ E s = v)⟨i⟩⌉ := by
-    sorry -- TODO: Rule C-UNIT-L proof (spec not yet reviewed)
+    sorry -- TODO: Rule C-UNIT-R proof (spec not yet reviewed)
 
 -- ### C-ASSOC
 
@@ -2667,7 +2667,7 @@ theorem Dist_Supp {i : I} {A : Type*}
   {μ : PMF A}
   :
   E⟨i⟩ ~ μ ⊢ E⟨i⟩ ~ μ ∗ ⌈(fun s => E s ∈ μ.support)⟨i⟩⌉ := by
-    sorry -- TODO: Rule DIRAC-SUPP proof
+    sorry -- TODO: Rule DIST-SUPP proof
 
 -- ### PROD-UNSPLIT
 
@@ -2898,7 +2898,7 @@ theorem RL_Convex {α : Type} {X : Set (I × Var)} {μ : PMF α} {R : Set (X →
 
 theorem RL_Merge {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
   ⌊R₁⌋ ∗ ⌊R₂⌋ ⊢ ⌊ R₁ ∩ R₂ ⌋ := by
-    sorry -- TODO: Rule RL-SURE-MERGE proof
+    sorry -- TODO: Rule RL-MERGE proof
 
 -- ### RL-SURE-MERGE
 
