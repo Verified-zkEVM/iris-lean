@@ -2884,9 +2884,8 @@ theorem RL_Unary {X : Set Var} [Finite X] {R : Set (X → Val)}
 theorem RL_Eq_Dist {A : Type*} [Inhabited A] [Inhabited X] {X : Set (I × Var)} {μ : PMF A} {ix jy : X} :
   ix.1.1 ≠ jy.1.1 →
   ⌊{v : (X → Val) | v ix = v jy}⌋
-  ⊢ iprop(∃ μ, ((fun _ ↦ ix.1.2))⟨ix.1.1⟩ ~ μ ∗ ((fun _ => jy.1.2))⟨jy.1.1⟩ ~ μ) := by
+  ⊢ iprop(∃ μ, ((fun s ↦ s ix.1.2))⟨ix.1.1⟩ ~ μ ∗ ((fun s => s jy.1.2))⟨jy.1.1⟩ ~ μ) := by
     sorry -- TODO: Rule RL-EQ-DIST proof (spec not yet reviewed)
-
 
 -- ### RL-CONVEX
 
