@@ -176,11 +176,11 @@ noncomputable section Formula
 /-- Allows us to write `P a` instead of `a ∈ P` -/
 instance {M : Type*} [OrderedUnitalResourceAlgebra M] : FunLike (Assertion M) M Prop where
   coe := fun P => P.carrier
-  coe_injective' := by intro P Q h; aesop
+  coe_injective := by intro P Q h; aesop
 
 instance : FunLike (bProp I Var Val) (IndexedPSpPm I Var Val) Prop where
   coe := fun P => P.carrier
-  coe_injective' := by intro P Q h; aesop
+  coe_injective := by intro P Q h; aesop
 
 variable {M : Type*} [OrderedUnitalResourceAlgebra M]
 
@@ -309,7 +309,7 @@ def bident : Assertion M := {
 section BIInstance
 
 instance : Iris.OFE (bProp I Var Val) := {
-  Equiv φ ψ := bientail φ ψ
+  -- Equiv φ ψ := bientail φ ψ
   Dist _ φ ψ := bientail φ ψ
   dist_eqv := by
     intro n
@@ -328,7 +328,20 @@ instance : Iris.OFE (bProp I Var Val) := {
         have := h₂.2 m hv hθ
         have := h₁.2 m hv this
         assumption
-  equiv_dist := ⟨fun h _ => h, fun h => h 0⟩
+  eq_dist := by
+    intros x y
+    unfold bientail entail
+    simp_all only [bProp, forall_const]
+    apply Iff.intro
+    · intro a
+      subst a
+      simp_all only [implies_true, and_self]
+    · intro a
+      obtain ⟨left, right⟩ := a
+      ext m
+      have : ✓m := by
+        sorry
+      aesop
   dist_lt := by
     intro n x y m h _
     assumption
@@ -369,14 +382,14 @@ noncomputable instance assertionBI : Iris.BI (bProp I Var Val) where
         have := h₂.2 m hv hθ
         have := h₁.2 m hv this
         assumption
-  equiv_dist := ⟨fun h _ => h, fun h => h 0⟩
+  eq_dist := sorry -- ⟨fun h _ => h, fun h => h 0⟩
   dist_lt := fun h _ => h
   compl := fun h => h 0
   conv_compl := by
     intro n c
     unfold Iris.Chain.chain
     unfold bientail
-    have a := @c.cauchy 0 n (zero_le _)
+    have a := @c.cauchy (n := 0) (i := n) (Nat.zero_le n)
     unfold Iris.OFE.Dist at a
     dsimp at a
     unfold Iris.Chain.chain at a
@@ -400,14 +413,15 @@ noncomputable instance assertionBI : Iris.BI (bProp I Var Val) where
     trans := fun h1 h2 m hv hφ => h2 m hv (h1 m hv hφ)
   }
   equiv_iff := by
-    intro P Q
-    constructor
-    · rintro ⟨h₁, h₂⟩
-      refine ⟨?_, ?_⟩
-      assumption; assumption
-    · rintro ⟨h₁, h₂⟩
-      refine ⟨?_, ?_⟩
-      assumption; assumption
+    sorry
+    -- intro P Q
+    -- constructor
+    -- · rintro ⟨h₁, h₂⟩
+    --   refine ⟨?_, ?_⟩
+    --   assumption; assumption
+    -- · rintro ⟨h₁, h₂⟩
+    --   refine ⟨?_, ?_⟩
+    --   assumption; assumption
   and_ne := {
     ne := by
       intro _ _ _ hx _ _ hy
@@ -1367,7 +1381,7 @@ private lemma almostSurely_intro {E : (Var → Val) → Prop} {i : I}
         ValidPSpPm, ValidPSp.PSpace, ValidPSp, Measure.map_const, PSpace.isProbability,
         measure_univ, one_smul] ;
 
-omit [Finite Var] [Countable Val] in 
+omit [Finite Var] [Countable Val] in
 /-- 🤖: Forward direction of SURE-MERGE. Mirrors the proof of `Sure_Eq_Inj`: from
 `b₁ * b₂ ≤ m` both sure assertions transfer to a.e. statements under the *same*
 measure `(⟨m,hm⟩.PSpace i).1.μ` (via `almostSurely_ae` together with

@@ -1,25 +1,28 @@
-name = "iris"
-srcDir = "./src/"
-defaultTargets = ["Iris", "Bluebell", "IrisTest"]
+name = "bluebell"
+srcDir = "./"
+defaultTargets = ["Bluebell"]
 
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.28.0"
+rev = "v4.31.0"
 
 [[require]]
 name = "importGraph"
 scope = "leanprover-community"
-rev = "v4.28.0"
+rev = "v4.31.0"
 
-[[lean_lib]]
-name = "Iris"
-globs = ["Iris.*"]
+[[require]]
+name = "iris-lean"
+git.url = "https://github.com/leanprover-community/iris-lean.git" 
+git.subDir = "Iris" 
+rev = "v4.31.0"
+
+[[require]]
+name = "VCVio"
+git = "https://github.com/Verified-zkEVM/VCV-io"
+rev = "v4.31.0"
 
 [[lean_lib]]
 name = "Bluebell"
 globs = ["Bluebell.*"]
-
-[[lean_lib]]
-name = "IrisTest"
-globs = ["Iris.*"]

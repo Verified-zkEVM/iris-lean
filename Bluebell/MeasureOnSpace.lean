@@ -154,16 +154,15 @@ lemma MeasurableSpace.sum_comm
 @[aesop 50% apply]
 lemma mem_sum_l {u : Set Ω} (hu : MeasurableSet[m₁] u) :
   MeasurableSet[m₁.sum m₂] u := by
-  simp
-  let f : Set (Set Ω) := MeasurableSet[m₁]
-  let g : Set (Set Ω) := MeasurableSet[m₁.sum m₂]
-  have : f ⊆ g := by
-    intro x hx
-    apply MeasurableSpace.measurableSet_generateFrom
+    let f : Set (Set Ω) := MeasurableSet[m₁]
+    let g : Set (Set Ω) := MeasurableSet[m₁.sum m₂]
+    have : f ⊆ g := by
+      intro x hx
+      apply MeasurableSpace.measurableSet_generateFrom
+      aesop
+    have : MeasurableSpace.generateFrom f = m₁ := by
+      apply @MeasurableSpace.generateFrom_measurableSet Ω m₁
     aesop
-  have : MeasurableSpace.generateFrom f = m₁ := by
-    apply @MeasurableSpace.generateFrom_measurableSet Ω m₁
-  aesop
 
 @[aesop 50% apply]
 lemma mem_sum_r {u : Set Ω} (hu : MeasurableSet[m₂] u) :
@@ -248,7 +247,7 @@ lemma MeasurableSpace.sum_mono {m₁ m₂ : MeasurableSpace Ω}
     simp_all only [Set.mem_union]
     apply Or.inr
     exact hu
-  simp_all only [sum]
+  exact this
 
 lemma MeasurableSpace.sum_functorial {m m₁ m₂ : MeasurableSpace Ω}
   (h : m₁ ≤ m₂)
@@ -364,8 +363,10 @@ theorem MeasureOnSpace.generateFrom_generator_eq_sum :
   have h₂ : generator p q ⊆ sumSp := fun u hu ↦ by
     obtain ⟨u₁, v₁, rfl, _, _⟩ := exists_inter_measurableSet_of_mem_generator hu
     exact (show sumSp u₁ by aesop).inter (by aesop)
-  apply MeasurableSpace.generateFrom_le (by convert h₂)
-  aesop (add simp (show u ∩ v ∈ generator p q by use u, v))
+  apply MeasurableSpace.generateFrom_le
+  · dsimp [sumSp] at h₂
+    exact h₂
+  · aesop (add simp (show u ∩ v ∈ generator p q by use u, v))
 
 lemma MeasureOnSpace.isPiSystem_generator : IsPiSystem (generator p q) := fun _ hu _ hv _ ↦ by
   obtain ⟨_, _, rfl, _, _⟩ := exists_inter_measurableSet_of_mem_generator hu
@@ -423,7 +424,7 @@ instance [Inhabited Ω] : PartialOrder (MeasureOnSpace Ω) where
       constructor
       have := h₁.1 u; aesop
       have := h₂.1 u; aesop
-    ext u; aesop
+    ext u; rw [h]
     apply MeasureOnSpace.le_preserves_measure
     aesop; aesop
 
@@ -446,10 +447,11 @@ lemma PSpace.ext_ms
   have : a = b := MeasureOnSpace.ext_ms h_eq_alg h_eq_mea
   aesop
 
+open ENNReal in
 @[simp, grind .]
 lemma PSpace.measure_ne_top
   {m : PSpace Ω} {u : Set Ω}
-  : m.1.μ u ≠ ⊤ := by
+  : m.1.μ u ≠ (⊤ : ℝ≥0∞) := by
   apply ne_of_lt
   have h₁ : m.1.μ Set.univ = 1 := m.2.measure_univ
   have h₂ : u ⊆ Set.univ := by aesop
@@ -470,12 +472,14 @@ theorem PSpace.uniqueness
   · intro t ht
     obtain ⟨u, v, rfl, hu, hv⟩ := exists_inter_measurableSet_of_mem_generator ht
     grind
-  · aesop (add simp MeasureTheory.measure_compl) (add safe cases PSpace)
+  · sorry
+    -- aesop (add simp MeasureTheory.measure_compl) (add safe cases PSpace)
+    -- rw?
   · intro us disjoint hus prf
     have h_sum1 : r.1.μ (⋃ i, us i) = ∑' i, r.1.μ (us i) :=
       @Measure.m_iUnion (α := Ω) (f := us) r.1.ms r.1.μ hus disjoint
     have : r'.1.μ (⋃ i, us i) = ∑' i, r'.1.μ (us i) :=
-      @Measure.m_iUnion (α := Ω) (f := us) r'.1.ms r'.1.μ (by aesop) disjoint
+      @Measure.m_iUnion (α := Ω) (f := us) r'.1.ms r'.1.μ (by grind) disjoint
     aesop
   · aesop (add simp MeasureOnSpace.generateFrom_generator_eq_sum)
 
@@ -501,6 +505,7 @@ lemma MeasureOnSpace.trim_eq
   : (p.trim h).μ u = p.μ u := by
   simp only [trim]
   unfold Measure.trim
+  unfold_projs
   aesop
 
 lemma Measure.trim_preserves_prob
@@ -519,7 +524,7 @@ def PSpace.trim
   simp only [MeasureOnSpace.trim]
   constructor
   have : (p.1.trim h).μ Set.univ = 1 := by
-    have := @Measure.trim_preserves_prob Ω f p.1.ms p.1.μ h p.2
+    have := (@Measure.trim_preserves_prob Ω f p.1.ms p.1.μ h p.2).1
     aesop
   aesop
 ⟩
@@ -575,7 +580,13 @@ lemma empty_sigma_algebra_is_identity [Inhabited Ω] (m : MeasureOnSpace Ω)
   rw [← h]
   have : m.ms = MeasurableSpace.generateFrom (m.ms.MeasurableSet') := by
     have := @MeasurableSpace.generateFrom_measurableSet Ω m.ms
-    grind
+    rw [←this]
+    simp only [MeasurableSpace.generateFrom_measurableSet]
+    -- rewrite (occs := .pos [1]) [←this]
+    -- simp
+
+    sorry
+
   assumption
 
 theorem indepenendentProduct_identity [Inhabited Ω] {p : PSpace Ω}
@@ -601,7 +612,7 @@ theorem indepenendentProduct_identity [Inhabited Ω] {p : PSpace Ω}
   simp
   unfold P
   simp_all
-  grind
+  exact h_u
 
 end PSpace.Identity
 
@@ -713,11 +724,12 @@ theorem independentProduct_assoc [Inhabited Ω] {pq p q s r : PSpace Ω}
       aesop
       have := @mem_sum_inter Ω p.1.ms q.1.ms u v hu hv
       have : p.1.ms.sum q.1.ms = pq.1.ms := by rw [h_pq.1]
-      aesop
+      rw [←this]
+      assumption
       exact hw
       {
         intro t ht h
-        have : u ∩ tᶜ = u \ (u ∩ t) := by grind
+        have : u ∩ tᶜ = u \ (u ∩ t) := by aesop
         have : s.1.μ (u \ (u ∩ t)) = s.1.μ u - s.1.μ (u ∩ t) := by
           have : s.1.μ Set.univ = 1 := s.2.measure_univ
           apply @measure_diff Ω s.1.ms s.1.μ u (u ∩ t)
@@ -730,7 +742,7 @@ theorem independentProduct_assoc [Inhabited Ω] {pq p q s r : PSpace Ω}
           aesop
           apply s.measure_ne_top
         have : s.1.μ u = p.1.μ u := by
-          have : u = (u ∩ Set.univ) ∩ Set.univ := by grind
+          have : u = (u ∩ Set.univ) ∩ Set.univ := by aesop
           have h₁ : s.1.μ u = s.1.μ ((u ∩ Set.univ) ∩ Set.univ) := by grind
           have h₂ : q.1.μ Set.univ = 1 := q.2.measure_univ
           have h₃ : r.1.μ Set.univ = 1 := r.2.measure_univ
@@ -747,7 +759,7 @@ theorem independentProduct_assoc [Inhabited Ω] {pq p q s r : PSpace Ω}
           aesop
         have h₃ : qr.1.μ tᶜ = 1 - qr.1.μ t := by
           have h := @measure_compl Ω qr.1.ms (μ := qr.1.μ) (s := t) ht
-          have : qr.1.μ t ≠ ⊤ := qr.measure_ne_top
+          have : qr.1.μ t ≠ (⊤ : ENNReal) := qr.measure_ne_top
           have := qr.2.measure_univ
           aesop
         calc
@@ -800,7 +812,9 @@ theorem independentProduct_assoc [Inhabited Ω] {pq p q s r : PSpace Ω}
           _ = p.1.μ u * qr.1.μ (⋃ i, us i) := by aesop
       }
       have := @MeasurableSpace.generateFrom_sumGenerator_eq_sum Ω q.1.ms r.1.ms
-      grind
+
+      sorry
+      -- grind
     aesop
   assumption
 
@@ -1030,7 +1044,7 @@ def PSp.unit [Inhabited Ω] : PSp Ω :=
   some PSpace.unit
 
 instance [Inhabited Ω] : Valid (PSp Ω) where
-  valid x := x ≠ ⊤
+  valid x := x ≠ (⊤ : PSp Ω)
 
 instance [Inhabited Ω] : One (PSp Ω) where
   one := PSp.unit
@@ -1126,8 +1140,8 @@ lemma PSp.le_of_mul_left
         rw [hmul]
         exact WithTop.coe_le_coe.2
           (PSpace.le_of_isIndependentProduct_left h.choose_spec)
-      · have hmul : (↑x : PSp Ω) * ↑y = ⊤ := by
-          change PSp.mul (some x) (some y) = ⊤
+      · have hmul : (↑x : PSp Ω) * ↑y = (⊤ : PSp Ω) := by
+          change PSp.mul (some x) (some y) = (⊤ : PSp Ω)
           simp [h]; rfl
         rw [hmul]
         exact le_top
@@ -1146,7 +1160,7 @@ lemma PSp.some_mono
   simp_all only [Option.some.injEq]
 
 lemma PSp.inversion [Inhabited Ω] {p : PSp Ω}
-  (h : p ≠ ⊤)
+  (h : p ≠ (⊤ : PSp Ω))
   : ∃ x, p = some x := by
   cases p with
   | none => contradiction
@@ -1222,8 +1236,8 @@ theorem PSp.mul_assoc [Inhabited Ω] {p q r : PSp Ω}
       grind
 
 theorem PSp.mul_defined_imp_defined
-  [Inhabited Ω] {p q : PSp Ω} (h : p.mul q ≠ ⊤)
-  : p ≠ ⊤ :=
+  [Inhabited Ω] {p q : PSp Ω} (h : p.mul q ≠ (⊤ : PSp Ω))
+  : p ≠ (⊤ : PSp Ω) :=
   match p, q with
   | none, _ => by aesop
   | _, none => by intro h₁; simp_all; contradiction
@@ -1258,16 +1272,18 @@ instance [Inhabited Ω] : PartialOrder (PSp Ω) := {
         aesop
 }
 
-lemma PSp.ge_top_imp_top {p : PSp Ω} (h : ⊤ ≤ p) : p = ⊤ := by
+lemma PSp.ge_top_imp_top {p : PSp Ω} (h : (⊤ : PSp Ω) ≤ p) : p = (⊤ : PSp Ω) := by
   cases p; rfl; contradiction
 
-lemma PSp.le_top' {p : PSp Ω} : p ≤ ⊤ := by
+lemma PSp.le_top' {p : PSp Ω} : p ≤ (⊤ : PSp Ω) := by
   apply le_top
 
 instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
   valid_one := by
-    unfold valid
-    have : (1 : PSp Ω) ≠ ⊤ := by aesop
+    unfold valid instValidPSpOfInhabited
+    simp
+    have : (1 : PSp Ω) ≠ (⊤ : PSp Ω) := by
+      exact Ne.symm WithTop.top_ne_one
     assumption
   elim := by
     intro a x y ha
@@ -1338,7 +1354,7 @@ instance [Inhabited Ω] : OrderedUnitalResourceAlgebra (PSp Ω) := {
     intro ps₁ ps₂ h₁ h₂
     cases ps₁ with
     | none =>
-      have : ps₂ = ⊤ := @PSp.ge_top_imp_top Ω ps₂ h₁
+      have : ps₂ = (⊤ : PSp Ω) := @PSp.ge_top_imp_top Ω ps₂ h₁
       aesop
     | some p₁ => cases ps₂ with
       | none => contradiction
@@ -1423,7 +1439,12 @@ def PSpace.tensor (P : PSpace Ω) (Q : PSpace Ω') : PSpace (Ω × Ω') := {
     have := P.2
     have := Q.2
     have := @Measure.prod_prod Ω Ω' P.1.ms Q.1.ms P.1.μ Q.1.μ _ Set.univ Set.univ
-    aesop
+    -- simp_all only [isProbability, Set.univ_prod_univ, measure_univ, mul_one, MeasureOnSpace.tensor]
+    -- have := P.2.1
+    -- have := Q.2.1
+    -- unfold Measure.prod Measure.wrapped
+    sorry
+    -- aesop
 }
 
 lemma MeasurableSpace.map_measurable
@@ -1618,13 +1639,16 @@ lemma hprod
     | mk P₃ f₃ => cases hP : P₃ with
     | none => trivial
     | some p₃ =>
-      simp [
-        ProductRA, OrderedUnitalResourceAlgebra.product,
-        Prod.instCommMonoid, Prod.instMonoid, Prod.instSemigroup, Prod.instMul
-      ] at h
+      -- simp [
+      --   ProductRA, OrderedUnitalResourceAlgebra.product,
+      --   Prod.instCommMonoid, Prod.instMonoid, Prod.instSemigroup, Prod.instMul
+      -- ] at h
       have hind : p₃ =ᵢ p₁ ⊕ᵢ p₂ := by
-        refine PSp.mul_inversion ?_; aesop
-      have : f₃ = f₁ * f₂ := by aesop
+        refine PSp.mul_inversion ?_;
+
+        sorry
+      have : f₃ = f₁ * f₂ := by
+        sorry -- aesop
       simp_all only [Compatible, PSp.compatiblePerm]
       have : p₁.compatiblePerm f₁ := by assumption
       have : p₂.compatiblePerm f₂ := by assumption

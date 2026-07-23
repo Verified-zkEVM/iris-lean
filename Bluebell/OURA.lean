@@ -19,28 +19,27 @@ instance {α β : Type*} [Valid α] [Valid β] : Valid (α × β) where
 
 /-- The class of **discrete** cameras, which do not care about step-indexing -/
 class DiscreteCMRA (α : Type*) extends CommSemigroup α, Valid α where
-  equiv : α → α → Prop
   pcore : α → Option α
 
-  is_equiv : Equivalence equiv
+  -- is_equiv : Equivalence equiv
 
-  mul_equiv {x y z} : equiv y z → equiv (x * y) (x * z)
-  pcore_equiv {x y cx} : equiv x y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ equiv cx cy
+  -- mul_equiv {x y z} : equiv y z → equiv (x * y) (x * z)
+  -- pcore_equiv {x y cx} : x = y → pcore x = some cx → ∃ cy, pcore y = some cy ∧ cx = cy
 
-  pcore_left {x cx} : pcore x = some cx → equiv (cx * x) x
+  pcore_left {x cx} : pcore x = some cx → cx * x = x
   pcore_idem {x cx} : pcore x = some cx → pcore cx = some cx
   pcore_mono' {x y cx} : pcore x = some cx → ∃ cy, pcore (x * y) = some (cx * cy)
 
-  valid_equiv {x y} : equiv x y → valid x → valid y
+  -- valid_equiv {x y} : equiv x y → valid x → valid y
   valid_mul {x y} : valid (x * y) → valid x
 
 open Iris in
-instance DiscreteCMRA.instOFE (α : Type*) [DiscreteCMRA α] : OFE α where
-  Equiv := equiv
-  Dist := fun _ ↦ equiv
-  dist_eqv := by simp [DiscreteCMRA.is_equiv]
-  equiv_dist := by simp
+instance DiscreteCMRA.instOFE (α : Type*) [inst : DiscreteCMRA α] : OFE α where
+  Dist := fun _ a b ↦ a = b
+  dist_eqv := fun {_} ↦ by
+    refine ⟨?_, ?_, ?_⟩ <;> simp
   dist_lt := fun h _ ↦ h
+  eq_dist := by simp
 
 open Iris in
 /-- A discrete CMRA can be converted to a regular CMRA -/
@@ -49,14 +48,26 @@ instance DiscreteCMRA.instCMRA {α : Type*} [DiscreteCMRA α] : CMRA α := {
   op := (·*·)
   ValidN := fun _ x ↦ valid x
   Valid := valid
-  op_ne := ⟨fun _ _ _ h ↦ mul_equiv h⟩
-  pcore_ne := pcore_equiv
-  validN_ne := valid_equiv
+  op_ne := by
+    intros x
+    refine ⟨?_⟩
+    intros n x₁ x₂ h
+    unfold_projs at h ⊢
+    rw [h]
+  pcore_ne := by
+    intros n x y cx h h'
+    use cx
+    rw [h] at h'
+    exact And.intro h' rfl
+  validN_ne := by
+    intros x n y h
+    rw [h]
+    exact id
   valid_iff_validN := by aesop
   validN_succ := by simp
   assoc := by simp [mul_assoc]
   comm := by simp [mul_comm]
-  pcore_op_left := pcore_left
+  pcore_op_left := fun {x} {cx} h _ ↦ pcore_left h
   pcore_idem := by
     intro x cx h
     have h₁ := @pcore_idem α _ x cx h
@@ -66,7 +77,7 @@ instance DiscreteCMRA.instCMRA {α : Type*} [DiscreteCMRA α] : CMRA α := {
     use cy
     rw [h]
   validN_op_left := valid_mul
-  extend {_ _ y₁ y₂ _ _} := by use y₁, y₂; simpa
+  extend {_ _ y₁ y₂ _ _} := by use y₁, y₂; unfold OFE.Equiv; simp; intros _; assumption
 }
 
 /-- An ordered unital resource algebra is a type with a multiplication, a one, a preorder `≤`,
@@ -94,7 +105,7 @@ instance : MulRightMono M := ⟨fun _ _ _ h ↦ mul_left_mono h⟩
 
 /-- Lifting the validity predicate to indexed tuples by requiring all elements to be valid -/
 @[simp]
-instance [Valid M] : Valid (I → M) where
+instance : Valid (I → M) where
   valid := fun x => ∀ i, ✓ x i
 
 /-- A resource algebra on `M` is lifted pointwise to a resource algebra on `I → M` -/
@@ -106,15 +117,10 @@ instance {I : Type*} : OrderedUnitalResourceAlgebra (I → M) where
 
 /-- Define a `DiscreteCMRA` instance given an `OrderedUnitalResourceAlgebra` instance -/
 instance instCMRM : DiscreteCMRA M := {
-  equiv a b := a = b
   pcore x := some 1
-  is_equiv := by constructor; grind; grind; grind
-  mul_equiv := by intro x y z h; grind
-  pcore_equiv := by grind
   pcore_left := by intro x cx h; grind
   pcore_idem := by simp_all
   pcore_mono' := by intro x y cx h; use 1; grind
-  valid_equiv := by grind
   valid_mul := by
     intro x y
     have := @OrderedUnitalResourceAlgebra.valid_mul M _ x y
@@ -122,12 +128,13 @@ instance instCMRM : DiscreteCMRA M := {
 }
 
 @[simp]
-abbrev carrier [OrderedUnitalResourceAlgebra M] := M
+abbrev carrier := M
 
 end OrderedUnitalResourceAlgebra
 
 namespace OrderedUnitalResourceAlgebra
 
+@[reducible]
 def subalgebra
   {α : Type*} {p : α → Prop} (i : OrderedUnitalResourceAlgebra α)
   (hu : p i.one) (hc : ∀ x y : α, p x → p y → p (i.mul x y))
@@ -164,6 +171,7 @@ def subalgebra
     aesop
 }
 
+@[reducible]
 def indexedProduct
   {I : Type*} {α : I → Type _}
   (f : (i : I) → OrderedUnitalResourceAlgebra (α i))
@@ -186,6 +194,7 @@ def indexedProduct
 
 /-- Technically binary product is just an instnace of indexed product, but
     it is convenient to redefine it -/
+@[reducible]
 def product
   {α β : Type*}
   (r₁ : OrderedUnitalResourceAlgebra α) (r₂ : OrderedUnitalResourceAlgebra β)
@@ -278,6 +287,7 @@ lemma quotientMul_commutes_out
   have : R (p.out * q.out) (quotientMul hclo p q).out := by aesop
   assumption
 
+@[reducible]
 def quotient
   {α : Type*} {R : Setoid α} {ra : OrderedUnitalResourceAlgebra α}
   (hclo : (p₁ q₁ p₂ q₂ : α) → (h₁ : R p₁ p₂) → (h₂ : R q₁ q₂) → R (p₁ * q₁) (p₂ * q₂))
@@ -417,7 +427,7 @@ def quotient
     assumption
 }
 
-instance OrderedUnitalResourceAlgebra.instUCMRA
+instance instUCMRA
   {M : Type*} [ra : OrderedUnitalResourceAlgebra M]
   : Iris.UCMRA M := {
   unit := ra.one
@@ -425,6 +435,7 @@ instance OrderedUnitalResourceAlgebra.instUCMRA
   unit_left_id := by
     intro x
     have : One.one * x = x := by change 1 * x = x; aesop
+    unfold Iris.OFE.Equiv
     aesop
   pcore_unit := by rfl
 }
