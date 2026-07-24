@@ -131,6 +131,6 @@
    "inputRev": "master",
    "inherited": true,
    "configFile": "lakefile.toml"}],
- "name": "iris",
+ "name": "bluebell",
  "lakeDir": ".lake",
  "fixedToolchain": false}

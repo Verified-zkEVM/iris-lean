@@ -564,7 +564,7 @@ noncomputable instance assertionBI : Iris.BI (bProp I Var Val) where
       refine P.upper' ?_ hPb₂
       intro i
       refine le_trans ?_ (hle i)
-      exact ⟨PSp.le_of_mul_right, by intro x; exact le_add_of_nonneg_left (zero_le _)⟩
+      exact ⟨PSp.le_of_mul_right, by intro x; exact le_add_of_nonneg_left (zero_le)⟩
     · intro m _ hPm
       exact ⟨1, m, (one_mul m).le, trivial, hPm⟩
   sep_symm := by
@@ -1012,7 +1012,7 @@ def pabs [DecidableEq I] (P : bProp I Var Val) (X : Set (I × Var)) : Prop :=
 
 -- For C-TRUE
 noncomputable instance : OfNat (ValidIndexedPSpPm I Var Val) 1 where
-  ofNat := ⟨1, by aesop⟩
+  ofNat := ⟨1, by unfold valid; simp⟩
 
 -- For C-TRUE
 noncomputable def validOne : ValidIndexedPSpPm I Var Val := 1
@@ -1842,7 +1842,7 @@ theorem Dist_Inj
   obtain ⟨ham, hμ₁⟩ := body
   obtain ⟨ham', hμ₂⟩ := body'
   have hv_i : valid (m i) := hv i
-  have hmi_ne_top : (m i).1.1 ≠ ⊤ := hv_i.1
+  have hmi_ne_top : (m i).1.1 ≠ (⊤ : PSp (Var → Val)) := hv_i.1
   match hmi : (m i).1.1 with
   | none => contradiction
   | some y =>
@@ -1856,7 +1856,7 @@ theorem Dist_Inj
     apply @Measure.ext _ ⊤
     intro u hu
     simp only [ValidIndexedPSpPm.PSpace] at *
-    rw [Measure.map_apply_of_aemeasurable ham hu, Measure.map_apply_of_aemeasurable ham' hu]
+    erw [Measure.map_apply_of_aemeasurable ham hu, Measure.map_apply_of_aemeasurable ham' hu]
     letI : MeasurableSpace A := ⊤
     set f := AEMeasurable.mk E ham
     set f' := AEMeasurable.mk E ham'
@@ -1959,7 +1959,7 @@ theorem C_True
       let k' (v : A) := (k.kernel i v : @Measure (Var → Val) ⊥)
       have {v : A} : k' v = (1 : MeasureOnSpace (Var → Val)).μ := by rfl
       have : (@μ.toMeasure A ⊤).bind k' = MeasureOnSpace.μ 1 := by aesop
-      rw [this]
+      erw [this]
       trivial
     · apply Iris.BI.forall_intro
       intro v _ _ _
@@ -2521,7 +2521,7 @@ theorem Sure_Dirac
     simp only [ValidIndexedPSpPm.PSpace] at hμ
     have h_null : (P.PSpace i).1.μ {s | ¬ E s = v} = 0 := by
       have h1 := Measure.map_apply_of_aemeasurable ham (s := {False}) MeasurableSpace.measurableSet_top
-      rw [hμ] at h1
+      erw [hμ] at h1
       simp only [PMF.dirac, Measure.toPMF_toMeasure,
         MeasurableSpace.measurableSet_top, Measure.dirac_apply'] at h1
       have hTF : (True : Prop) ∉ ({False} : Set Prop) := by
@@ -2541,7 +2541,7 @@ theorem Sure_Dirac
     constructor
     · exact ⟨fun _ => v, measurable_const, hae⟩
     · rw [bridge_E]; simp only [ValidIndexedPSpPm.PSpace]
-      rw [Measure.map_congr (mβ := ⊤) hae]
+      erw [Measure.map_congr (mβ := ⊤) hae]
       apply @Measure.ext _ ⊤
       intro s hs
       rw [Measure.map_apply_of_aemeasurable (mβ := ⊤) measurable_const.aemeasurable hs]
@@ -2868,7 +2868,7 @@ theorem RL_Cons {X : Set (I × Var)} {R₁ R₂ : Set (X → Val)} :
   have h_sum_le : ∑' r : R₁, μ r ≤ ∑' r : R₂, μ r := by
     rw [tsum_subtype, tsum_subtype]
     exact ENNReal.tsum_le_tsum
-      (Set.indicator_le_indicator_of_subset hR₁R₂ (fun _ => zero_le _))
+      (Set.indicator_le_indicator_of_subset hR₁R₂ (fun _ => zero_le))
   have h_sum_le_one : ∑' r : R₂, μ r ≤ 1 := by
     have h_sum_le_one : ∑' r : R₂, μ r ≤ ∑' r : X → Val, μ r := by
       rw [ tsum_subtype ];
