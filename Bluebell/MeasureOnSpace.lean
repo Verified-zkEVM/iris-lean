@@ -655,16 +655,7 @@ lemma empty_sigma_algebra_is_identity [Inhabited Ω] (m : MeasureOnSpace Ω)
     assumption
     assumption
   rw [← h]
-  have : m.ms = MeasurableSpace.generateFrom (m.ms.MeasurableSet') := by
-    have := @MeasurableSpace.generateFrom_measurableSet Ω m.ms
-    rw [←this]
-    simp only [MeasurableSpace.generateFrom_measurableSet]
-    -- rewrite (occs := .pos [1]) [←this]
-    -- simp
-
-    sorry
-
-  assumption
+  exact (@MeasurableSpace.generateFrom_measurableSet Ω m.ms).symm
 
 theorem indepenendentProduct_identity [Inhabited Ω] {p : PSpace Ω}
   : p =ᵢ unit ⊕ᵢ p := by
@@ -888,10 +879,7 @@ theorem independentProduct_assoc [Inhabited Ω] {pq p q s r : PSpace Ω}
           _ = p.1.μ u *  ∑' i, qr.1.μ (us i) := by aesop
           _ = p.1.μ u * qr.1.μ (⋃ i, us i) := by aesop
       }
-      have := @MeasurableSpace.generateFrom_sumGenerator_eq_sum Ω q.1.ms r.1.ms
-
-      sorry
-      -- grind
+      exact (@MeasurableSpace.generateFrom_sumGenerator_eq_sum Ω q.1.ms r.1.ms).symm
     aesop
   assumption
 
@@ -1512,16 +1500,9 @@ def MeasureOnSpace.tensor (m : MeasureOnSpace Ω) (n : MeasureOnSpace Ω') : Mea
 def PSpace.tensor (P : PSpace Ω) (Q : PSpace Ω') : PSpace (Ω × Ω') := {
   val := P.1.tensor Q.1,
   property := by
-    refine isProbabilityMeasure_iff.mpr ?_
-    have := P.2
-    have := Q.2
-    have := @Measure.prod_prod Ω Ω' P.1.ms Q.1.ms P.1.μ Q.1.μ _ Set.univ Set.univ
-    -- simp_all only [isProbability, Set.univ_prod_univ, measure_univ, mul_one, MeasureOnSpace.tensor]
-    -- have := P.2.1
-    -- have := Q.2.1
-    -- unfold Measure.prod Measure.wrapped
-    sorry
-    -- aesop
+    haveI := P.2
+    haveI := Q.2
+    exact Measure.prod.instIsProbabilityMeasure P.1.μ Q.1.μ
 }
 
 lemma MeasurableSpace.map_measurable
@@ -1716,16 +1697,11 @@ lemma hprod
     | mk P₃ f₃ => cases hP : P₃ with
     | none => trivial
     | some p₃ =>
-      -- simp [
-      --   ProductRA, OrderedUnitalResourceAlgebra.product,
-      --   Prod.instCommMonoid, Prod.instMonoid, Prod.instSemigroup, Prod.instMul
-      -- ] at h
       have hind : p₃ =ᵢ p₁ ⊕ᵢ p₂ := by
-        refine PSp.mul_inversion ?_;
-
-        sorry
-      have : f₃ = f₁ * f₂ := by
-        sorry -- aesop
+        refine PSp.mul_inversion ?_
+        rw [← hP]
+        exact congr_arg Prod.fst h
+      have : f₃ = f₁ * f₂ := (congr_arg Prod.snd h).symm
       simp_all only [Compatible, PSp.compatiblePerm]
       have : p₁.compatiblePerm f₁ := by assumption
       have : p₂.compatiblePerm f₂ := by assumption
