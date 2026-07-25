@@ -458,6 +458,7 @@ lemma PSpace.measure_ne_top
   have h₃ : m.1.μ u ≤ m.1.μ Set.univ := measure_mono h₂
   exact lt_of_le_of_lt (b := 1) (by aesop) (by aesop)
 
+set_option maxHeartbeats 10000000
 theorem PSpace.uniqueness
   {r r' p q : PSpace Ω}
   (h₁ : r =ᵢ p ⊕ᵢ q) (h₂ : r' =ᵢ p ⊕ᵢ q)
@@ -472,9 +473,85 @@ theorem PSpace.uniqueness
   · intro t ht
     obtain ⟨u, v, rfl, hu, hv⟩ := exists_inter_measurableSet_of_mem_generator ht
     grind
-  · sorry
-    -- aesop (add simp MeasureTheory.measure_compl) (add safe cases PSpace)
-    -- rw?
+  · intros t h h_eq
+    have r_r'_mes : r.1.ms = r'.1.ms := by rw [h₁.1, h₂.1]
+    have : @MeasurableSet Ω r'.1.ms t := by
+      rw [←r_r'_mes]; exact h
+    let f (n : ℕ) : Set Ω :=
+      if n = 0
+      then t
+      else if n = 1 then tᶜ else ∅
+    have f_prop₁ : (⋃ i, f i) = Set.univ := by
+        have h₁ : t ⊆ ⋃ i, f i := by
+          simp [f]
+          intros x h
+          simp only [Set.mem_iUnion]
+          use 0
+          simpa using h
+        have h₂ : tᶜ ⊆ ⋃ i, f i := by
+          simp [f]
+          intros x h
+          simp only [Set.mem_iUnion]
+          use 1
+          simpa using h
+        have : t ∪ tᶜ ⊆ ⋃ i, f i := by
+          exact Set.union_subset h₁ h₂
+        simpa using this
+    have f_prop₂ : ∑' i, r.1.μ (f i) =  r.1.μ t +  r.1.μ tᶜ := by
+      simp only [f]
+      rw [tsum_eq_sum (s := ({0, 1} : Finset ℕ)) (fun b hb => by
+        simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hb
+        simp [hb.1, hb.2])]
+      rw [Finset.sum_pair (by decide : (0 : ℕ) ≠ 1)]
+      simp
+    have f_prop₂' : ∑' i, r'.1.μ (f i) =  r'.1.μ t +  r'.1.μ tᶜ := by
+      simp only [f]
+      rw [tsum_eq_sum (s := ({0, 1} : Finset ℕ)) (fun b hb => by
+        simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hb
+        simp [hb.1, hb.2])]
+      rw [Finset.sum_pair (by decide : (0 : ℕ) ≠ 1)]
+      simp
+    have h₁ : r.1.μ tᶜ = 1 - r.1.μ t := by
+      have h' :=
+        @r.1.2.m_iUnion f
+          (by
+            intros i
+            by_cases h : i = 0
+            · simp only [h, ↓reduceIte, f]; assumption
+            · by_cases h' : i = 1
+              · simp only [h', one_ne_zero, ↓reduceIte, MeasurableSet.compl_iff, f]; assumption
+              · simp [f, h, h']
+          )
+          (by
+            unfold Pairwise Disjoint Function.onFun
+            intros i j h x
+            simp only [Set.le_eq_subset, Set.bot_eq_empty, Set.subset_empty_iff, f]
+            split_ifs with cond cond' cond'' <;> grind
+          )
+      simp only [f_prop₁, f_prop₂, Measure.coe_toOuterMeasure, r.2.measure_univ] at h'
+      have h' := h'.symm
+      exact ENNReal.eq_sub_of_add_eq' (by simp) (by simpa [add_comm] using h')
+    have h₂ : r'.1.μ tᶜ = 1 - r'.1.μ t := by
+      have h' :=
+        @r'.1.2.m_iUnion f
+          (by
+            intros i
+            by_cases h : i = 0
+            · simp only [h, ↓reduceIte, f]; assumption
+            · by_cases h' : i = 1
+              · simp only [h', one_ne_zero, ↓reduceIte, MeasurableSet.compl_iff, f]; assumption
+              · simp [f, h, h']
+          )
+          (by
+            unfold Pairwise Disjoint Function.onFun
+            intros i j h x
+            simp only [Set.le_eq_subset, Set.bot_eq_empty, Set.subset_empty_iff, f]
+            split_ifs with cond cond' cond'' <;> grind
+          )
+      simp only [f_prop₁, f_prop₂', Measure.coe_toOuterMeasure, r'.2.measure_univ] at h'
+      have h' := h'.symm
+      exact ENNReal.eq_sub_of_add_eq' (by simp) (by simpa [add_comm] using h')
+    rw [h₁, h₂, h_eq]
   · intro us disjoint hus prf
     have h_sum1 : r.1.μ (⋃ i, us i) = ∑' i, r.1.μ (us i) :=
       @Measure.m_iUnion (α := Ω) (f := us) r.1.ms r.1.μ hus disjoint
