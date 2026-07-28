@@ -1245,28 +1245,36 @@ private lemma psp_trim_indep {ps : PSpace (Var → Val)} {F : MeasurableSpace (V
     (hF : F ≤ ps.1.ms)
     (hbin : ∀ u, @MeasurableSet (Var → Val) F u → ps.1.μ u = 0 ∨ ps.1.μ u = 1) :
     PSpace.isIndependentProduct ps (PSpace.trim (p := ps) (h := hF)) ps := by
-    sorry
-  -- unfold PSpace.isIndependentProduct;
-  -- simp +decide [ PSpace.trim ];
-  -- constructor;
-  -- · refine' le_antisymm _ _;
-  --   · exact fun s hs => MeasurableSpace.measurableSet_generateFrom ( Set.mem_union_right _ hs );
-  --   · exact MeasurableSpace.generateFrom_le fun s hs => by aesop;
-  -- · intro E hE F hF';
-  --   cases hbin E hE <;> simp_all +decide [ MeasureTheory.Measure.trim ];
-  --   · exact MeasureTheory.measure_mono_null ( Set.inter_subset_left ) ‹_›;
-  --   · have h_compl : (ps.1.μ (F \ E)) = 0 := by
-  --       have h_compl : (ps.1.μ (Set.univ \ E)) = 0 := by
-  --         rw [ MeasureTheory.measure_diff ] <;> norm_num [ * ];
-  --         exact MeasurableSet.nullMeasurableSet (hF E hE);
-  --       exact MeasureTheory.measure_mono_null ( fun x => by aesop ) h_compl;
-  --     have h_eq : (ps.1.μ (E ∩ F)) = (ps.1.μ F) - (ps.1.μ (F \ E)) := by
-  --       rw [ ← MeasureTheory.measure_diff ];
-  --       · simp +decide [ Set.inter_comm ];
-  --       · exact Set.diff_subset;
-  --       · exact MeasureTheory.NullMeasurableSet.of_null h_compl;
-  --       · aesop;
-  --     aesop
+  unfold PSpace.isIndependentProduct
+  refine ⟨?_, ?_⟩
+  · simp +decide
+    refine' le_antisymm _ _
+    · exact fun s hs => MeasurableSpace.measurableSet_generateFrom ( Set.mem_union_right _ hs )
+    · exact MeasurableSpace.generateFrom_le fun s hs => by aesop
+  · intro E hE s hs
+    haveI : IsProbabilityMeasure ps.1.μ := ps.2
+    have hEF : @MeasurableSet _ F E := hE
+    have hE' : @MeasurableSet _ ps.1.ms E := hF E hEF
+    show ps.1.μ (E ∩ s) = (ps.1.μ.trim hF) E * ps.1.μ s
+    rw [MeasureTheory.trim_measurableSet_eq hF hEF]
+    rcases hbin E hEF with h0 | h1
+    · rw [h0, zero_mul]
+      exact MeasureTheory.measure_mono_null Set.inter_subset_left h0
+    · rw [h1, one_mul]
+      have hcompl : ps.1.μ (s \ E) = 0 := by
+        have huniv : ps.1.μ (Set.univ \ E) = 0 := by
+          rw [MeasureTheory.measure_sdiff (Set.subset_univ E) hE'.nullMeasurableSet
+            (MeasureTheory.measure_ne_top _ _), h1, measure_univ, tsub_self]
+        exact MeasureTheory.measure_mono_null
+          (Set.sdiff_subset_sdiff_left (Set.subset_univ s)) huniv
+      have hunion : s = (E ∩ s) ∪ (s \ E) := by
+        ext x; by_cases hx : x ∈ E <;>
+          simp [hx, Set.mem_inter_iff, Set.mem_union]
+      have hle : ps.1.μ s ≤ ps.1.μ (E ∩ s) := by
+        calc ps.1.μ s = ps.1.μ ((E ∩ s) ∪ (s \ E)) := by rw [← hunion]
+          _ ≤ ps.1.μ (E ∩ s) + ps.1.μ (s \ E) := MeasureTheory.measure_union_le _ _
+          _ = ps.1.μ (E ∩ s) := by rw [hcompl, add_zero]
+      exact le_antisymm (MeasureTheory.measure_mono Set.inter_subset_right) hle
 
 open MeasureTheory in
 omit [Finite Var] [Countable Val] in
@@ -1280,41 +1288,39 @@ private lemma almostSurely_elim {E : (Var → Val) → Prop} {i : I}
       P.PSpace i ≤ m.PSpace i ∧
       almostMeasurable E (P.PSp i) ∧
       (P.PSpace i).1.μ {s | E s} = 1 := by
-    sorry
-  -- obtain ⟨q, ⟨P, hqP⟩, hqm⟩ := h
-  -- subst hqP
-  -- obtain ⟨b₁, b₂, hle, hown, body⟩ := hqm
-  -- obtain ⟨p, ⟨a, rfl⟩, hsome⟩ := hown
-  -- obtain ⟨hown_le, hown_some⟩ := hsome
-  -- refine ⟨P, ?_, ?_, ?_⟩
-  -- · have step1 : (⟨⟨P.PSp i, a.perm i⟩, a.comp i⟩ : PSpPm Var Val) ≤ b₁ i := hown_le i
-  --   have step2 : b₁ i ≤ (m.val) i :=
-  --     le_trans (IndexedPSpPm.le_of_mul_left I Val Var i) (hle i)
-  --   have hPm : P.PSp i ≤ (m.val i).1.1 := le_trans step1.1 step2.1
-  --   have hms : (m.val i).1.1 = some (m.PSpace i) := m.val_psp_eq_some i
-  --   have hPs : (P.PSp i) = some (P.PSpace i) := rfl
-  --   rw [hPs, hms] at hPm
-  --   exact WithTop.coe_le_coe.mp hPm
-  -- · simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body ⊢
-  --   exact body.1
-  -- · simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body
-  --   obtain ⟨ham, hμ⟩ := body
-  --   have bridge : @Measure.map _ _ (P.ms i) ⊤ E (P.μ i)
-  --       = @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ :=
-  --     ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨P.val i, P.property i⟩ E
-  --   rw [bridge] at hμ
-  --   have hae : AEMeasurable E (P.PSpace i).1.μ := by
-  --     simpa [ValidIndexedPSpPm.PSpace] using ham
-  --   have key := Measure.map_apply_of_aemeasurable (mβ := ⊤) hae
-  --     (s := {True}) MeasurableSpace.measurableSet_top
-  --   rw [hμ] at key
-  --   simp only [PMF.dirac, Measure.toPMF_toMeasure,
-  --     Measure.dirac_apply', MeasurableSpace.measurableSet_top] at key
-  --   simp only [Set.indicator_of_mem, Set.mem_singleton_iff, Pi.one_apply] at key
-  --   rw [key]
-  --   congr 1
-  --   ext s
-  --   simp [Set.mem_setOf_eq]
+  obtain ⟨q, ⟨P, hqP⟩, hqm⟩ := h
+  subst hqP
+  obtain ⟨b₁, b₂, hle, hown, body⟩ := hqm
+  obtain ⟨p, ⟨a, rfl⟩, hsome⟩ := hown
+  obtain ⟨hown_le, hown_some⟩ := hsome
+  refine ⟨P, ?_, ?_, ?_⟩
+  · have step1 : (⟨⟨P.PSp i, a.perm i⟩, a.comp i⟩ : PSpPm Var Val) ≤ b₁ i := hown_le i
+    have step2 : b₁ i ≤ (m.val) i :=
+      le_trans (IndexedPSpPm.le_of_mul_left I Val Var i) (hle i)
+    have hPm : P.PSp i ≤ (m.val i).1.1 := le_trans step1.1 step2.1
+    have hms : (m.val i).1.1 = some (m.PSpace i) := m.val_psp_eq_some i
+    have hPs : (P.PSp i) = some (P.PSpace i) := rfl
+    rw [hPs, hms] at hPm
+    exact WithTop.coe_le_coe.mp hPm
+  · simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body ⊢
+    exact body.1
+  · simp only [almostMeasurable, ValidIndexedPSpPm.PSp, ValidPSpPm.PSp] at body
+    obtain ⟨ham, hμ⟩ := body
+    have bridge : @Measure.map _ _ (P.ms i) ⊤ E (P.μ i)
+        = @Measure.map _ _ (P.PSpace i).1.ms ⊤ E (P.PSpace i).1.μ :=
+      ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨P.val i, P.property i⟩ E
+    rw [bridge] at hμ
+    have hae : @AEMeasurable _ _ ⊤ (P.PSpace i).1.ms E (P.PSpace i).1.μ := ham
+    have key := Measure.map_apply_of_aemeasurable (mβ := ⊤) hae
+      (s := {True}) MeasurableSpace.measurableSet_top
+    rw [hμ] at key
+    simp only [PMF.dirac, Measure.toPMF_toMeasure,
+      Measure.dirac_apply', MeasurableSpace.measurableSet_top] at key
+    simp only [Set.indicator_of_mem, Set.mem_singleton_iff, Pi.one_apply] at key
+    rw [key]
+    congr 1
+    ext s
+    simp [Set.mem_setOf_eq]
 
 open MeasureTheory in
 omit [Finite Var] [Countable Val] in
@@ -1323,28 +1329,29 @@ omit [Finite Var] [Countable Val] in
 private lemma almostSurely_ae {E : (Var → Val) → Prop} {i : I}
     (m : ValidIndexedPSpPm I Var Val) (h : ⌈E⟨i⟩⌉ m.val) :
     ∀ᵐ s ∂(m.PSpace i).1.μ, E s := by
-  sorry
-  -- obtain ⟨ P, hPle, ham, hP1 ⟩ := almostSurely_elim m h;
-  -- -- 🤖: Let `μP := (P.PSpace i).1.μ`.
-  -- set μP := (P.PSpace i).1.μ;
-  -- -- 🤖: Show `f ⁻¹' {True}` has measure 1 and hence `f ⁻¹' {False}` has measure 0.
-  -- obtain ⟨ f, hf_meas, hf_ae ⟩ := ham;
-  -- have h_true : μP (f ⁻¹' {True}) = 1 := by
-  --   rw [ ← hP1, ← MeasureTheory.measure_congr ];
-  --   filter_upwards [ hf_ae ] with s hs using by simpa using hs;
-  -- have h_false : μP (f ⁻¹' {False}) = 0 := by
-  --   convert MeasureTheory.measure_compl _ _ using 1;
-  --   convert rfl;
-  --   any_goals exact f ⁻¹' { True };
-  --   · ext; simp [Set.mem_compl_iff];
-  --   · rw [ h_true, ( P.PSpace i ).2.measure_univ, tsub_self ];
-  --   · exact hf_meas ( MeasurableSingletonClass.measurableSet_singleton _ );
-  --   · exact h_true.symm ▸ ENNReal.one_ne_top;
-  -- obtain ⟨ N2, hN2_sub, hN2_meas, hN2_null ⟩ := @exists_measurable_superset_of_null _ ( P.PSpace i ).1.ms μP _ hf_ae.symm;
-  -- refine' MeasureTheory.measure_mono_null _ _;
-  -- exact N2 ∪ f ⁻¹' { False };
-  -- · grind +qlia;
-  -- · exact MeasureOnSpace.le_preserves_measure hPle ( hN2_meas.union ( hf_meas ( MeasurableSingletonClass.measurableSet_singleton _ ) ) ) |> fun h => h.symm ▸ MeasureTheory.measure_union_null hN2_null h_false
+  obtain ⟨ P, hPle, ham, hP1 ⟩ := almostSurely_elim m h;
+  -- 🤖: Let `μP := (P.PSpace i).1.μ`.
+  set μP := (P.PSpace i).1.μ;
+  -- 🤖: Show `f ⁻¹' {True}` has measure 1 and hence `f ⁻¹' {False}` has measure 0.
+  obtain ⟨ f, hf_meas, hf_ae ⟩ := ham;
+  have h_true : μP (f ⁻¹' {True}) = 1 := by
+    rw [ ← hP1, ← MeasureTheory.measure_congr ]
+    filter_upwards [ hf_ae ] with s hs
+    change E s = (f s = True)
+    simp only [hs, eq_iff_iff, iff_true]
+  have h_false : μP (f ⁻¹' {False}) = 0 := by
+    convert MeasureTheory.measure_compl _ _ using 1;
+    convert rfl;
+    any_goals exact f ⁻¹' { True };
+    · ext; simp [Set.mem_compl_iff];
+    · rw [ h_true, ( P.PSpace i ).2.measure_univ, tsub_self ];
+    · exact hf_meas ( MeasurableSingletonClass.measurableSet_singleton _ );
+    · exact h_true.symm ▸ ENNReal.one_ne_top;
+  obtain ⟨ N2, hN2_sub, hN2_meas, hN2_null ⟩ := @exists_measurable_superset_of_null _ ( P.PSpace i ).1.ms μP _ hf_ae.symm;
+  refine' MeasureTheory.measure_mono_null _ _;
+  exact N2 ∪ f ⁻¹' { False };
+  · grind +qlia;
+  · exact MeasureOnSpace.le_preserves_measure hPle ( hN2_meas.union ( hf_meas ( MeasurableSingletonClass.measurableSet_singleton _ ) ) ) |> fun h => h.symm ▸ MeasureTheory.measure_union_null hN2_null h_false
 
 omit [Finite Var] [Countable Val] in
 /-- 🤖: A valid indexed space owns its own underlying spaces. -/
@@ -1367,23 +1374,19 @@ omit [Finite Var] [Countable Val] in
 private lemma almostSurely_intro {E : (Var → Val) → Prop} {i : I}
     (m : ValidIndexedPSpPm I Var Val) (h : ∀ᵐ s ∂(m.PSpace i).1.μ, E s) :
     ⌈E⟨i⟩⌉ m.val := by
-  sorry
-  -- refine' ⟨ _, ⟨ m, rfl ⟩, _ ⟩;
-  -- refine' ⟨ m.val, 1, _ ⟩;
-  -- refine' ⟨ _, _, _ ⟩;
-  -- · exact mul_one _ |> le_of_eq;
-  -- · exact ownPSp_self m;
-  -- · refine' ⟨ _, _ ⟩;
-  --   · refine' ⟨ fun _ => True, measurable_const, h.mono fun s hs => by simpa using hs ⟩;
-  --   · have hE_true : E =ᵐ[(m.PSpace i).1.μ] (fun _ => True) := by
-  --       filter_upwards [ h ] with s hs using by simpa using hs;
-  --     convert Measure.map_congr hE_true using 1;
-  --     · convert ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨ m.val i, m.property i ⟩ E using 1;
-  --     · ext s hs; simp +decide only [PMF.dirac, Measure.toPMF_toMeasure,
-  --       MeasurableSpace.measurableSet_top, Measure.dirac_apply', ValidIndexedPSpPm.PSpace,
-  --       PSp.compatiblePerm, OrderedUnitalResourceAlgebra.instValidForall.eq_1, ValidPSpPm.PSpace,
-  --       ValidPSpPm, ValidPSp.PSpace, ValidPSp, Measure.map_const, PSpace.isProbability,
-  --       measure_univ, one_smul] ;
+  refine' ⟨ _, ⟨ m, rfl ⟩, _ ⟩;
+  refine' ⟨ m.val, 1, _ ⟩;
+  refine' ⟨ _, _, _ ⟩;
+  · exact mul_one _ |> le_of_eq;
+  · exact ownPSp_self m;
+  · refine' ⟨ _, _ ⟩;
+    · refine' ⟨ fun _ => True, measurable_const, h.mono fun s hs => by simpa using hs ⟩;
+    · have hE_true : E =ᵐ[(m.PSpace i).1.μ] (fun _ => True) := by
+        filter_upwards [ h ] with s hs using by simpa using hs;
+      convert Measure.map_congr hE_true using 1;
+      · exact ValidPSpPm.map_μ_eq_map_PSpace_μ ⟨ m.val i, m.property i ⟩ E
+      · simp only [Measure.map_const, (m.PSpace i).2.measure_univ, one_smul, PMF.dirac,
+          Measure.toPMF_toMeasure]
 
 omit [Finite Var] [Countable Val] in
 /-- 🤖: Forward direction of SURE-MERGE. Mirrors the proof of `Sure_Eq_Inj`: from
@@ -1770,24 +1773,31 @@ arbitrary intersection `idx P` inherits the irrelevance property via
 `irrelevant_sInter_valid` and the `UpperSet` structure of assertions. -/
 private lemma irrelevant_idx_compl [Inhabited Var] [Finite I]
   (P : bProp I Var Val) : irrelevant {i | i ∉ idx P} P := by
-  sorry
-  -- intro a ha;
-  -- obtain ⟨a', ha', hagree', hPa'⟩ := ha
-  -- set a₀ : IndexedPSpPm I Var Val := fun i => if i ∈ idx P then a' i else 1;
-  -- -- 🤖: By definition of $a₀$, we know that $a₀$ is valid.
-  -- have ha₀_valid : valid a₀ := by
-  --   aesop;
-  -- -- 🤖: By definition of $a₀$, we know that $a₀$ and $a'$ agree on $\text{idx } P$.
-  -- have ha₀_a'_agree : ∀ i ∈ idx P, a₀ i = a' i := by
-  --   aesop;
-  -- -- 🤖: By definition of $a₀$, we know that $P a₀$.
-  -- have ha₀_P : P a₀ := by
-  --   apply_rules [ irrelevant_sInter_valid ];
-  --   exact fun J hJ => hJ;
-  -- convert P.upper' _ ha₀_P using 1;
-  -- intro i; by_cases hi : i ∈ idx P <;> simp_all +decide ;
-  -- convert IndexedPSpPm.one_le ( I := I ) ( Var := Var ) ( Val := Val ) ( a := a ) i using 1;
-  -- aesop
+  intro a ha
+  obtain ⟨a', ha', hagree', hPa'⟩ := ha
+  set a₀ : IndexedPSpPm I Var Val := fun i => if i ∈ idx P then a' i else 1 with ha₀_def
+  -- 🤖: By definition of `a₀`, it is valid.
+  have ha₀_valid : valid a₀ := by
+    intro i
+    simp only [ha₀_def]
+    by_cases hi : i ∈ idx P
+    · simp only [if_pos hi]; exact ha' i
+    · simp only [if_neg hi]; exact valid_one
+  -- 🤖: By definition of `a₀`, it agrees with `a'` on `idx P`.
+  have ha₀_a'_agree : ∀ i ∈ idx P, a₀ i = a' i := by
+    intro i hi; simp only [ha₀_def, if_pos hi]
+  -- 🤖: `P a₀` follows from irrelevance on the intersection defining `idx P`.
+  have ha₀_P : P a₀ :=
+    irrelevant_sInter_valid (fun J hJ => hJ) ha₀_valid ha' ha₀_a'_agree hPa'
+  -- 🤖: `a₀ ≤ a`, so `P a` by upward closure of the assertion `P`.
+  refine P.upper' ?_ ha₀_P
+  intro i
+  simp only [ha₀_def]
+  by_cases hi : i ∈ idx P
+  · rw [if_pos hi]
+    exact le_of_eq (hagree' i (by simpa using hi)).symm
+  · rw [if_neg hi]
+    exact IndexedPSpPm.one_le I Val Var i
 
 -- #### AND-TO-STAR: Spec & Proof
 
@@ -2738,25 +2748,30 @@ private lemma bind_event_null {A : Type*}
     (E : (Var → Val) → Prop)
     (h : ∀ a : μ.support, (κ a) {s | ¬ E s} = 0) :
     (@Measure.bind A (Var → Val) ⊤ ms (@PMF.toMeasure A ⊤ μ) κ) {s | ¬ E s} = 0 := by
-  sorry
-  -- -- 🤖: Let $N$ be the intersection of $N_v$ for all $v \in \text{supp}(\mu)$.
-  -- obtain ⟨N, hN_meas, hN_sub, hN_zero⟩ : ∃ N : Set (Var → Val), MeasurableSet N ∧ {s | ¬E s} ⊆ N ∧ ∀ v : μ.support, (κ v) N = 0 := by
-  --   revert h;
-  --   intro h
-  --   have h_countable_support : Countable μ.support := by
-  --     exact μ.support_countable.to_subtype;
-  --   have hN : ∀ v : μ.support, ∃ N_v : Set (Var → Val), MeasurableSet N_v ∧ {s | ¬E s} ⊆ N_v ∧ (κ v) N_v = 0 := by
-  --     intro v;
-  --     have := MeasureTheory.exists_measurable_superset_of_null ( h v ) ; aesop;
-  --   choose N hN_meas hN_sub hN_zero using hN;
-  --   refine' ⟨ ⋂ v : μ.support, N v, MeasurableSet.iInter hN_meas, _, _ ⟩ <;> simp_all +decide [ Set.subset_def ];
-  --   exact fun a ha => MeasureTheory.measure_mono_null ( Set.iInter_subset_of_subset a ( Set.iInter_subset _ ha ) ) ( hN_zero a ha );
-  -- refine MeasureTheory.measure_mono_null hN_sub ?_
-  -- rw [MeasureTheory.Measure.bind_apply hN_meas measurable_from_top.aemeasurable]
-  -- rw [MeasureTheory.lintegral_eq_zero_iff (by fun_prop)]
-  -- convert PMF.toMeasure_apply_eq_zero_iff _ _ |>.2 ?_
-  -- · simp +decide
-  -- · exact Set.disjoint_left.mpr fun x hx₁ hx₂ => hx₂ <| hN_zero ⟨x, hx₁⟩
+  -- 🤖: Let $N$ be the intersection of $N_v$ for all $v \in \text{supp}(\mu)$.
+  obtain ⟨N, hN_meas, hN_sub, hN_zero⟩ : ∃ N : Set (Var → Val), MeasurableSet N ∧ {s | ¬E s} ⊆ N ∧ ∀ v : μ.support, (κ v) N = 0 := by
+    revert h;
+    intro h
+    have h_countable_support : Countable μ.support := by
+      exact μ.support_countable.to_subtype;
+    have hN : ∀ v : μ.support, ∃ N_v : Set (Var → Val), MeasurableSet N_v ∧ {s | ¬E s} ⊆ N_v ∧ (κ v) N_v = 0 := by
+      intro v;
+      have := MeasureTheory.exists_measurable_superset_of_null ( h v ) ; aesop;
+    choose N hN_meas hN_sub hN_zero using hN;
+    refine' ⟨ ⋂ v : μ.support, N v, MeasurableSet.iInter hN_meas, _, _ ⟩ <;> simp_all +decide [ Set.subset_def ];
+    exact fun a ha => MeasureTheory.measure_mono_null ( Set.iInter_subset_of_subset a ( Set.iInter_subset _ ha ) ) ( hN_zero a ha );
+  refine MeasureTheory.measure_mono_null hN_sub ?_
+  rw [MeasureTheory.Measure.bind_apply hN_meas measurable_from_top.aemeasurable]
+  rw [MeasureTheory.lintegral_eq_zero_iff (by fun_prop)]
+  letI : MeasurableSpace A := ⊤
+  have hgoal : ∀ᵐ a ∂(@PMF.toMeasure A ⊤ μ), (κ a) N = 0 := by
+    rw [MeasureTheory.ae_iff,
+      PMF.toMeasure_apply_eq_zero_iff _ MeasurableSpace.measurableSet_top,
+      Set.disjoint_left]
+    intro a ha
+    simp only [Set.mem_setOf_eq, not_not]
+    exact hN_zero ⟨a, ha⟩
+  exact hgoal
 
 -- #### SURE-CONVEX: Spec & Proof
 
