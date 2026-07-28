@@ -15,6 +15,8 @@ noncomputable section
 
 namespace MeasureTheory
 
+#check Iris.wp 
+
 abbrev Measure.map! (ms₁ : MeasurableSpace Ω) (ms₂ : MeasurableSpace Ω')
                     (f : Ω → Ω') (μ : Measure Ω) : Measure Ω' := @μ.map _ _ ms₁ ms₂ f
 
