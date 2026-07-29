@@ -39,8 +39,17 @@ variable [Finite Var] [Countable Val]
 
 
 -- bProp I Var Val → bProp I Var Val
+
+-- TODO: fix/finish and remove `partial`
+partial def wp' {ι : Type} {spec : OracleSpec ι}
+  (_ : Unit) (s : CoPset) (e : OracleComp spec spec.toPFunctor.A)
+  (Q : (spec.toPFunctor.A → (bProp I Var Val))) : bProp I Var Val :=
+  match e with
+  | PFunctor.FreeM.pure a => Q a
+  | PFunctor.FreeM.roll a r => wp' () s e (fun x ↦ wp' () s (r sorry) Q)
+
 instance {α ι : Type} {spec : OracleSpec ι} : Iris.Wp (bProp I Var Val) (OracleComp spec α) α Unit where
-  wp := sorry
+  wp := sorry -- wp'
 
 /-
 🤖: The product distribution `μ₁ ⊗ μ₂` is the iterated `bind`.
